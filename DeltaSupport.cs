@@ -253,6 +253,9 @@ public static class PortableMain {
             if(args.Length==3 && args[0]=="--test-launcher-apply"){
                 LauncherUpdate.TestApply(args[1],args[2]);return 0;
             }
+            if(args.Length==3 && args[0]=="--test-orphan-profiles"){
+                LauncherLayoutTests.TestOrphans(args[1],args[2]);return 0;
+            }
             if(args.Length>2 && args[0]=="--prepare-control-session"){var p=Store.Detect(args[1],"Private runtime verification");p.Id="control-verification-fixture";File.WriteAllText(args[2],RuntimeSupport.Prepare(p),new UTF8Encoding(false));return 0;}
             if(args.Length>1 && args[0]=="--english-pack-report") {File.WriteAllText(args[1],Store.Json.Serialize(EnglishRelease.Report()),new UTF8Encoding(false));return 0;}
             if(args.Length>2 && args[0]=="--english-status") {File.WriteAllText(args[2],Store.Json.Serialize(EnglishSupport.Status(Store.Detect(args[1],"Selected game"))),new UTF8Encoding(false));return 0;}

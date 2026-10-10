@@ -1,15 +1,20 @@
 CELESPHONIA MOD LIBRARY
 
-LAUNCHER 1.0.0 — GITHUB RELEASES UPDATES
+LAUNCHER 1.0.1 — ORPHAN PROFILE REPAIR + GITHUB RELEASES UPDATES
 The Help page now has Check launcher updates and GitHub source. Choose a
 trusted dedicated GitHub owner/repository to enable checks on startup. New
 launcher releases must use launcher-vX.Y.Z tags and include both the portable
 ZIP and matching .sha256.txt asset. Installation asks first, verifies every
 file and uses a separate launcher helper with retained rollback; games,
 saved profiles, English user translations and F8 sessions are untouched.
-The updater cannot contact a release until a Celesphonia GitHub repository
-is configured and has published launcher releases. See LAUNCHER AUTO-UPDATE.md
-in the development folder for the release process.
+The public update source is kitomisaitichi-design/celesphonia-launcher.
+The Help page offers version checks once this source is configured.
+Orphan entries for missing/incomplete game installations are now excluded
+from the game library. The launcher also rejects an installation that
+disappears while it is open. Saved profile records and game saves are not
+deleted, so moved folders can reappear when restored. Fully independent
+mod installations no longer require a historical deleted base folder for
+their optional runtime-control asset lookup.
 
 V1.03 / V1.04 ARCHIVE RECOGNITION
 Both creator archives in Telegram Desktop are RAR format, even if their

@@ -34,7 +34,7 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.0";
+    public const string CurrentVersion="1.0.1";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";
     // GitHub account names cannot start with dots; reject relative components
@@ -279,7 +279,7 @@ public static class LauncherUpdate {
             File.WriteAllText(exe,"OLD-LAUNCHER");
             File.WriteAllText(config,"PRIVATE-PROFILES-SENTINEL");
             File.WriteAllText(save,"PRIVATE-SAVE-SENTINEL");
-            var marker=new LauncherUpdateStage{Tag="launcher-v1.0.1",Repository="example/example",
+            var marker=new LauncherUpdateStage{Tag="launcher-v1.0.2",Repository="example/example",
                 ArchiveHash=Hash(archive),Files=hashes};
             string manifest=Path.Combine(stage,"manifest.json");
             File.WriteAllText(manifest,Store.Json.Serialize(marker));
@@ -304,7 +304,7 @@ public static class LauncherUpdate {
     public static void Test(string archive,string output){
         var positive=VerifyZip(archive,false,null);
         if(!positive.ContainsKey("Celesphonia Portable Switcher.exe")||IsNewer(CurrentVersion)||
-           !IsNewer("1.0.1")||IsNewer("0.9.9")||!TagPattern.IsMatch("launcher-v1.0.1")||
+           !IsNewer("1.0.2")||IsNewer("1.0.0")||!TagPattern.IsMatch("launcher-v1.0.2")||
            TagPattern.IsMatch("v1.04")||RepositoryPattern.IsMatch("../escape")||
            !Checksum(new string('a',64)+"  "+Asset).Equals(new string('a',64)))throw new IOException("Launcher update validation invariants failed.");
         bool traversal=false,privateFile=false;

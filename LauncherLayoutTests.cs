@@ -8,6 +8,69 @@ using System.Windows.Forms;
 
 public static class LauncherLayoutTests {
     static void Animate(int milliseconds){var watch=System.Diagnostics.Stopwatch.StartNew();while(watch.ElapsedMilliseconds<milliseconds){Application.DoEvents();System.Threading.Thread.Sleep(5);}}
+    public static void TestOrphans(string report,string profileFile){
+        byte[] original=File.ReadAllBytes(profileFile);
+        Settings recorded=Store.Json.Deserialize<Settings>(System.Text.Encoding.UTF8.GetString(original).TrimStart('\ufeff'));
+        if(recorded.Profiles==null)throw new IOException("Orphan test settings contain no profiles.");
+        // Read without writing or syncing the machine-wide installation index.
+        foreach(Profile p in recorded.Profiles){
+            if(p==null)continue;
+            p.Root=Store.PortablePath(p.Root,false);
+            p.SavePath=Store.PortablePath(p.SavePath,false);
+        }
+        var visible=ProfileLibrary.Visible(recorded.Profiles,recorded.SelectedId);
+        var unavailable=recorded.Profiles.Where(p=>!ProfileLibrary.IsPlayable(p)).ToList();
+        if(visible.Any(p=>unavailable.Contains(p)))throw new InvalidOperationException("An orphaned game remains visible.");
+        string stage=Path.Combine(Store.Home,"Staging","OrphanProfileTests-"+Guid.NewGuid().ToString("N"));
+        string good=Path.Combine(stage,"good"),web=Path.Combine(good,"www"),data=Path.Combine(web,"data");
+        string bad=Path.Combine(stage,"broken");
+        try{
+            Directory.CreateDirectory(data);Directory.CreateDirectory(bad);
+            File.WriteAllText(Path.Combine(good,"package.json"),"{\"main\":\"www/index.html\"}",System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(web,"index.html"),"<html><head></head><body></body></html>",System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(data,"System.json"),"{}",System.Text.Encoding.UTF8);
+            File.WriteAllBytes(Path.Combine(good,"Game.exe"),new byte[]{0x4d,0x5a});
+            // A new installation legitimately has no save directory yet.
+            Profile valid=new Profile{Id="good",Name="Valid no-save installation",Root=good,
+                Exe="Game.exe",SavePath=Path.Combine(web,"save")};
+            Profile missing=new Profile{Id="missing",Name="Removed install",Root=Path.Combine(stage,"deleted"),
+                Exe="Game.exe",SavePath=Path.Combine(stage,"deleted","save")};
+            Profile incomplete=new Profile{Id="incomplete",Name="Broken package",Root=bad,
+                Exe="Game.exe",SavePath=Path.Combine(bad,"save")};
+            Profile wrongSave=new Profile{Id="wrong-save",Name="Stale save mapping",Root=good,
+                Exe="Game.exe",SavePath=Path.Combine(stage,"unrelated","save")};
+            if(!ProfileLibrary.IsPlayable(valid)||Directory.Exists(valid.SavePath))
+                throw new InvalidOperationException("A valid game with no saves was filtered.");
+            if(ProfileLibrary.IsPlayable(missing)||ProfileLibrary.IsPlayable(incomplete)||
+               ProfileLibrary.IsPlayable(wrongSave))throw new InvalidOperationException("A broken profile passed validation.");
+            var fixture=new[]{valid,missing,incomplete,wrongSave};
+            var filtered=ProfileLibrary.Visible(fixture,"missing");
+            if(filtered.Count!=1||filtered[0]!=valid)throw new InvalidOperationException("Stale selection was not safely skipped.");
+            if(ProfileLibrary.Entries(fixture,"missing").OfType<Profile>().Any(p=>p!=valid))
+                throw new InvalidOperationException("Sidebar included a broken installed row.");
+            File.WriteAllText(Path.Combine(good,"launcher-base.json"),
+                Store.Json.Serialize(new{BaseRoot=missing.Root,StorageMode="Full independent copy"}),System.Text.Encoding.UTF8);
+            if(RuntimeSupport.OptionalBaseWeb(good)!=null)throw new InvalidOperationException("A missing historical base was treated as required.");
+            File.Delete(Path.Combine(data,"System.json"));
+            if(ProfileLibrary.IsPlayable(valid))throw new InvalidOperationException("Broken game content was shown as playable.");
+            File.WriteAllText(Path.Combine(data,"System.json"),"{}",System.Text.Encoding.UTF8);
+            if(!ProfileLibrary.IsPlayable(valid))throw new InvalidOperationException("Restored game content stayed hidden.");
+            File.Delete(Path.Combine(good,"Game.exe"));
+            if(ProfileLibrary.IsPlayable(valid))throw new InvalidOperationException("Missing executable was shown as playable.");
+            File.WriteAllBytes(Path.Combine(good,"Game.exe"),new byte[]{0x4d,0x5a});
+            if(!ProfileLibrary.IsPlayable(valid))throw new InvalidOperationException("Restored executable stayed hidden.");
+            if(!original.SequenceEqual(File.ReadAllBytes(profileFile)))throw new InvalidOperationException("Orphan filtering modified the user's profile database.");
+            File.WriteAllText(report,Store.Json.Serialize(new{status="PASS",realProfiles=recorded.Profiles.Count,
+                realUnavailable=unavailable.Select(p=>new{id=p.Id,name=p.Name}).ToArray(),realVisible=visible.Count,
+                orphanSelectionFallsBack=true,missingRootExcluded=true,missingGameFilesExcluded=true,
+                invalidSaveMappingExcluded=true,validEmptySaveFolderAllowed=true,restoredGameBecomesVisible=true,
+                absentHistoricalBaseOptional=true,privateProfilesPreserved=true,settingsBytesPreserved=true,
+                gameFilesDeleted=0,userSavesDeleted=0}),System.Text.Encoding.UTF8);
+        }finally{
+            if(Directory.Exists(stage)&&Path.GetFileName(stage).StartsWith("OrphanProfileTests-",StringComparison.Ordinal))
+                Directory.Delete(stage,true);
+        }
+    }
     [DllImport("user32.dll")] static extern bool PrintWindow(IntPtr window,IntPtr dc,uint flags);
     static IEnumerable<Control> Descendants(Control parent){foreach(Control c in parent.Controls){yield return c;foreach(var child in Descendants(c))yield return child;}}
     static int Check(Control parent){

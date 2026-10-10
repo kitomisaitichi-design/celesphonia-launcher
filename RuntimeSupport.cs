@@ -57,8 +57,10 @@ public static class RuntimeSupport {
         if(id!=null&&id!="ch-current")try{dictionary=Store.Json.Deserialize<Dictionary<string,string>>(Encoding.UTF8.GetString(EnglishRelease.Read(id,"dictionary.json")));}catch(IOException){}
         string aliases=Path.Combine(Store.Home,"English",id??"runtime-generic","user-translations.json");
         if(File.Exists(aliases))foreach(var v in Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(aliases,Encoding.UTF8)))dictionary[v.Key]=v.Value;
-        string baseWeb=null,layerFile=Path.Combine(p.Root,"launcher-base.json");
-        if(File.Exists(layerFile)){var layer=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(layerFile,Encoding.UTF8));if(layer.ContainsKey("BaseRoot"))baseWeb=Store.WebRoot(Convert.ToString(layer["BaseRoot"]));}
+        // Independent mod copies may retain a historical BaseRoot that was
+        // deleted after installation. It is an optional resource fallback,
+        // never a requirement for starting the fully installed game.
+        string baseWeb=OptionalBaseWeb(p.Root);
         string panel=Path.Combine(app,"panel.html");File.WriteAllText(panel,"<!doctype html><html><head><meta charset=\"utf-8\"><title>Runtime controls</title></head><body></body></html>",new UTF8Encoding(false));
         var config=new{panel=new Uri(panel).AbsoluteUri,root=p.Root,web=web,baseWeb=baseWeb,home=home,save=saves,profile=p.Name,version=id??"unrecognized",dictionary=dictionary};
         string prefix="window.CelesphoniaControlConfig="+Store.Json.Serialize(config).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\n";
@@ -72,6 +74,22 @@ public static class RuntimeSupport {
         }
         File.WriteAllText(Path.Combine(app,"package.json"),Store.Json.Serialize(manifest),new UTF8Encoding(false));
         return app;
+    }
+    public static string OptionalBaseWeb(string root){
+        string record=Path.Combine(root,"launcher-base.json");
+        if(!File.Exists(record))return null;
+        try{
+            var layer=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(record,Encoding.UTF8));
+            object raw;
+            if(layer==null||!layer.TryGetValue("BaseRoot",out raw)||raw==null)return null;
+            string basis=Convert.ToString(raw);
+            return !string.IsNullOrWhiteSpace(basis)&&Directory.Exists(basis)?Store.WebRoot(basis):null;
+        }catch(Exception e){
+            if(e is IOException||e is UnauthorizedAccessException||e is ArgumentException||
+               e is InvalidOperationException||e is NotSupportedException||
+               e is System.Security.SecurityException)return null;
+            throw;
+        }
     }
     public static Process Launch(Profile p,Action<string> progress) {
         var detected=Store.Detect(p.Root,p.Name);

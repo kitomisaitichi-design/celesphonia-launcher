@@ -1,8 +1,9 @@
 # Celesphonia Launcher — GitHub Releases auto-update
 
 This system updates **the Windows launcher**, independently of the
-Three-in-one 3.3.5 **game mod v1.04**. Its launcher version starts at
-**1.0.0**. Nothing about mod releases is inferred from launcher tags.
+Three-in-one 3.3.5 **game mod v1.04**. Its launcher version is now
+**1.0.1**, following the original 1.0.0 release. Nothing about mod releases
+is inferred from launcher tags.
 
 ## What now works
 
@@ -47,11 +48,11 @@ their separate user file. If installation fails, rollback copies are retained.
 2. Update the `CurrentVersion` constant in `LauncherUpdate.cs`, rebuild
    the Windows launcher via `Build.ps1`, rerun the native tests and create
    the verified portable ZIP via `BuildPortablePackage.py`.
-3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.0`
+3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.1`
    to verify the ZIP and write its checksum asset, then, with GitHub CLI
    installed and authenticated, rerun adding `-Publish` to create
-   `launcher-v1.0.0` with both assets. Publish a larger tag, such as
-   `launcher-v1.0.1`, to exercise an update from launcher v1.0.0.
+   `launcher-v1.0.1` with both assets. Each future binary must have its
+   own higher launcher version and matching release tag.
 4. Set **Help → GitHub source** to your repository and leave automatic checks
    enabled. You can also check manually at any time.
 
@@ -67,6 +68,13 @@ an isolated fake launcher while preserving its private save/config sentinels
 and a rollback copy. The installed launcher is now configured to check the
 public GitHub repository automatically at startup. Its **real Help → Check
 launcher updates** call successfully checked the published v1.0.0 release
-and reported the installed v1.0.0 as current. An actual live upgrade to
-v1.0.1 requires publishing a genuinely newer matching executable and ZIP;
-the isolated replacement/rollback tests are not a substitute for that event.
+and reported the installed v1.0.0 as current. The 1.0.1 release fixes
+orphaned and incomplete profile entries: only genuinely playable game
+directories appear in the sidebar, stale selections fall back to a valid
+profile, and deleting a game folder during an open launcher session produces
+a clear warning rather than running or writing a broken session. Old
+metadata, saves, and backups remain intact. An independent mod no longer
+requires a deleted historical `launcher-base.json` BaseRoot to use the
+optional runtime controls. These cases are tested against both working and
+portable-profile settings; a real GitHub 1.0.0-to-1.0.1 self-update must
+still be checked separately from the isolated rollback tests.

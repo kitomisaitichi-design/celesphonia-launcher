@@ -1,10 +1,10 @@
-﻿# Celesphonia Portable Launcher
+# Celesphonia Portable Launcher
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.0** and game-mod version 1.04 are independently versioned.
+**Launcher version 1.0.1** (orphan-profile repair; released after v1.0.0) and game-mod version 1.04 are independently versioned.
 
-## Download / update
+## v1.0.1 fixes\r\nThe library no longer lists orphaned, moved, or incomplete game directories as installed. If an installation disappears while the launcher is open, launching it is blocked with a clear warning. Empty save folders remain valid; stored profiles, private saves and backups are not deleted. Fully independent mod copies tolerate a missing historical base-folder reference for optional runtime assets.\r\n\r\n## Download / update
 
 Download the latest **Celesphonia-Delta-Launcher-CH1.zip** and checksum file from [Releases](https://github.com/kitomisaitichi-design/celesphonia-launcher/releases). Extract into a portable folder outside the game folder and run `Celesphonia Portable Switcher.exe`. Set the GitHub update source to `kitomisaitichi-design/celesphonia-launcher` under Help. Checks can run automatically when opening the launcher, but installation always requires your confirmation. The program validates SHA-256 and retains rollback copies.
 

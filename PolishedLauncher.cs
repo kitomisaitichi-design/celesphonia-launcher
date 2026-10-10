@@ -427,6 +427,14 @@ public class PolishedLauncher : ReplacementAwareForm {
     void Launch(){Launch(controlsToggle!=null&&controlsToggle.Checked);}
     async void Launch(bool controls){
         if(busy||Selected==null||!GameClosed())return;
+        if(!ProfileLibrary.IsPlayable(Selected)){
+            string missing=Selected.Name;
+            RefreshProfiles();UpdateActions();
+            status.Text="Unavailable installation excluded · "+missing;
+            MessageBox.Show(this,"This game's folder was moved, deleted or is incomplete. Its library entry is now hidden until the game is available again. No game files, saves or backups were deleted.",
+                "Game installation unavailable",MessageBoxButtons.OK,MessageBoxIcon.Warning);
+            return;
+        }
         if(scanCancellation!=null)scanCancellation.Cancel();
         var profile=Selected;Store.Write(settings);busy=true;SetEnabled(false);progress.Visible=true;
         var updates=new Progress<string>(message=>{if(!IsDisposed&&busy)status.Text=message;});

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -126,8 +126,29 @@ public class GrimoirePage : Panel {
 public static class ProfileLibrary {
     static string PathKey(string path){try{return Path.GetFullPath(path).TrimEnd('\\','/');}catch{return path??"";}}
     public static string Identity(Profile p){return PathKey(p.Root)+"|"+PathKey(p.SavePath);}
+    // A profile is metadata, not proof that its game is still installed.
+    // Portable copies and the shared installation index can retain paths to
+    // deleted/moved folders; never show such orphans as playable installations.
+    // Keep the saved metadata and backups intact so relocated drives recover.
+    public static bool IsPlayable(Profile p){
+        if(p==null||string.IsNullOrWhiteSpace(p.Root)||string.IsNullOrWhiteSpace(p.SavePath)
+            ||FileDiscovery.IsNativeProbe(p.Root))return false;
+        try{
+            if(!Directory.Exists(p.Root))return false;
+            Profile detected=Store.Detect(p.Root,p.Name??"Game");
+            if(!PathKey(detected.SavePath).Equals(PathKey(p.SavePath),StringComparison.OrdinalIgnoreCase))
+                return false;
+            using(var exe=File.OpenRead(Path.Combine(p.Root,detected.Exe)))
+                return exe.ReadByte()=='M'&&exe.ReadByte()=='Z';
+        }catch(Exception e){
+            if(e is IOException||e is UnauthorizedAccessException||e is ArgumentException||
+               e is InvalidOperationException||e is NotSupportedException||
+               e is System.Security.SecurityException)return false;
+            throw;
+        }
+    }
     public static List<Profile> Visible(IEnumerable<Profile> profiles,string selectedId){
-        return (profiles??Enumerable.Empty<Profile>()).Where(p=>p!=null&&!FileDiscovery.IsNativeProbe(p.Root))
+        return (profiles??Enumerable.Empty<Profile>()).Where(IsPlayable)
             .GroupBy(Identity,StringComparer.OrdinalIgnoreCase).Select(g=>g.FirstOrDefault(p=>p.Id==selectedId)??g.First()).ToList();
     }
     static string VersionOrder(string id){
