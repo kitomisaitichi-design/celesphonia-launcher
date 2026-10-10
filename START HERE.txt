@@ -1,0 +1,220 @@
+GAME UPDATE: THREE-IN-ONE 3.3.5 V1.04
+All 20 new source text keys introduced in the creator's v1.04 are translated
+(18 new plus two pre-existing exact matches). The verified v1.04-specific
+English pack covers 34,482 keys; 21,079 older untranslated keys remain.
+Install v1.04 from the Telegram Desktop author archive using Upgrade & carry
+saves; original versions, saves and F8 controls remain independently usable.
+Older v1.03 files must not overwrite the new v1.04 data or plugin fixes.
+Read UPGRADE PATHS.md for the full verified upgrade requirements.
+
+HISTORICAL ENGLISH UPDATE 083
+23 new reviewed keys; 27,637 total; 0 actionable whole fields pending.
+Save-slot captions and development-screen layout now use fitted English display copies.
+See English/CURRENT STATUS.md for fresh occurrence counts and native checks.
+The established launcher folder and ZIP are updated in place. Older details below are historical.
+Translation remains partial.
+
+CELESPHONIA MOD LIBRARY - ANY STARTING VERSION
+
+Run Celesphonia Portable Switcher.exe on Windows with .NET Framework 4.5 or newer.
+The launcher finds installed games automatically. You can also start with original
+archives and add a game later. Supported games are CH, Gorpg 1.23, Maple 1.7.2,
+three-in-one 3.3.4, 3.3.5 trial, and 3.3.5 v1.01.
+No CH installation is required when using the new any-version pack.
+
+
+3.3.5 V1.01: FORWARD UPGRADE WITH SAVES
+Choose Three-in-one 3.3.5 v1.01 in Files or Install. The creator's complete update
+archive is detected from its signature/hash even with the downloaded r删ar suffix.
+The launcher verifies every update content file, creates an independent copy of
+the registered 3.3.5 trial, backs up and copies its saves, and verifies the result.
+Enabled English carries forward using v1.01's exact source-key pack. The original
+trial remains available. Newer saves cannot be copied/restored into older or separate
+branches. 3.3.4 stays separate on clean Gorpg with its own hypnosis route.
+The old five-version any-version pack is unchanged; this update uses the creator bundle.
+
+ENGLISH TEXT: ENABLE, UPDATE, OR RESTORE
+Select a supported installed game in the sidebar and open English. Enable / update
+English applies that version's partial display overlay. Use original text restores
+the exact original entry page. Each game keeps its own English status and saves.
+CH is the existing English reference; these overlays target Gorpg 1.23, Maple
+1.7.2, 3.3.4, 3.3.5 trial and 3.3.5 v1.01. No CH installation or MTool runtime is required to
+use the included English packs on a matching version.
+
+The five packs include CH-derived English reference matches and reviewed translation
+batches. The translation is NOT COMPLETE. Remaining
+dialogue and labels stay in their original language. The progress bar counts catalog
+entries (lines, multiline blocks and labels), not a percentage of game scenes.
+See English/BATCHES.md and English/TRANSLATION RULES.md for scope and review rules.
+Latest batches add complete cataloged quest descriptions, repeatable mission menus,
+shops and reactions, chapter transitions, true-story scenes, adult bad endings,
+variant hypnosis endings, final-boss dialogue and New Game Plus prompts. There are
+now 18,400 distinct reviewed keys plus the existing English reference matches.
+The preceding 1,318 keys complete remaining world-map captions/help, native blue-marker
+event-page fields, shared scene-result/partner templates and progress labels, plus
+selected complete NPC pages. Direct map-canvas labels and numeric requirements now
+translate and fit their native panels. The scope covers every map/entity and branch;
+other NPC/common-event/story dialogue remains incomplete.
+Trial has 28,732 translated catalog entries; v1.01 has 28,695. Native checks cover
+every enemy definition, state prefix and battle-log name in all five overlay versions.
+English/interactions-index.json traces NPC speakers and objects to event pages,
+conditions, variables, shared/script calls, scene dispatch and quest references.
+It also links enemies to troops, skills and evidenced map battles. See
+English/ENEMY AND SCENE COVERAGE.md for the exact scope and remaining scenes.
+Title-grid captions fit their fixed columns; profile paragraphs wrap. The purple
+horizontal pattern is the original Hpara.png artwork and remains intact.
+See English/batch-009-coverage.json, batch-010-coverage.json and story-coverage.json
+for exact source-field and event-page counts, including remaining story gaps.
+Native checks exercise quest acceptance and log refresh, objectives, discovery,
+reward item expansion, pictures and ticker rendering. Full dialogue remains partial.
+
+Import translated JSON accepts intact source keys and translated values, preserving
+control codes, line counts and plugin conditions. An untouched MTool template has
+source-to-source entries and adds no translations. The CH export is English-to-itself
+and is a reference, not a Chinese-to-English import for another variant.
+Export untranslated creates a template for the selected version. Seen text log
+shows untranslated text actually rendered while English is enabled; its translated
+values can also be imported for that version. New imports update an enabled overlay.
+Keep the English folder and EnglishRuntime.js beside the portable executable.
+
+Only the entry HTML gets a small loader added. Original databases, encoded Maple
+files, scripts, variables and save data remain intact. The small celesphonia-english
+folder inside the game contains the original entry backup, overlay and seen-text log.
+Its backup is recovery data, not an unused game copy. If another tool changes the
+entry page, the launcher preserves that change and stops automatic restoration.
+Save and close the game before enabling, updating or restoring English.
+
+FILES: WHAT YOU ALREADY HAVE
+The Files page shows five versions alongside their installed games, original
+files, patch packs, and available action. Green rows are ready to switch; lavender
+rows can be installed from detected files; amber rows need more files.
+Select a row and press Use selected version, or double-click it. Installed games
+open Play with their existing saves. Missing games open the relevant Install guide.
+View detected files shows complete paths and missing split archive parts.
+
+ANY VERSION TO ANY OTHER VERSION
+Place Celesphonia-Any-Version.cgdelta.zip beside the launcher or in Delta Packs.
+Open Install, choose the target, and use a version-to-version pack. Starting version
+lets you select any supported installation, nested extracted folder, or full game
+archive. The new pack contains all 20 directed routes between the five versions,
+including returning to CH. It verifies required source files before reconstruction
+and every output file afterward. Modified/incomplete source files are rejected.
+Each target gets a full independent folder and separate empty save folder.
+The source game and its saves remain in place. Existing targets switch directly.
+
+The any-version pack is approximately 7.00 GB (6,996,317,846 bytes). It contains
+changed/new data for all five targets, including files needed to reconstruct CH.
+It still must be copied or downloaded; the launcher cannot recreate unknown bytes.
+The four older packs remain CH-only:
+  gorpg-1-23.cgdelta.zip                   57 MB
+  three-in-one-3-3-4.cgdelta.zip          141 MB
+  three-in-one-3-3-5-trial.cgdelta.zip     438 MB
+  maple-1-7-2.cgdelta.zip               2,796 MB
+Use the new any-version pack when the starting game is not CH.
+
+ORIGINAL FILES ALSO WORK
+Already installed complete game: add its folder or wrapper folder, then switch.
+Complete ZIP/RAR/7z game archive: extract/install it or register an extracted game.
+Maple 1.7.2 is a complete standalone game; it is not a Gorpg overlay.
+Gorpg 1.23: keep .7z.001 and .002 together and select .001.
+3.3.4 overlay: clean Gorpg + one complete 3.3.4 bundle (.001 through .004 together).
+3.3.5 trial overlay: clean Gorpg + one complete trial bundle. It already contains
+Abu 56.6 + story 1.0 + skills 3.3.5 trial. Do not stack Maple, 3.3.4, or standalone
+Abu with it. If only another modded game is available, reconstruct clean Gorpg
+first using the any-version pack, then apply the original bundle.
+Bundle + hotfixes supports explicitly reviewed ordering: full bundle first, separate
+author-supplied hotfixes afterward. Later files overwrite earlier ones.
+Arbitrary mod combinations are not automatically compatible.
+
+DETECTION
+Searches include the launcher folder/subfolders, registered game folders and their
+parents, install location, native Documents/Desktop/Downloads/Telegram Desktop,
+and local browser download settings. Search another folder adds a remembered root.
+Automatic scans use five levels and a 3,500-folder budget per root; pick a deeper
+folder manually if needed. Game assets, saves, runtime caches and links are skipped.
+Game structure and three SHA-256 version markers identify the five reference builds.
+ZIP contents are inspected, so renamed full-game ZIPs and renamed pack ZIPs work.
+ZIP marker matches identify the version; they are not proof of every game's asset.
+RAR/7z names suggest a target, then extracted contents/known archive hashes are
+checked during installation. Unknown related archives remain unverified.
+Corrupt ZIPs do not interrupt discovery. Detection alone never installs anything.
+
+SAVES AND REVERSIBILITY
+Save and close the game before switching or installing. Select any existing version
+and press Switch & Play to return to its own game files and saves. No overwritten
+game has to be downgraded. Launches back up saves; reconstructed profiles are checked
+against their recorded file hashes. Saves supports backup, restore, and explicit
+copying between versions with a destination backup. Copying does not convert saves.
+Cross-version gameplay compatibility is unverified. In particular, 3.3.5 trial
+removed the hypnosis storyline. Keep each version's original progress.
+
+PORTABILITY AND STORAGE
+Share Celesphonia-Delta-Launcher.zip plus the new any-version pack, or use original
+game files instead. The clean launcher ZIP includes no game assets, personal saves,
+local profile paths, or runtime caches. Extract it into a writable folder.
+Native ZIP support needs no separate extractor. For split 7z/unsupported archives,
+extract with a suitable archive program and select the extracted folder. Windows
+tar provides RAR extraction where available; the local archive helper is not included
+in the clean sharing ZIP. Each complete installed profile runs independently.
+Install location changes where future profiles are created. Full profiles require
+several GB each; the launcher checks available space before reconstruction.
+See UPGRADE PATHS.md, TEST RESULTS.txt, and any-version-verification.json.
+
+WINDOWS AND NATIVE FOLDERS
+Opening the launcher again closes previous launcher windows, including portable
+copies, hidden windows and minimized windows. Active installations, English changes
+and file scans finish before replacement. Game processes continue running.
+The startup gate keeps simultaneous launches from opening duplicate libraries.
+
+Use Folders at the top for the selected game's folder, content, data, plugins,
+saves, backups, runtime, English overlay/recovery and matching English pack.
+Launcher, patch-pack, English-pack and new-installation folders are also listed.
+Hover a menu item to see its full path. Uncreated folders are disabled.
+Detected original files and patch packs open their actual containing folder.
+Right-click a version in the sidebar or Files table for its folders.
+Choice and folder menus safely release their popups after native close processing.
+Play also has Game folder and Saves folder buttons. View detected files has
+Open containing folder for archives, split volumes and extracted sources.
+
+ENGLISH UPDATE 015-018
+3,253 additional exact source keys cover common-event/battle reactions, capture
+dialogue, transformation, photography quests, combat help, enemy/skill fields,
+and progression notices. Trial now has 21,394 available display translations.
+The HUD renders weekdays from expanded calendar fields without changing saves.
+A single cached/indexed runtime handles all translated text. Multi-group enemy
+reinforcements rebuild sprites once in 3.3.4 and trial; native combat state is
+preserved. Original databases, scripts, saves and exports are unchanged.
+English coverage is still partial; untranslated source remains visible.
+
+ENGLISH UPDATE 019-025
+1,668 additional reviewed keys cover status and timed-state text, capture commands,
+fluid/meter notices, battle dialogue, common-event notifications and library labels.
+Trial now includes 22,764 available display translations. All cataloged States,
+Enemies, SystemMessage, VariableIconName, HypnosisBase and Troops display fields,
+plus map namePop captions, have translations across the four supported overlays.
+Every map and common-event page is inventoried; overall scene dialogue is partial.
+The existing single runtime matches icon/color-wrapped sentences, expanded actor
+names, state counters and Latin qualifiers. Capture instructions fit the tested
+native panel. Conditions, event commands, original files and saves remain intact.
+
+LATEST UPDATE: 041–044
+690 more reviewed keys: full selected scene families, battle-entry events and
+sibling pages, outcome narration, combat help and independent speaker labels.
+Native full/summary event probes and both reminder choices pass across applicable
+versions. Core equipment notices fit; nested streak counts render correctly.
+Named event calls and deferred picture-triggered links are now indexed.
+All five overlay probes pass. Whole-game translation is still incomplete; trial
+and v1.01 each retain 635 event pages with missing fields. Source inventory and
+selected event execution do not establish a full playthrough. See
+English/CHAIN COVERAGE.md for the concrete checks and outstanding coverage.
+
+
+UPDATE 045–047: EXHAUSTIVE SOURCE SCOPE
+422 new reviewed keys; 18,822 total. Every native map file, common-event list
+and troop page is now indexed, including silent switches and unlisted maps.
+All five versions pass native covered-text replay with zero known render failures.
+Full-width enemy letters, named course variables, mixed actor placeholders,
+independent speakers and complete notices are fixed. Native source and saves
+remain unchanged. English is still partial: 6,800 unique whole fields across
+the supported versions await review. Full gameplay traversal is unverified.
+See English/ALL ROUTES.md for current scope, evidence and the remaining queue.

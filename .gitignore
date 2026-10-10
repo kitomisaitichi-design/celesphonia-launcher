@@ -1,0 +1,19 @@
+﻿# Never commit runtime, installed games, private saves/profiles or generated archives
+*.exe
+*.zip
+*.rar
+*.7z
+*.rpgsave
+profiles*.json
+launcher-update.json
+Control Sessions/
+Save Backups/
+Runtime/
+Staging/
+Game Profiles/
+English/
+__pycache__/
+*.candidate.*
+*.test-result.json
+*.log
+*.bak

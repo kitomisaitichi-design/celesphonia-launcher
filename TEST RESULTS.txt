@@ -1,0 +1,308 @@
+CURRENT ENGLISH UPDATE 083
+23 new reviewed keys; 27,637 total; 0 actionable whole fields pending.
+Save-slot captions and development-screen layout now use fitted English display copies.
+See English/CURRENT STATUS.md for fresh occurrence counts and native checks.
+The established launcher folder and ZIP are updated in place. Older details below are historical.
+Translation remains partial.
+
+ANY-VERSION RELEASE VALIDATION
+
+PASS: All 20 directed routes; 207,196 reconstructed target files match SHA-256 and size.
+PASS: Fresh Maple -> 3.3.5 trial reconstruction; Scene_Title; no startup errors; private save folder.
+PASS: Reference identified: CH - current installation
+PASS: Reference identified: Maple 1.7.2
+PASS: Reference identified: Three-in-one 3.3.4
+PASS: Reference identified: Gorpg 1.23 - base
+PASS: Reference identified: Three-in-one 3.3.5 - trial
+PASS: Five separate reference save folders
+PASS: Renamed wrapped full ZIP identified from three matching version files
+PASS: Damaged ZIP does not stop discovery
+PASS: Renamed universal ZIP advertises all five target routes
+PASS: Renamed legacy ZIP identified by manifest
+PASS: Original ZIP extracts and registers its actual version
+PASS: Nested wrapper game folder resolved
+PASS: Wrong selected target rejected for original archive
+PASS: Prefix, payload and suffix reconstruct across www/root layouts
+PASS: Empty files reconstruct correctly
+PASS: Independent target saves; source save untouched
+PASS: Changed reconstructed file detected before launch
+PASS: Modified required source rejected before reconstruction
+PASS: Source mismatch writes no target folder
+PASS: Traversal target path rejected
+PASS: Files grid shows five installed versions ready to switch
+PASS: No-CH install guide works from Maple 1.7.2
+PASS: No-CH install guide works from Three-in-one 3.3.4
+PASS: No-CH install guide works from Gorpg 1.23 - base
+PASS: No-CH install guide works from Three-in-one 3.3.5 - trial
+PASS: Archive-only first run can open library with no installed game
+
+
+EARLIER INSTALLATION / SAVE CHECKS
+PASS — 3.3.5 trial startup: Scene_Title, no recorded startup errors, expected private save folder.
+PASS — 3.3.5 CH delta: all 11,735 reconstructed game files match the complete installed target by SHA-256.
+PASS — Earlier Gorpg, Maple, and 3.3.4 deltas: previously verified 26,409 files.
+PASS — Full base copy and overlay file hashes; final full layered profile verification.
+PASS — Reject CH/Maple/3.3.4 as the clean Gorpg overlay base.
+PASS — Reject multiple complete bundles and a bundle placed after a hotfix.
+PASS — Ordered hotfix wins; layer added/overwritten counts recorded; source base unchanged.
+PASS — Base/overlay saves excluded from new profiles; all registered save paths distinct.
+PASS — Completed full profile verifies even when the recorded base path is unavailable.
+PASS — Changed installed layer file is detected.
+PASS — Nested renamed delta found by manifest; complete split volumes grouped.
+PASS — Missing .002 and orphan .002 / missing .001 reported.
+PASS — An unrelated game in a shared root does not prevent finding sibling mod files.
+PASS — Unrelated RPG games excluded from automatic registration.
+PASS — Native Documents/Desktop roots and Chromium/Firefox custom download-directory settings.
+PASS — Clean first run finds CH and all four other installed versions without a folder-selection prompt.
+PASS — Install diagram/checklist updates for Maple standalone, Gorpg overlays, and CH deltas.
+PASS — Returning to CH updates its original 14 save slots in the UI.
+PASS — Isolated save copy, destination backup, restore, empty backup restore, unrelated-file preservation, backup hashes, and path boundaries.
+PASS — Play / Install / Saves / Help screens rendered and visually inspected.
+
+Scope: file integrity, installation ordering, startup, launcher behavior, and save-folder operations.
+Full gameplay, every CH release, arbitrary hotfix combinations, and cross-version save migration remain unverified.
+
+ENGLISH OVERLAY CHECKS (2026-10-03)
+PASS - 21 fixture checks: control codes, placeholder order, plugin conditions,
+line counts, observed-text import, unrelated-key rejection, remaining export,
+owned-asset verification, other-tool changes, exact restoration and save isolation.
+PASS - All four dictionaries validated against their source catalogs and tokens.
+PASS - Render hooks preserve stored actor names, variable values, message buffers
+and choices. Bitmap glyphs are protected from single-character substitutions.
+PASS - Native startup probes on all four variants: English title commands, display
+names, icon/color status labels, battle labels, notifications and Normal difficulty.
+Stored actor names and variable values remain unchanged.
+PASS - Actual 3.3.5 apply/restore/apply: 565 data/script files, 22 save files across
+profiles and two MTool exports unchanged; original entry restored byte for byte.
+PASS - English UI rendered and visually inspected. Per-version packs remain partial.
+English gameplay, every custom scene and all dialogue layouts are unverified.
+
+LAUNCHER UI AND INSTANCE CHECKS (2026-10-03)
+PASS - Idle, busy and simultaneous startup replacement fixtures; cooperative exit.
+PASS - Legacy launcher replacement, including hidden native windows.
+PASS - Native folder targets on all five profiles; Maple uses its root without www.
+PASS - Six redesigned pages rendered; Play, Files, Install and English inspected.
+Profiles, saves and translation overlays are preserved by this launcher update.
+
+ADDITIONAL ENGLISH BATCHES 005 / 006 (2026-10-03)
+PASS - 765 new reviewed keys and four revised keys; 1,747 total distinct reviewed
+keys. Includes intro choices, item descriptions, anatomy and state labels, opening
+story and complete adjacent outfit / light-magic / Hazuki / mother conversations.
+PASS - Every message block in trial Map002 events 86, 99, 108 and 112 is covered
+by reviewed text or an existing English reference match.
+PASS - All four dictionaries preserve control tokens and line counts. Runtime
+checks cover actor-expanded messages, separate speaker labels, complete item
+description fields, native state suffixes and the private ticker converter.
+PASS - Native checks on all four variants: original ticker log preserved, nested
+icon/color variables, item description and unchanged stored actor/variable values.
+PASS - Trial native intro/menu/anatomy checks plus canonical and expanded Hazuki
+dialogue, mother/voice speaker labels and the mod's light-magic dialogue.
+PASS - Apply/restore/apply: 565 original data/script files, 21 save files and two
+MTool exports unchanged. Original entry restored byte for byte.
+English remains enabled on trial 3.3.5; the other three versions retain original
+text. The four packaged overlays can be enabled independently. Coverage is partial;
+these startup and renderer checks do not constitute a full gameplay playthrough.
+
+BROAD ENGLISH BATCH 007 (2026-10-03)
+PASS - 1,719 batch entries: 1,707 new reviewed keys and twelve revisions;
+3,454 distinct reviewed keys total. Full NPC/boss exchanges and quest branches,
+tutorials, core/plugin options, objectives, skills, item flavor and status effects.
+PASS - Source audit: 259 complete event message blocks, four choices and 39
+tutorial blocks across the selected Memoria, association and hospital sequences.
+Exact event/page coverage is recorded in English/batch-007-coverage.json.
+PASS - Actual native option lists and their values: Gorpg 9, Maple 22, 3.3.4 15,
+trial 3.3.5 19. Labels, status values, symbols and stored actor/variable values
+checked; gameplay variables and option settings are not rewritten.
+PASS - Native trial rendering: Memoria restoration, association Miasma Detector,
+Tanemaki's confrontation, father/rescue messages, Doppelia's encounter, police
+handoff choice, Soul (SL) +20 and state suffix activation.
+PASS - Four native ticker converters retain the original log and icon/color data.
+PASS - Original-entry apply/restore/apply: all 565 original data/script files,
+21 saves and two MTool exports unchanged. Byte-exact restoration verified.
+Trial English remains enabled; the other three retain their original text.
+Coverage is partial; selected event coverage does not cover every questline.
+
+LAUNCHER DROPDOWN FIX (2026-10-03)
+PASS - Fixed ContextMenuStrip disposal during native close processing, affecting
+both choice pickers and native folder menus. Disposal now follows the close stack.
+PASS - 30 native popup cycles: outside click, item selection and keyboard close.
+Post-close handle access succeeds; every closed menu is released afterward.
+PASS - Idle/busy/simultaneous launcher replacement and all five native folder
+targets still pass. Profile configuration is preserved and exit is cooperative.
+
+BATCH 008 RELEASE CHECKS (2026-10-03)
+Source audit: no missing non-placeholder item/weapon/armor names or descriptions,
+profile parameter names, or map display names in the four version catalogs.
+Six selected event pages: 68 displayed fields, including 41 complete message blocks;
+no missing text after combining reviewed translations and English reference matches.
+1354 reviewed batch entries: 1352 new keys and two revisions; 4806 distinct total.
+Native checks exercise DTextPicture bitmap construction, eight profile-counter widths,
+NPC speaker/sentence composition, menus and locations while preserving stored values.
+Launcher checks cover 30 menu-close cycles, replacement/simultaneous startup, busy
+operation handling and five native-folder target sets. Existing per-game English
+settings and user profile configuration are preserved. Full gameplay remains unverified.
+
+BATCHES 009 / 010 RELEASE CHECKS (2026-10-03)
+478 + 547 new reviewed keys; 5831 distinct reviewed keys total.
+Cataloged quest descriptions: 55/55 Gorpg, 56/56 Maple, 55/55 3.3.4,
+65/65 trial. These are quest-log descriptions, not all storyline dialogue.
+Source audit covers every event page in all four versions. Selected adult ending,
+repeatable mission, defeat, support and postgame pages have no missing display fields.
+The trial set contains 33 pages / 975 display fields. Other variants include
+hypnosis endings and final-boss passages absent from trial. Exact counts and remaining
+story gaps are recorded in English/batch-010-coverage.json and story-coverage.json.
+Adult pregnancy and offspring references are translated; the explicitly child-sexual
+passages in CommonEvent 739 remain original.
+Native probes accept four story quests and seven repeatable missions, refresh the
+real glossary list, and check changing objectives and discovery notifications.
+The reported first-chapter gameplay staleness was not reproduced. Original quest
+conditions, variables, rewards, IDs and stored item names are preserved.
+Reward item-icon escapes translate complete referenced names after native conversion,
+including parenthesized sizes, while retaining icons and quantities.
+Four native variants and runtime dictionary/control/immutability checks pass.
+Apply/restore/apply verifies 565 original data/script files, 22 saves and two
+source exports unchanged, with the original entry restored byte for byte.
+Trial English remains enabled; other versions retain their prior text setting.
+Full gameplay and every dialogue layout remain unverified.
+
+BATCHES 011-014 UPDATE
+501 additional reviewed keys; 6,332 reviewed keys in total.
+Main story objectives are stored separately from accepted quest inventory.
+The objective is now displayed in the mission ledger without granting mission items.
+Native fixtures use both current school saves read-only, including the empty ledger.
+Full-map, common-event and battle-event dialogue discovery runs on catalog builds.
+Native renderer probes cover teacher/Hazuki scenes, Renegades, intermission,
+club work and hospital dungeon rules, clothing recovery and locked-outfit dialogue.
+Original event commands, conditions, inventory IDs, flags and saves remain intact.
+Translation and full-gameplay layout coverage remain partial.
+
+UPDATE 015-018
+3,253 new reviewed exact source keys; 9,585 reviewed keys total.
+All new entries preserve ordered controls and line counts. Skill/enemy snapshot
+coverage: all 782 selected previously missing fields translated. Offline dialogue
+compiler emits only fully resolved clauses; unknown sentences remain intact.
+Runtime tests cover calendar boundaries, composed monster names, duplicate loads,
+cache-compatible output, reinforcement batching and error cleanup.
+Apply/restore/apply verified 565 original game data/script files, 26 save files
+across profiles, and two exports unchanged; original entry restored byte exactly.
+Native fixtures compare reinforcement battlers, variables and switches and test
+weekday progression, capture help, spoken battle lines, playback and combat help.
+CPU microbenchmark: 10,000 Latin glyph calls 23.57ms -> 0.34ms; repeated battle
+translation calls 7532.11ms -> 0.38ms after cache warmup. These are CPU timings,
+not combat frame-rate measurements or a claim that every source of lag is gone.
+
+UPDATE 019-025
+1,668 new reviewed source keys; 11,253 total. Trial has 22,764 available entries.
+Catalog checks cover every map namePop caption and all cataloged display fields
+in States, Enemies, SystemMessage, VariableIconName, HypnosisBase and Troops.
+No untranslated entries remain within those named families across four overlays.
+Conditional choice guards and greedCommand labels are inventoried as captions;
+their native commands and expressions are preserved.
+Runtime regressions cover wrapped actor sentences, ESC/doubled escapes, state
+counters and Latin qualifiers. Native trial probes pass all 23 composed displays.
+Capture instruction bitmap: 741px at font size 34; limit 940px.
+Native reinforcement fixture: three rebuilds become one; battlers, variables
+and switches match. Translation CPU microbenchmark retains 2,507 unaffected
+equivalence cases and rejects duplicate hook/timer installation.
+Original data/script files, saves and exports remain unchanged. Complete scene
+dialogue, full-gameplay traversal, every layout and end-to-end FPS are unverified.
+
+UPDATE 026, 030-032
+3,432 new reviewed source keys; 14,685 total. Trial has 25,421 of 55,307
+catalog entries translated; overall map/common-event dialogue remains partial.
+Enemy-note and glossary-description catalog coverage passes in all four variants.
+All trial choice-help lines/blocks and equipment-option fields are translated.
+Native probes pass in four variants, including enemy-book descriptions, glossary
+panel wrapping/fit and font restoration, generated equipment effects, calendar,
+sleep help and complete speaker-prefixed utterances. Trial checks all 113 glossary
+description fields. Quest acceptance, objectives and stored game values still pass.
+Apply/restore/apply confirms 565 original data/script files, 26 saves and two
+exports unchanged, and exact restoration of the original entry page.
+NPC/object reverse index records all dialogue-bearing map pages and recursively
+called common events with conditions and explicit quest references. Trial has
+2,181 interaction pages and 68 quest-objective fields with zero missing fields.
+The 37 actor speaker slots are mutable references, not 37 distinct NPC identities.
+Runtime/control tests and 2,507 benchmark equivalence cases pass; duplicate runtime
+loads cannot add hooks. CPU microbenchmarks do not establish combat frame rates.
+
+
+UPDATE 033–035
+1,707 new reviewed keys; 16,392 total. Four packs: Gorpg 23,249; Maple 24,655;
+3.3.4 25,529; trial 26,949 of 55,307 catalog entries. Story remains partial.
+Complete cataloged BattleMessage/LoseMessage fields, skill-use messages, choice
+help, equipment options, enemy/glossary descriptions and CommonEvents 126,
+517–519, 582–584, 612–614. Nine scene events are complete; other defeat families
+remain partial. Native converters check 361/361/361/395 actual scene-family display fields.
+Every nonempty enemy definition tested: 141/144/156/182 across the four variants.
+Native names/logs pass in 282/2304/2496/2912 cases with applicable state prefixes,
+stacked states and duplicate letters. Original enemy/state records stay unchanged.
+Title-grid widths and profile paragraph layout pass in all variants; trial tests
+121 titles. The original Hpara.png background explains the purple line pattern.
+Reverse index includes script calls, scene-base dispatch, variable writes and
+enemy/troop/skill/map battle links, plus native victory/escape/defeat branches.
+Trial indexes 244 battle-bearing interaction pages and 68 route anchors; variable
+destinations without sufficient evidence remain unresolved. Backlog follows routes.
+Four native variants, runtime units and 21 launcher checks pass. Apply/restore/apply
+preserves 565 original data/script files, 27 saves and two exports. English settings
+remain trial ON, other overlays OFF. 2,507 benchmark-equivalence cases pass; CPU
+measurements are not an end-to-end combat FPS claim.
+
+
+UPDATE 036–040 AND 3.3.5 V1.01
+1,318 new reviewed keys; 17,710 total. Current packs:
+Gorpg 24,072/46,950; Maple 25,635/52,625; 3.3.4 26,627/54,509;
+trial 28,140/55,379; v1.01 28,103/54,994. Translation remains incomplete.
+All five native overlays pass; trial/v1.01 each test 614 map marker/NPC fields,
+307 shared-result/progress fields and 44 direct map canvas captions. Numeric
+requirements 100/125/500 preserve game variables. Migrated saves 2 and 3 decode
+with native JsonEx and render their current objectives without modifying save bytes.
+Every map page is inventoried, including moving/stationary entities and conditional
+battle/story state; static coverage does not establish a full gameplay traversal.
+The creator update contains 5,162 verified game-relative files; only five files
+differ from the original trial. The new independent installation retains all
+original profiles and carries all nine recognized save/backup files byte exactly.
+Seven upgrade checks pass: forward-only policy, separate 3.3.4 branch, renamed ZIP
+structure/hash detection, unsafe ZIP rejection, cache invalidation, low-level backup
+restore rejection and stable repeated picker selections. Forty cached identity
+calls complete correctly. Native 30-cycle popup and cooperative replacement tests
+pass with six profiles. Launch verification and English status run off the UI thread.
+Trial apply/restore/apply preserves 565 game data/script files, 36 save/backup files
+across six profiles and three exports. 21 launcher English checks and 2,507 renderer
+equivalence cases pass. CPU benchmarks do not establish whole-game frame rates.
+
+UPDATE 041–044: WHOLE-FIELD AND EVENT-CHAIN CHECKS
+690 new reviewed keys; 18,400 total. All five native overlays pass.
+Complete selected event lists: Gorpg 397; Maple 390; 3.3.4 452;
+trial/v1.01 423 each. Complete fields: 1604/1643/1860/1789/1789.
+Native interpreter: events 543/777/779 in full and summary modes; trial/v1.01
+also exercise both combat-help reminder choices and verify switch 1830.
+Source unchanged; probes prohibit saving and restore globals. Five nested counter
+values and native equipment-notice widths pass. Full gameplay remains unverified.
+Named/picture plugin comparisons and runtime unit checks pass for all five packs.
+Apply/restore/apply preserves 565 original data/script files,
+38 recognized save/backup files across six profiles and three exports.
+21 launcher English checks and 2,507 renderer-equivalence cases pass.
+The complete wider backlog remains explicit: 370/690/754/635/635 event pages
+with missing text. Catalog ratios and indexed links do not prove story completion.
+Final deployment verifies all 161 portable files and preserves all 38 current
+save/backup files. The original nine-file migration backup remains verified;
+v1.01's eleven current save files may advance independently from the trial.
+
+
+UPDATE 045–047: EXHAUSTIVE SOURCE SCOPE
+422 new reviewed keys; 18,822 total. Every native map file, common-event list
+and troop page is now indexed, including silent switches and unlisted maps.
+All five versions pass native covered-text replay with zero known render failures.
+Full-width enemy letters, named course variables, mixed actor placeholders,
+independent speakers and complete notices are fixed. Native source and saves
+remain unchanged. English is still partial: 6,800 unique whole fields across
+the supported versions await review. Full gameplay traversal is unverified.
+See English/ALL ROUTES.md for current scope, evidence and the remaining queue.
+
+Current apply/restore/apply verification preserves 565 original data/script files,
+39 recognized save/backup files across six profiles and three exports.
+21 launcher English checks pass. The 2,507 renderer comparisons retain 2,506
+identical outputs and one explicitly checked actor-grammar wording change.
+
+Current deployment verifies 174 portable files, all 39 current save/backup files,
+and the original 9-file version-tagged migration backup.
