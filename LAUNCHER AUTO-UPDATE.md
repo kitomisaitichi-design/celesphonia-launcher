@@ -39,10 +39,11 @@ their separate user file. If installation fails, rollback copies are retained.
 
 ## Publish a future launcher version
 
-1. Create or choose a dedicated GitHub repository under your account.
-   There is currently **no connected Celesphonia repository**, and the
-   launcher will not reuse your unrelated ChatGPT Viewer/Exporter repository.
-   Choose private/public visibility with regard to rights to game-derived text.
+1. Use the dedicated public repository
+   **kitomisaitichi-design/celesphonia-launcher**. The first stable release
+   **launcher-v1.0.0** was published on October 10, 2026, with the verified
+   50,550,385-byte portable ZIP and its SHA-256 checksum. This repository is
+   separate from the ChatGPT Viewer and Exporter projects.
 2. Update the `CurrentVersion` constant in `LauncherUpdate.cs`, rebuild
    the Windows launcher via `Build.ps1`, rerun the native tests and create
    the verified portable ZIP via `BuildPortablePackage.py`.
@@ -63,5 +64,9 @@ supported update channel; use only a repository/publisher you trust.
 Native offline checks include semantic-version comparisons, an allowlisted
 release ZIP, rejected private/traversal paths and an end-to-end test updating
 an isolated fake launcher while preserving its private save/config sentinels
-and a rollback copy. A **live download/install from GitHub cannot be verified
-until a real Celesphonia GitHub release and checksum exist**.
+and a rollback copy. The installed launcher is now configured to check the
+public GitHub repository automatically at startup. Its **real Help → Check
+launcher updates** call successfully checked the published v1.0.0 release
+and reported the installed v1.0.0 as current. An actual live upgrade to
+v1.0.1 requires publishing a genuinely newer matching executable and ZIP;
+the isolated replacement/rollback tests are not a substitute for that event.
