@@ -56,9 +56,18 @@ jobs:
             assert all(('v1.0'+str(n)) in changelog for n in range(1,5)), 'Game changelog missing historical releases'
             assert 'kitomisaitichi-design/celesphonia-launcher' in source, 'Official update source not embedded'
             translation = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/dictionary.json'))
+            catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/catalog.json'))
+            aliases = [k for k, row in catalog.items() if 'legacy-runtime-display' in row.get('kinds', [])]
+            assert len(aliases) == 472 and all(k in translation for k in aliases), 'Missing verified legacy v1.04 runtime displays'
             title = [k for k in translation if k.startswith('魔法少女苍蓝星★三合一改')]
             assert len(title)==3 and all(not re.search(r'[\u3400-\u9fff]',translation[k]) for k in title), 'Untranslated v1.04 titles'
-            assert len(translation) >= 34485, 'v1.04 translation coverage regressed'
+            assert len(translation) >= 34957, 'v1.04 runtime display preservation regressed'
+            for source, target in {
+                '敵全体': 'All Enemies',
+                '装備不可': 'Cannot Equip',
+                '口腔侵蚀度': 'Oral Corruption',
+            }.items():
+                assert translation.get(source)==target, 'Missing legacy display: '+source
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 

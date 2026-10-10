@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory=$true)][string]$Repository,
-    [string]$Version='1.0.4',
+    [string]$Version='1.0.5',
     [switch]$Publish
 )
 # This script only publishes launcher packages. Game/mod RARs, private

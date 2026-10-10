@@ -1,6 +1,17 @@
 CELESPHONIA MOD LIBRARY
 
-LAUNCHER 1.0.4 — BACKWARD-COMPATIBLE GITHUB UPDATES
+LAUNCHER 1.0.5 — V1.04 ENGLISH RUNTIME LABEL PRESERVATION
+The game-mod v1.04 English pack restores 472 verified historical render-time
+translations omitted from v1.04's fresh source inventory, including native
+battle/menu labels, status labels and previously observed dynamic displays.
+Changed old dialogue, database values and story descriptions are deliberately
+excluded: v1.04 keeps its own 21 newly reviewed source strings.
+All retained v1.03 translations remain unchanged. Translation is still a
+reversible display overlay; source scripts, game data and saves are untouched.
+The 29-file distribution and safe confirmation-based GitHub updater remain
+compatible with launcher v1.0.4 and earlier supported updaters.
+
+PREVIOUS LAUNCHER 1.0.4 — BACKWARD-COMPATIBLE GITHUB UPDATES
 The game-mod changelog is included in this README and embedded inside the
 launcher EXE. Help → Game changelog exports its complete Markdown original
 to GAME MOD CHANGELOG.md when needed. No extra ZIP entry is required, so

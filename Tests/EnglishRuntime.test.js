@@ -38,6 +38,20 @@ const mapCalls=[];
 Spriteset_Map.prototype.createUpperLayer=function(){this._hzChoiceScreen={bitmap:{context:{font:'16px GameFont',measureText(text){return {width:text.length*10};},fillText(text,x,y,width){mapCalls.push({text,font:this.font,width});}}}};};
 Scene_Boot.prototype.start = function () { calls.push('boot'); };
 const realV104Titles=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-04','dictionary.json'),'utf8'));
+const v103Dictionary=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-03','dictionary.json'),'utf8'));
+// Actual v1.04 native plugin labels and historical dynamic displays must
+// survive when the v1.04 catalog is rebuilt from game data.
+const restoredNativeLabels=[
+    '\u6575\u5168\u4f53', // FTKR: All Enemies
+    '\u88c5\u5099\u4e0d\u53ef', // FTKR: Cannot Equip
+    '\u5bf9h\u7684\u770b\u6cd5', // HypState: View of Sex
+    '\u53e3\u8154\u4fb5\u8680\u5ea6', // HypState: Oral Corruption
+    '\u5473\u65b9\u5168\u4f53', // FTKR: All Allies
+];
+restoredNativeLabels.forEach(key=>{
+    assert.ok(Object.prototype.hasOwnProperty.call(v103Dictionary,key),'v1.03 legacy source must be known: '+key);
+    assert.strictEqual(realV104Titles[key],v103Dictionary[key],'v1.04 lost a verified legacy display: '+key);
+});
 const nativeV104Title=Object.keys(realV104Titles).find(k=>k.startsWith('魔法少女苍蓝星★三合一改 C变身/'));
 assert.ok(nativeV104Title,'real v1.04 source title must be inventoried and translated');
 Scene_Boot.prototype.updateDocumentTitle=function(){context.document.title=nativeV104Title;};
@@ -74,6 +88,7 @@ Object.assign(context.CelesphoniaEnglishDictionary, {
 Object.keys(realV104Titles).filter(k=>k.startsWith('魔法少女苍蓝星★三合一改')).forEach(
     k=>context.CelesphoniaEnglishDictionary[k]=realV104Titles[k]
 );
+restoredNativeLabels.forEach(k=>context.CelesphoniaEnglishDictionary[k]=realV104Titles[k]);
 Object.assign(context.CelesphoniaEnglishDictionary,{'交给\\n[1]。\n\\c[6]任务条件\\c[0]':'Give it to \\n[1].\n\\c[6]Quest requirements\\c[0]','变节者成员':'Renegade Member'});
 Object.assign(context.CelesphoniaEnglishDictionary,{
  '\\n<\\n[1]事情结束了。':'\\n<\\n[1]It is over.',
@@ -121,6 +136,12 @@ new Scene_Boot().updateDocumentTitle();
 assert.strictEqual(context.document.title,realV104Titles[nativeV104Title],
     'v1.04 boot window title and C/A/TAB instructions must be rendered in English');
 const window = new Window_Base();
+restoredNativeLabels.forEach(key=>{
+    assert.strictEqual(context.CelesphoniaEnglish.translate(key),v103Dictionary[key],
+        'legacy native/runtime display must render in English: '+key);
+    assert.strictEqual(window.drawText(key),v103Dictionary[key],
+        'native window must display the restored label in English: '+key);
+});
 ['第一阶段','第二阶段','第三阶段'].forEach((label,i)=>{
  assert.equal(window.convertEscapeCharacters('\\n<\\n['+label+']>Status'),'\x1bn<Stage '+['One','Two','Three'][i]+'>Status','literal stage titles inside native nonnumeric actor name boxes render from their separately cataloged labels');
 });

@@ -34,7 +34,7 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.4";
+    public const string CurrentVersion="1.0.5";
     public const string OfficialRepository="kitomisaitichi-design/celesphonia-launcher";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";
@@ -348,7 +348,7 @@ public static class LauncherUpdate {
         var positive=VerifyZip(archive,false,null);
         if(!positive.ContainsKey("Celesphonia Portable Switcher.exe")||
            positive.ContainsKey("GAME MOD CHANGELOG.md")||IsNewer(CurrentVersion)||
-           !IsNewer("1.0.5")||IsNewer("1.0.3")||!TagPattern.IsMatch("launcher-v1.0.5")||
+           !IsNewer("1.0.6")||IsNewer("1.0.4")||!TagPattern.IsMatch("launcher-v1.0.6")||
            TagPattern.IsMatch("v1.04")||RepositoryPattern.IsMatch("../escape")||
            !Checksum(new string('a',64)+"  "+Asset).Equals(new string('a',64)))throw new IOException("Launcher update validation invariants failed.");
         bool traversal=false,privateFile=false;

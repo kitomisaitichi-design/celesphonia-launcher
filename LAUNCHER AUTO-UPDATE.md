@@ -2,7 +2,7 @@
 
 This system updates **the Windows launcher**, independently of the
 Three-in-one 3.3.5 **game mod v1.04**. Its launcher version is now
-**1.0.4**, following 1.0.3's official-source defaults, the original 1.0.0,
+**1.0.5**, following 1.0.4's backward-compatible package, 1.0.3's official-source defaults, the original 1.0.0,
 orphan-profile-fix 1.0.1, and v1.04 English-title fix 1.0.2 releases. Nothing about mod releases
 is inferred from launcher tags.
 
@@ -52,10 +52,10 @@ their separate user file. If installation fails, rollback copies are retained.
 2. Update the `CurrentVersion` constant in `LauncherUpdate.cs`, rebuild
    the Windows launcher via `Build.ps1`, rerun the native tests and create
    the verified portable ZIP via `BuildPortablePackage.py`.
-3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.4`
+3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.5`
    to verify the ZIP and write its checksum asset, then, with GitHub CLI
    installed and authenticated, rerun adding `-Publish` to create
-   `launcher-v1.0.4` with both assets. Each future binary must have its
+   `launcher-v1.0.5` with both assets. Each future binary must have its
    own higher launcher version and matching release tag.
 4. Set **Help → GitHub source** to your repository and leave automatic checks
    enabled. You can also check manually at any time.
@@ -91,3 +91,11 @@ are preserved across rebuilds. The window and save-screen translations
 are display-only: original plugin logic and save-title matching remain
 unchanged. A native JavaScript regression test verifies the real v1.04
 window-title translation and unchanged stored save metadata.
+
+Launcher 1.0.5 restores 472 previously translated runtime display aliases
+missing from the fresh v1.04 inventory, while leaving the 12 changed older
+story/database/description strings out. A source-backed regression audit
+checks 37 literal plugin display strings in the actual v1.04 scripts.
+The v1.04 pack now has 34,957 English dictionary entries, including all 21
+new v1.04 source keys. This is render-only; save IDs and original data are
+not changed.
