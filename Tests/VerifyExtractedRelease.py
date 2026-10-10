@@ -16,13 +16,18 @@ def main():
     try:
         with zipfile.ZipFile(args.archive) as z:
             assert z.testzip() is None
-            changelog=z.read('GAME MOD CHANGELOG.md').decode('utf8')
+            changelog=z.read('README.txt').decode('utf8')
             assert all('v1.0'+str(i) in changelog for i in range(1,5)), 'The English creator changelog is missing a version.'
+            assert 'GAME MOD CHANGELOG.md' not in z.namelist(), 'Extra ZIP entry would break older auto-updaters.'
             for name in z.namelist():
                 p=portable/pathlib.PurePosixPath(name);p.resolve().relative_to(portable.resolve());p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(name))
             assert (portable/'profiles.json').read_bytes()==original_config
             for name in z.namelist():assert (portable/name).read_bytes()==z.read(name)
             assert not (portable/'launcher-update.json').exists(), 'Portable distribution leaked private updater preferences.'
+            extracted_changelog=portable/'GAME MOD CHANGELOG.md'
+            run(exe,'--export-game-changelog',extracted_changelog)
+            assert extracted_changelog.read_text('utf8')==(HOME/'GAME MOD CHANGELOG.md').read_text('utf8')
+            assert all('v1.0'+str(i) in extracted_changelog.read_text('utf8') for i in range(1,5))
             profiles=c.load(HOME/'profiles.json')['Profiles']
             for profile in profiles:
                 if profile['Root'].startswith('@launcher/'):

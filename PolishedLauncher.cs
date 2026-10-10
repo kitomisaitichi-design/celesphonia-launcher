@@ -269,7 +269,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         LabelAt(helpPage,"01   Start from any supported version\r\nCH, Gorpg 1.23, Maple 1.7.2, 3.3.4, and 3.3.5 trial can be starting installations. Use the any-version pack to prepare a missing version. Existing games switch directly.\r\n\r\n02   Original files also work\r\nUse complete game folders or full ZIP/RAR/7z archives. A three-in-one overlay needs clean Gorpg 1.23. Its bundled components are applied together; separate hotfixes go afterward.\r\n\r\n03   Files shows what is ready\r\nInstalled games, matching original files, and patch packs appear together. Green rows are ready to switch. Other rows explain whether installation files are available or still needed.\r\n\r\n04   Saves remain separate\r\nEach version returns to its own save folder. Explicit transfers back up the destination and preserve the source. Saves are copied, not converted; cross-version gameplay is unverified.",0,110,800,404,11,false,muted);
         ButtonAt(helpPage,"Quick start guide",0,540,345,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"README.txt")){UseShellExecute=true})),true);
         ButtonAt(helpPage,"Open delta packs",361,540,250,44,()=>Guard(()=>{Directory.CreateDirectory(Path.Combine(Store.Home,"Delta Packs"));Process.Start("explorer.exe",Store.Q(Path.Combine(Store.Home,"Delta Packs")));}),false);
-        ButtonAt(helpPage,"Game changelog",625,540,180,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"GAME MOD CHANGELOG.md")){UseShellExecute=true})),false);
+        ButtonAt(helpPage,"Game changelog",625,540,180,44,()=>Guard(OpenGameChangelog),false);
         LabelAt(helpPage,"LAUNCHER APPEARANCE",0,615,400,25,10,true,muted);
         themePicker=new ChoicePicker{Location=new Point(0,651),Size=new Size(310,40),Font=Font,BackColor=card,ForeColor=ForeColor,AccessibleName="Launcher theme"};themePicker.Items.AddRange(new object[]{"Midnight","Violet","Ocean","Daylight"});themePicker.SelectedItem=settings.LauncherTheme??"Midnight";helpPage.Controls.Add(themePicker);
         themePicker.SelectedIndexChanged+=delegate{ApplyTheme(themePicker.SelectedItem.ToString());if(!previewMode)Store.Write(settings);};
@@ -278,6 +278,11 @@ public class PolishedLauncher : ReplacementAwareForm {
         ButtonAt(helpPage,"Check launcher updates",0,750,286,43,()=>CheckLauncherUpdate(),true);
         ButtonAt(helpPage,"GitHub source",306,750,230,43,()=>ConfigureLauncherUpdates(),false);
         LabelAt(helpPage,"Uses GitHub Releases with a required SHA-256 checksum. Offers updates when a verified newer launcher is available; your installed games, saves, F8 sessions and profiles stay untouched.",0,801,805,62,10,false,muted);
+    }
+    void OpenGameChangelog(){
+        string file=Path.Combine(Store.Home,"GAME MOD CHANGELOG.md");
+        if(!File.Exists(file))LauncherUpdate.ExportChangelog(file);
+        Process.Start(new ProcessStartInfo(file){UseShellExecute=true});
     }
     bool ConfigureLauncherUpdates(){
         if(busy)return false;

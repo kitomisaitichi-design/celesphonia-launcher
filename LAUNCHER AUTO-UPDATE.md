@@ -2,8 +2,8 @@
 
 This system updates **the Windows launcher**, independently of the
 Three-in-one 3.3.5 **game mod v1.04**. Its launcher version is now
-**1.0.3**, following the original 1.0.0, orphan-profile-fix 1.0.1,
-and v1.04 English-title fix 1.0.2 releases. Nothing about mod releases
+**1.0.4**, following 1.0.3's official-source defaults, the original 1.0.0,
+orphan-profile-fix 1.0.1, and v1.04 English-title fix 1.0.2 releases. Nothing about mod releases
 is inferred from launcher tags.
 
 ## What now works
@@ -27,7 +27,7 @@ The highest launcher release must contain BOTH:
 - `Celesphonia-Delta-Launcher-CH1.zip.sha256.txt`
 
 The downloaded ZIP is SHA-256 verified. The ZIP may contain only the EXE,
-`EnglishRuntime.js`, `README.txt`, `GAME MOD CHANGELOG.md`, `mod-recipes.json`,
+`EnglishRuntime.js`, `README.txt`, `mod-recipes.json`,
 `version-fingerprints.json`, and the explicit English `manifest.json`,
 `catalog.json`, `dictionary.json` files. Unsafe paths, symlinks, unknown
 files, oversized ZIP entries, and missing assets are refused. The validated
@@ -52,10 +52,10 @@ their separate user file. If installation fails, rollback copies are retained.
 2. Update the `CurrentVersion` constant in `LauncherUpdate.cs`, rebuild
    the Windows launcher via `Build.ps1`, rerun the native tests and create
    the verified portable ZIP via `BuildPortablePackage.py`.
-3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.3`
+3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.4`
    to verify the ZIP and write its checksum asset, then, with GitHub CLI
    installed and authenticated, rerun adding `-Publish` to create
-   `launcher-v1.0.3` with both assets. Each future binary must have its
+   `launcher-v1.0.4` with both assets. Each future binary must have its
    own higher launcher version and matching release tag.
 4. Set **Help → GitHub source** to your repository and leave automatic checks
    enabled. You can also check manually at any time.

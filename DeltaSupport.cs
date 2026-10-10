@@ -256,6 +256,9 @@ public static class PortableMain {
             if(args.Length==2 && args[0]=="--test-launcher-defaults"){
                 LauncherUpdate.TestFirstRunDefaults(args[1]);return 0;
             }
+            if(args.Length==2 && args[0]=="--export-game-changelog"){
+                LauncherUpdate.ExportChangelog(args[1]);return 0;
+            }
             if(args.Length==3 && args[0]=="--test-orphan-profiles"){
                 LauncherLayoutTests.TestOrphans(args[1],args[2]);return 0;
             }

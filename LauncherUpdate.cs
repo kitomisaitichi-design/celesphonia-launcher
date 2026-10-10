@@ -34,7 +34,7 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.3";
+    public const string CurrentVersion="1.0.4";
     public const string OfficialRepository="kitomisaitichi-design/celesphonia-launcher";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";
@@ -136,7 +136,10 @@ public static class LauncherUpdate {
             throw new IOException("Unsafe launcher update ZIP entry: "+name);
         var bits=name.Split('/');
         if(bits.Any(x=>x==""||x=="."||x==".."))throw new IOException("Update ZIP attempts directory traversal.");
-        bool root=new[]{"Celesphonia Portable Switcher.exe","EnglishRuntime.js","README.txt","GAME MOD CHANGELOG.md","mod-recipes.json","version-fingerprints.json"}.Contains(name);
+        // Keep the original 1.0.0–1.0.2 ZIP allowlist compatible. Older
+        // installed launchers must be able to verify any newer release,
+        // without encountering an unapproved new root entry.
+        bool root=new[]{"Celesphonia Portable Switcher.exe","EnglishRuntime.js","README.txt","mod-recipes.json","version-fingerprints.json"}.Contains(name);
         bool english=Regex.IsMatch(name,@"^English/[a-z0-9-]+/(manifest|catalog|dictionary)\.json$");
         if(!root&&!english)throw new IOException("Update contains an unapproved or private file: "+name);
         return name;
@@ -175,7 +178,7 @@ public static class LauncherUpdate {
                 }
             }
         }
-        foreach(string required in new[]{"Celesphonia Portable Switcher.exe","mod-recipes.json","version-fingerprints.json","README.txt","GAME MOD CHANGELOG.md"})
+        foreach(string required in new[]{"Celesphonia Portable Switcher.exe","mod-recipes.json","version-fingerprints.json","README.txt"})
             if(!files.ContainsKey(required))throw new IOException("Launcher release missing: "+required);
         return files;
     }
@@ -183,6 +186,19 @@ public static class LauncherUpdate {
         var match=Regex.Match(contents.Trim(),@"^([a-fA-F0-9]{64})(?:\s+\*?Celesphonia-Delta-Launcher-CH1\.zip)?\s*$");
         if(!match.Success)throw new IOException("Release checksum asset has an unexpected format.");
         return match.Groups[1].Value.ToLowerInvariant();
+    }
+    public static string ChangelogText(){
+        // Bundled INSIDE the EXE (an existing allowlisted asset) so the
+        // documentation can be exported without introducing a ZIP entry
+        // that old launcher updaters would reject.
+        using(var stream=typeof(LauncherUpdate).Assembly.GetManifestResourceStream("Celesphonia.GameModChangelog.md")){
+            if(stream==null)throw new IOException("Embedded game-mod changelog resource missing.");
+            using(var reader=new StreamReader(stream,Encoding.UTF8,true))return reader.ReadToEnd();
+        }
+    }
+    public static void ExportChangelog(string path){
+        if(File.Exists(path))throw new IOException("Refusing to overwrite an existing changelog.");
+        File.WriteAllText(path,ChangelogText(),new UTF8Encoding(false));
     }
     public static string Stage(LauncherUpdateInfo info){
         if(info==null||!IsNewer(info.Version)||!TagPattern.IsMatch(info.Tag))throw new IOException("Not a newer launcher version.");
@@ -283,7 +299,7 @@ public static class LauncherUpdate {
             File.WriteAllText(exe,"OLD-LAUNCHER");
             File.WriteAllText(config,"PRIVATE-PROFILES-SENTINEL");
             File.WriteAllText(save,"PRIVATE-SAVE-SENTINEL");
-            var marker=new LauncherUpdateStage{Tag="launcher-v1.0.4",Repository="example/example",
+            var marker=new LauncherUpdateStage{Tag="launcher-v1.0.5",Repository="example/example",
                 ArchiveHash=Hash(archive),Files=hashes};
             string manifest=Path.Combine(stage,"manifest.json");
             File.WriteAllText(manifest,Store.Json.Serialize(marker));
@@ -331,8 +347,8 @@ public static class LauncherUpdate {
     public static void Test(string archive,string output){
         var positive=VerifyZip(archive,false,null);
         if(!positive.ContainsKey("Celesphonia Portable Switcher.exe")||
-           !positive.ContainsKey("GAME MOD CHANGELOG.md")||IsNewer(CurrentVersion)||
-           !IsNewer("1.0.4")||IsNewer("1.0.2")||!TagPattern.IsMatch("launcher-v1.0.4")||
+           positive.ContainsKey("GAME MOD CHANGELOG.md")||IsNewer(CurrentVersion)||
+           !IsNewer("1.0.5")||IsNewer("1.0.3")||!TagPattern.IsMatch("launcher-v1.0.5")||
            TagPattern.IsMatch("v1.04")||RepositoryPattern.IsMatch("../escape")||
            !Checksum(new string('a',64)+"  "+Asset).Equals(new string('a',64)))throw new IOException("Launcher update validation invariants failed.");
         bool traversal=false,privateFile=false;
@@ -349,7 +365,7 @@ public static class LauncherUpdate {
                 }}
             };
         };
-        var latest=SelectLatest(new object[]{release("launcher-v1.0.3"),
+        var latest=SelectLatest(new object[]{release("launcher-v1.0.4"),
             release("v1.04"),release("launcher-v1.2.0"),release("launcher-v1.0.9")},
             "example/launcher");
         if(latest==null||latest.Version!="1.2.0"||latest.Tag!="launcher-v1.2.0")
@@ -361,6 +377,10 @@ public static class LauncherUpdate {
         bool missingRejected=false;try{SelectLatest(new object[]{missing,release("launcher-v1.2.0")},"example/launcher");}
             catch(IOException){missingRejected=true;}
         if(!missingRejected)throw new IOException("Incomplete newest launcher version was silently skipped.");
+        string text=ChangelogText();
+        foreach(string version in new[]{"v1.01","v1.02","v1.03","v1.04"})
+            if(!text.Contains(version))throw new IOException("Embedded creator changelog missing "+version);
+        if(positive.Count!=29)throw new IOException("Updater compatibility requires the original 29 release entries.");
         File.WriteAllText(output,Store.Json.Serialize(new{status="PASS",version=CurrentVersion,zipFiles=positive.Count,
             gameAndSaveFilesExcluded=true,pathTraversalRejected=true,forwardVersionsOnly=true,
             githubChecksumRequired=true,gameModVersionIndependent=true,

@@ -2,7 +2,7 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.3** (official first-run auto-check and English changelog, following v1.0.2 title repair) and game-mod version 1.04 are independently versioned.
+**Launcher version 1.0.4** (backward-compatible update package, following v1.0.3 automatic first-run release checks) and game-mod version 1.04 are independently versioned.
 
 ## v1.0.1 fixes
 The library no longer lists orphaned, moved, or incomplete game directories as installed. If an installation disappears while the launcher is open, launching it is blocked with a clear warning. Empty save folders remain valid; stored profiles, private saves and backups are not deleted. Fully independent mod copies tolerate a missing historical base-folder reference for optional runtime assets.
@@ -10,8 +10,11 @@ The library no longer lists orphaned, moved, or incomplete game directories as i
 ## v1.0.2 fixes
 The Three-in-One v1.04 window title and C/A/TAB controls are translated again. All 20 new/changed v1.04 display strings and 18 reviewed v1.04-specific translation overrides survive rebuilding. No game scripts or saved-game metadata are translated in place; rendering is display-only.
 
+## v1.0.4 compatibility fix
+Older launcher v1.0.2 installations rejected the additional changelog file introduced with v1.0.3. v1.0.4 restores the original 29-file ZIP structure for compatibility with existing release validators. The **complete translated changelog is embedded in the launcher EXE** and reproduced in README.txt; Help → Game changelog exports the standalone Markdown on demand. The brief v1.0.3 release requires manual installation of v1.0.4 if its updater rejects the ZIP.
+
 ## v1.0.3 improvements
-Fresh portable downloads automatically check the official GitHub Releases channel on startup and offer a newer launcher version with a confirmation prompt. No source configuration is required. Existing user opt-outs/custom channels are preserved. The English game-mod v1.01–v1.04 creator changelog is now bundled in the portable ZIP and opens from Help → Game changelog.
+Fresh portable downloads automatically check the official GitHub Releases channel on startup and offer a newer launcher version with a confirmation prompt. No source configuration is required. Existing user opt-outs/custom channels are preserved. The English game-mod v1.01–v1.04 creator changelog is now bundled in README.txt and the EXE resource; Help → Game changelog opens the extracted Markdown copy.
 
 ## Download / update
 
