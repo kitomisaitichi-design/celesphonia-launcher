@@ -1,6 +1,12 @@
 CELESPHONIA MOD LIBRARY
 
-LAUNCHER 1.0.1 — ORPHAN PROFILE REPAIR + GITHUB RELEASES UPDATES
+LAUNCHER 1.0.2 — V1.04 WINDOW TITLE RESTORED + GITHUB RELEASES UPDATES
+The v1.04 English dictionary now includes the translated Three-in-One
+window title and C/A/TAB controls plus native save-slot captions,
+while retaining every translation from the previous v1.04 package.
+The game's save titles and executable identification strings remain native
+internally for compatibility: only on-screen presentation is translated.
+The v1.0.1 orphan profile and safe launch fixes remain included.
 The Help page now has Check launcher updates and GitHub source. Choose a
 trusted dedicated GitHub owner/repository to enable checks on startup. New
 launcher releases must use launcher-vX.Y.Z tags and include both the portable

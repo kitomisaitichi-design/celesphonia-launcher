@@ -2,7 +2,7 @@
 
 This system updates **the Windows launcher**, independently of the
 Three-in-one 3.3.5 **game mod v1.04**. Its launcher version is now
-**1.0.1**, following the original 1.0.0 release. Nothing about mod releases
+**1.0.2**, following the original 1.0.0 and orphan-profile-fix 1.0.1 releases. Nothing about mod releases
 is inferred from launcher tags.
 
 ## What now works
@@ -48,10 +48,10 @@ their separate user file. If installation fails, rollback copies are retained.
 2. Update the `CurrentVersion` constant in `LauncherUpdate.cs`, rebuild
    the Windows launcher via `Build.ps1`, rerun the native tests and create
    the verified portable ZIP via `BuildPortablePackage.py`.
-3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.1`
+3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.2`
    to verify the ZIP and write its checksum asset, then, with GitHub CLI
    installed and authenticated, rerun adding `-Publish` to create
-   `launcher-v1.0.1` with both assets. Each future binary must have its
+   `launcher-v1.0.2` with both assets. Each future binary must have its
    own higher launcher version and matching release tag.
 4. Set **Help → GitHub source** to your repository and leave automatic checks
    enabled. You can also check manually at any time.
@@ -78,3 +78,12 @@ requires a deleted historical `launcher-base.json` BaseRoot to use the
 optional runtime controls. These cases are tested against both working and
 portable-profile settings; a real GitHub 1.0.0-to-1.0.1 self-update must
 still be checked separately from the isolated rollback tests.
+
+Launcher 1.0.2 fixes the mod v1.04 translated game-window title and the
+associated C/A/TAB shortcut captions. The v1.04 catalog now inventories
+the three human-facing JavaScript titles from MyselfPlugins.js; exact
+English translations from v1.03 and 18 reviewed v1.04-specific additions
+are preserved across rebuilds. The window and save-screen translations
+are display-only: original plugin logic and save-title matching remain
+unchanged. A native JavaScript regression test verifies the real v1.04
+window-title translation and unchanged stored save metadata.

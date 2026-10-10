@@ -372,6 +372,13 @@ def inventory(web):
     if not m.group(1):continue # Comments and metadata are never translation sources.
     text=jsstring(m.group(1))
     nearby=source[max(0,m.start()-110):m.start()]
+    # Three-in-One's human-facing window/save-slot titles are JS literals
+    # (some characters are \u-escaped), not ordinary drawText calls. Index
+    # only these explicit display variables. Never rewrite the plugin or
+    # its savefile title comparisons: the overlay translates rendering only.
+    if name=='MyselfPlugins' and CJK.search(text) and re.search(
+      r'\b(?:var|let|const)\s+(?:newtitle|savetitle|autosavetitle)\s*=\s*$',nearby):
+     add(filename,('title-literal',m.start()),text,'window-title')
     if m.group(1).startswith('`') and re.search(r'TickerManager\.show\s*\(\s*$',nearby):
      tokens=re.findall(r'\$\{([A-Za-z_$][\w$]*)\}',text)
      if tokens and len(set(tokens))<=9:
