@@ -197,3 +197,9 @@ bundle. Saves migrate forward from trial, v1.01 or v1.02.
 The latest uninstalled update appears at the top of the left game list. Click
 its Update available row to open the matching detected-bundle upgrade route.
 After installation the row becomes a normal playable game with its own saves.
+
+CREATOR CHANGELOG — ENGLISH TRANSLATION
+See GAME MOD CHANGELOG.md beside this README for the complete English
+developer notes covering Three-in-one 3.3.5 v1.01 through v1.04,
+including full-release synchronized changes #200 and #201.
+These are game-mod versions, separate from launcher v1.0.2.
