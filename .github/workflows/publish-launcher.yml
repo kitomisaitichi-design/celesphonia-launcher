@@ -1,0 +1,74 @@
+name: Publish verified Celesphonia launcher
+
+on:
+  push:
+    tags:
+      - 'launcher-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout preverified release assets
+        uses: actions/checkout@v4
+        with:
+          ref: release-assets/${{ github.ref_name }}
+          path: release
+          persist-credentials: false
+
+      - name: Verify ZIP, checksum and launcher version
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, zipfile
+          tag = os.environ['GITHUB_REF_NAME']
+          match = re.fullmatch(r'launcher-v(\d+\.\d+\.\d+)', tag)
+          assert match, 'Unexpected release tag'
+          version = match.group(1)
+          source = pathlib.Path('LauncherUpdate.cs').read_text('utf-8')
+          assert 'CurrentVersion="'+version+'"' in source, 'Source and release versions differ'
+          root = pathlib.Path('release')
+          archive = root/'Celesphonia-Delta-Launcher-CH1.zip'
+          checksum = root/'Celesphonia-Delta-Launcher-CH1.zip.sha256.txt'
+          assert archive.is_file() and checksum.is_file()
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          assert checksum.read_text('utf-8').strip() == digest+'  '+archive.name, 'Checksum mismatch'
+          allowed = {'Celesphonia Portable Switcher.exe','EnglishRuntime.js','README.txt','mod-recipes.json','version-fingerprints.json'}
+          versions = (
+            'gorpg-1-23','maple-1-7-2','three-in-one-3-3-4',
+            'three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01',
+            'three-in-one-3-3-5-v1-02','three-in-one-3-3-5-v1-03',
+            'three-in-one-3-3-5-v1-04',
+          )
+          allowed.update('English/'+v+'/'+item for v in versions for item in ('manifest.json','dictionary.json','catalog.json'))
+          with zipfile.ZipFile(archive) as bundle:
+            assert bundle.testzip() is None, 'Corrupt ZIP entry'
+            assert set(bundle.namelist()) == allowed, 'Unknown or missing ZIP entries'
+            translation = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/dictionary.json'))
+            title = [k for k in translation if k.startswith('魔法少女苍蓝星★三合一改')]
+            assert len(title)==3 and all(not re.search(r'[\u3400-\u9fff]',translation[k]) for k in title), 'Untranslated v1.04 titles'
+            assert len(translation) >= 34485, 'v1.04 translation coverage regressed'
+          print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
+          PY
+
+      - name: Publish release only after asset verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "release/Celesphonia-Delta-Launcher-CH1.zip" \
+            "release/Celesphonia-Delta-Launcher-CH1.zip.sha256.txt" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Celesphonia Launcher v1.0.2 — English Window Title Fix" \
+            --notes-file "release/RELEASE-NOTES.md" \
+            --latest
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets --jq '{draft:.isDraft,prerelease:.isPrerelease,assets:[.assets[].name]}'
