@@ -2,7 +2,7 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.2** (v1.04 English title fix, following v1.0.1 orphan repair) and game-mod version 1.04 are independently versioned.
+**Launcher version 1.0.3** (official first-run auto-check and English changelog, following v1.0.2 title repair) and game-mod version 1.04 are independently versioned.
 
 ## v1.0.1 fixes
 The library no longer lists orphaned, moved, or incomplete game directories as installed. If an installation disappears while the launcher is open, launching it is blocked with a clear warning. Empty save folders remain valid; stored profiles, private saves and backups are not deleted. Fully independent mod copies tolerate a missing historical base-folder reference for optional runtime assets.
@@ -10,9 +10,12 @@ The library no longer lists orphaned, moved, or incomplete game directories as i
 ## v1.0.2 fixes
 The Three-in-One v1.04 window title and C/A/TAB controls are translated again. All 20 new/changed v1.04 display strings and 18 reviewed v1.04-specific translation overrides survive rebuilding. No game scripts or saved-game metadata are translated in place; rendering is display-only.
 
+## v1.0.3 improvements
+Fresh portable downloads automatically check the official GitHub Releases channel on startup and offer a newer launcher version with a confirmation prompt. No source configuration is required. Existing user opt-outs/custom channels are preserved. The English game-mod v1.01–v1.04 creator changelog is now bundled in the portable ZIP and opens from Help → Game changelog.
+
 ## Download / update
 
-Download the latest **Celesphonia-Delta-Launcher-CH1.zip** and checksum file from [Releases](https://github.com/kitomisaitichi-design/celesphonia-launcher/releases). Extract into a portable folder outside the game folder and run `Celesphonia Portable Switcher.exe`. Set the GitHub update source to `kitomisaitichi-design/celesphonia-launcher` under Help. Checks can run automatically when opening the launcher, but installation always requires your confirmation. The program validates SHA-256 and retains rollback copies.
+Download the latest **Celesphonia-Delta-Launcher-CH1.zip** and checksum file from [Releases](https://github.com/kitomisaitichi-design/celesphonia-launcher/releases). Extract into a portable folder outside the game folder and run `Celesphonia Portable Switcher.exe`. The official update source `kitomisaitichi-design/celesphonia-launcher` is built in; Help allows turning off startup checks or changing the repository. Checks run automatically when opening the launcher, but installation always requires your confirmation. The program validates SHA-256 and retains rollback copies.
 
 The portable release includes supported version-specific English dictionaries. Translation coverage is incomplete for pre-existing dialogue; do not represent the game as fully translated. No original commercial game data, developer RAR/ZIP mod releases, user saves, local profiles, runtime sessions, or personal settings are included.
 

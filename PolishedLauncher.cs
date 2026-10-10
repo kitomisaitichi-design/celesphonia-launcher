@@ -269,6 +269,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         LabelAt(helpPage,"01   Start from any supported version\r\nCH, Gorpg 1.23, Maple 1.7.2, 3.3.4, and 3.3.5 trial can be starting installations. Use the any-version pack to prepare a missing version. Existing games switch directly.\r\n\r\n02   Original files also work\r\nUse complete game folders or full ZIP/RAR/7z archives. A three-in-one overlay needs clean Gorpg 1.23. Its bundled components are applied together; separate hotfixes go afterward.\r\n\r\n03   Files shows what is ready\r\nInstalled games, matching original files, and patch packs appear together. Green rows are ready to switch. Other rows explain whether installation files are available or still needed.\r\n\r\n04   Saves remain separate\r\nEach version returns to its own save folder. Explicit transfers back up the destination and preserve the source. Saves are copied, not converted; cross-version gameplay is unverified.",0,110,800,404,11,false,muted);
         ButtonAt(helpPage,"Quick start guide",0,540,345,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"README.txt")){UseShellExecute=true})),true);
         ButtonAt(helpPage,"Open delta packs",361,540,250,44,()=>Guard(()=>{Directory.CreateDirectory(Path.Combine(Store.Home,"Delta Packs"));Process.Start("explorer.exe",Store.Q(Path.Combine(Store.Home,"Delta Packs")));}),false);
+        ButtonAt(helpPage,"Game changelog",625,540,180,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"GAME MOD CHANGELOG.md")){UseShellExecute=true})),false);
         LabelAt(helpPage,"LAUNCHER APPEARANCE",0,615,400,25,10,true,muted);
         themePicker=new ChoicePicker{Location=new Point(0,651),Size=new Size(310,40),Font=Font,BackColor=card,ForeColor=ForeColor,AccessibleName="Launcher theme"};themePicker.Items.AddRange(new object[]{"Midnight","Violet","Ocean","Daylight"});themePicker.SelectedItem=settings.LauncherTheme??"Midnight";helpPage.Controls.Add(themePicker);
         themePicker.SelectedIndexChanged+=delegate{ApplyTheme(themePicker.SelectedItem.ToString());if(!previewMode)Store.Write(settings);};
@@ -285,7 +286,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,
             MinimizeBox=false,MaximizeBox=false}){
             var label=new Label{Location=new Point(20,17),Size=new Size(566,45),
-                Text="GitHub repository that publishes launcher-v1.0.1+ releases, in owner/repository format.\r\nDo not use a repository for game archives or unrelated projects."};
+                Text="Official updates: "+LauncherUpdate.OfficialRepository+"\r\nUse owner/repository format. Disable automatic checks below if preferred."};
             var input=new TextBox{Location=new Point(20,77),Width=560,Text=config.Repository??""};
             var auto=new CheckBox{Location=new Point(20,119),Width=540,Text="Automatically check for launcher updates on startup",Checked=config.AutoCheck};
             var save=new Button{Location=new Point(440,163),Width=140,Text="Save",DialogResult=DialogResult.OK};

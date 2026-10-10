@@ -41,7 +41,7 @@ jobs:
           assert archive.is_file() and checksum.is_file()
           digest = hashlib.sha256(archive.read_bytes()).hexdigest()
           assert checksum.read_text('utf-8').strip() == digest+'  '+archive.name, 'Checksum mismatch'
-          allowed = {'Celesphonia Portable Switcher.exe','EnglishRuntime.js','README.txt','mod-recipes.json','version-fingerprints.json'}
+          allowed = {'Celesphonia Portable Switcher.exe','EnglishRuntime.js','README.txt','GAME MOD CHANGELOG.md','mod-recipes.json','version-fingerprints.json'}
           versions = (
             'gorpg-1-23','maple-1-7-2','three-in-one-3-3-4',
             'three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01',
@@ -52,6 +52,9 @@ jobs:
           with zipfile.ZipFile(archive) as bundle:
             assert bundle.testzip() is None, 'Corrupt ZIP entry'
             assert set(bundle.namelist()) == allowed, 'Unknown or missing ZIP entries'
+            changelog = bundle.read('GAME MOD CHANGELOG.md').decode('utf-8')
+            assert all(('v1.0'+str(n)) in changelog for n in range(1,5)), 'Game changelog missing historical releases'
+            assert 'kitomisaitichi-design/celesphonia-launcher' in source, 'Official update source not embedded'
             translation = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/dictionary.json'))
             title = [k for k in translation if k.startswith('魔法少女苍蓝星★三合一改')]
             assert len(title)==3 and all(not re.search(r'[\u3400-\u9fff]',translation[k]) for k in title), 'Untranslated v1.04 titles'
@@ -68,7 +71,7 @@ jobs:
             "release/Celesphonia-Delta-Launcher-CH1.zip.sha256.txt" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "Celesphonia Launcher v1.0.2 — English Window Title Fix" \
+            --title "Celesphonia Launcher $GITHUB_REF_NAME" \
             --notes-file "release/RELEASE-NOTES.md" \
             --latest
           gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets --jq '{draft:.isDraft,prerelease:.isPrerelease,assets:[.assets[].name]}'

@@ -253,6 +253,9 @@ public static class PortableMain {
             if(args.Length==3 && args[0]=="--test-launcher-apply"){
                 LauncherUpdate.TestApply(args[1],args[2]);return 0;
             }
+            if(args.Length==2 && args[0]=="--test-launcher-defaults"){
+                LauncherUpdate.TestFirstRunDefaults(args[1]);return 0;
+            }
             if(args.Length==3 && args[0]=="--test-orphan-profiles"){
                 LauncherLayoutTests.TestOrphans(args[1],args[2]);return 0;
             }

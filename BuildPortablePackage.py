@@ -23,7 +23,7 @@ def main():
  if not evidenceCurrent:print('Historical broad-coverage reports are stale; current package is verified by its own manifests, embedded EXE and extracted release checks.')
  # Distribution is a runtime allowlist. Authoring reports, source, tests and
  # workflow documents stay here even when future passes create new files.
- top=['Celesphonia Portable Switcher.exe','EnglishRuntime.js','README.txt','mod-recipes.json','version-fingerprints.json']
+ top=['Celesphonia Portable Switcher.exe','EnglishRuntime.js','README.txt','GAME MOD CHANGELOG.md','mod-recipes.json','version-fingerprints.json']
  ids=('gorpg-1-23','maple-1-7-2','three-in-one-3-3-4','three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01')
  import EnglishCatalog as c
  ids=c.IDS
@@ -41,7 +41,7 @@ def main():
   assert row['catalogHash']==hashlib.sha256((HOME/'English'/ident/'catalog.json').read_bytes()).hexdigest()
  files=[(HOME/name,name) for name in top]
  files.extend((HOME/'English'/ident/name,'English/'+ident+'/'+name) for ident in ids for name in ('manifest.json','dictionary.json','catalog.json'))
- assert len(files)==len({name for _,name in files})==5+3*len(ids)
+ assert len(files)==len({name for _,name in files})==6+3*len(ids)
  assert b'Celesphonia.RuntimePanel.js' in (HOME/top[0]).read_bytes(),'Runtime controls must be embedded in the EXE.'
  ui=json.loads((HOME/'Tests/launcher-ui-review/layout-check.json').read_text('utf8'))
  assert ui['status']=='PASS' and ui['launcherHash']==hashlib.sha256((HOME/top[0]).read_bytes()).hexdigest(),'Stale launcher UI verification.'
@@ -65,7 +65,7 @@ def main():
   assert not any(x in names for x in ['profiles.json','profiles.json.previous','English-build-check.exe','delta-error.txt'])
   assert set(names)=={name for _,name in files}
   for p,name in files:assert archive.read(name)==p.read_bytes(),'Staged release changed since review: '+name
-  assert not any(name.endswith('.md') or name.startswith(('Source/','Tests/')) for name in names)
+  assert not any((name.endswith('.md') and name!='GAME MOD CHANGELOG.md') or name.startswith(('Source/','Tests/')) for name in names)
   for ident in ids:
    manifest=json.loads(archive.read('English/'+ident+'/manifest.json'));assert hashlib.sha256(archive.read('English/'+ident+'/dictionary.json')).hexdigest()==manifest['DictionaryHash'];assert hashlib.sha256(archive.read('English/'+ident+'/catalog.json')).hexdigest()==manifest['CatalogHash']
  if args.stage_only:

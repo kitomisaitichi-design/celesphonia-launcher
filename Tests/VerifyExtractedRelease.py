@@ -16,10 +16,13 @@ def main():
     try:
         with zipfile.ZipFile(args.archive) as z:
             assert z.testzip() is None
+            changelog=z.read('GAME MOD CHANGELOG.md').decode('utf8')
+            assert all('v1.0'+str(i) in changelog for i in range(1,5)), 'The English creator changelog is missing a version.'
             for name in z.namelist():
                 p=portable/pathlib.PurePosixPath(name);p.resolve().relative_to(portable.resolve());p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(name))
             assert (portable/'profiles.json').read_bytes()==original_config
             for name in z.namelist():assert (portable/name).read_bytes()==z.read(name)
+            assert not (portable/'launcher-update.json').exists(), 'Portable distribution leaked private updater preferences.'
             profiles=c.load(HOME/'profiles.json')['Profiles']
             for profile in profiles:
                 if profile['Root'].startswith('@launcher/'):

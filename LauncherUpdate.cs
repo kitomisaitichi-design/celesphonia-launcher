@@ -34,7 +34,8 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.2";
+    public const string CurrentVersion="1.0.3";
+    public const string OfficialRepository="kitomisaitichi-design/celesphonia-launcher";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";
     // GitHub account names cannot start with dots; reject relative components
@@ -44,9 +45,12 @@ public static class LauncherUpdate {
     static string ConfigFile {get{return Path.Combine(Store.Home,"launcher-update.json");}}
     public static string StageHome {get{return Path.Combine(Store.Home,"Staging","LauncherUpdates");}}
     public static LauncherUpdateConfig Load(){
-        if(!File.Exists(ConfigFile))return new LauncherUpdateConfig{Repository="",AutoCheck=true};
+        // Fresh portable downloads work without a manually created settings
+        // file. Existing configurations (including an explicitly empty
+        // repository or disabled auto-check) are never replaced.
+        if(!File.Exists(ConfigFile))return new LauncherUpdateConfig{Repository=OfficialRepository,AutoCheck=true};
         var result=Store.Json.Deserialize<LauncherUpdateConfig>(File.ReadAllText(ConfigFile,Encoding.UTF8));
-        return result??new LauncherUpdateConfig{Repository="",AutoCheck=true};
+        return result??new LauncherUpdateConfig{Repository=OfficialRepository,AutoCheck=true};
     }
     public static void Save(LauncherUpdateConfig config){
         string repo=(config.Repository??"").Trim();
@@ -132,7 +136,7 @@ public static class LauncherUpdate {
             throw new IOException("Unsafe launcher update ZIP entry: "+name);
         var bits=name.Split('/');
         if(bits.Any(x=>x==""||x=="."||x==".."))throw new IOException("Update ZIP attempts directory traversal.");
-        bool root=new[]{"Celesphonia Portable Switcher.exe","EnglishRuntime.js","README.txt","mod-recipes.json","version-fingerprints.json"}.Contains(name);
+        bool root=new[]{"Celesphonia Portable Switcher.exe","EnglishRuntime.js","README.txt","GAME MOD CHANGELOG.md","mod-recipes.json","version-fingerprints.json"}.Contains(name);
         bool english=Regex.IsMatch(name,@"^English/[a-z0-9-]+/(manifest|catalog|dictionary)\.json$");
         if(!root&&!english)throw new IOException("Update contains an unapproved or private file: "+name);
         return name;
@@ -171,7 +175,7 @@ public static class LauncherUpdate {
                 }
             }
         }
-        foreach(string required in new[]{"Celesphonia Portable Switcher.exe","mod-recipes.json","version-fingerprints.json","README.txt"})
+        foreach(string required in new[]{"Celesphonia Portable Switcher.exe","mod-recipes.json","version-fingerprints.json","README.txt","GAME MOD CHANGELOG.md"})
             if(!files.ContainsKey(required))throw new IOException("Launcher release missing: "+required);
         return files;
     }
@@ -279,7 +283,7 @@ public static class LauncherUpdate {
             File.WriteAllText(exe,"OLD-LAUNCHER");
             File.WriteAllText(config,"PRIVATE-PROFILES-SENTINEL");
             File.WriteAllText(save,"PRIVATE-SAVE-SENTINEL");
-            var marker=new LauncherUpdateStage{Tag="launcher-v1.0.3",Repository="example/example",
+            var marker=new LauncherUpdateStage{Tag="launcher-v1.0.4",Repository="example/example",
                 ArchiveHash=Hash(archive),Files=hashes};
             string manifest=Path.Combine(stage,"manifest.json");
             File.WriteAllText(manifest,Store.Json.Serialize(marker));
@@ -301,10 +305,34 @@ public static class LauncherUpdate {
                 Directory.Delete(root,true);
         }
     }
+    public static void TestFirstRunDefaults(string output){
+        // Run only inside a dedicated disposable testing installation.
+        // Never overwrite real update preferences or delete any user files.
+        if(!Path.GetFileName(Store.Home).StartsWith("Celesphonia-Update-QA-",StringComparison.Ordinal)
+           ||File.Exists(ConfigFile))throw new IOException("Fresh-update test needs its own empty QA installation.");
+        var fresh=Load();
+        if(fresh.Repository!=OfficialRepository||!fresh.AutoCheck||fresh.LastNotifiedTag!=null)
+            throw new IOException("Fresh download does not automatically check the official release feed.");
+        var disabled=new LauncherUpdateConfig{Repository="",AutoCheck=false,LastNotifiedTag="user-disabled"};
+        Save(disabled);
+        var readDisabled=Load();
+        if(readDisabled.Repository!=""||readDisabled.AutoCheck||readDisabled.LastNotifiedTag!="user-disabled")
+            throw new IOException("Explicit opt-out preferences were not preserved.");
+        var custom=new LauncherUpdateConfig{Repository="custom-owner/custom-launcher",AutoCheck=true,LastNotifiedTag="launcher-v9.0.0"};
+        Save(custom);
+        var again=Load();
+        if(again.Repository!=custom.Repository||!again.AutoCheck||again.LastNotifiedTag!=custom.LastNotifiedTag)
+            throw new IOException("User custom repository was overwritten by the official default.");
+        File.WriteAllText(output,Store.Json.Serialize(new{status="PASS",version=CurrentVersion,
+            officialRepository=OfficialRepository,freshAutoCheck=true,withoutInitialConfig=true,
+            manualSourceSetupRequired=false,optOutPreserved=true,customRepositoryPreserved=true,
+            existingPreferencesPreserved=true}),new UTF8Encoding(false));
+    }
     public static void Test(string archive,string output){
         var positive=VerifyZip(archive,false,null);
-        if(!positive.ContainsKey("Celesphonia Portable Switcher.exe")||IsNewer(CurrentVersion)||
-           !IsNewer("1.0.3")||IsNewer("1.0.1")||!TagPattern.IsMatch("launcher-v1.0.3")||
+        if(!positive.ContainsKey("Celesphonia Portable Switcher.exe")||
+           !positive.ContainsKey("GAME MOD CHANGELOG.md")||IsNewer(CurrentVersion)||
+           !IsNewer("1.0.4")||IsNewer("1.0.2")||!TagPattern.IsMatch("launcher-v1.0.4")||
            TagPattern.IsMatch("v1.04")||RepositoryPattern.IsMatch("../escape")||
            !Checksum(new string('a',64)+"  "+Asset).Equals(new string('a',64)))throw new IOException("Launcher update validation invariants failed.");
         bool traversal=false,privateFile=false;
@@ -321,7 +349,7 @@ public static class LauncherUpdate {
                 }}
             };
         };
-        var latest=SelectLatest(new object[]{release("launcher-v1.0.2"),
+        var latest=SelectLatest(new object[]{release("launcher-v1.0.3"),
             release("v1.04"),release("launcher-v1.2.0"),release("launcher-v1.0.9")},
             "example/launcher");
         if(latest==null||latest.Version!="1.2.0"||latest.Tag!="launcher-v1.2.0")

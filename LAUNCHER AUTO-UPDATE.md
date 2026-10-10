@@ -2,15 +2,19 @@
 
 This system updates **the Windows launcher**, independently of the
 Three-in-one 3.3.5 **game mod v1.04**. Its launcher version is now
-**1.0.2**, following the original 1.0.0 and orphan-profile-fix 1.0.1 releases. Nothing about mod releases
+**1.0.3**, following the original 1.0.0, orphan-profile-fix 1.0.1,
+and v1.04 English-title fix 1.0.2 releases. Nothing about mod releases
 is inferred from launcher tags.
 
 ## What now works
 
 The Help page has **Check launcher updates** and **GitHub source** controls.
-Set the GitHub repository as `owner/repository`. When a source is configured,
-the launcher checks automatically when it opens (unless you disable that
-option), notifies you once for each newer release, and asks before installation.
+Freshly extracted launchers already use `kitomisaitichi-design/celesphonia-launcher`
+with startup update checks enabled; users do not need to enter a source.
+Existing settings, including disabled checks or a custom repository, are
+respected. The Help page allows manually choosing `owner/repository`.
+When startup checks are enabled, the launcher notifies once for each newer
+release and asks before installation.
 There is no silently initiated update or scheduled background updater.
 
 The updater compares the newest 100 GitHub releases by **numeric semantic
@@ -23,7 +27,7 @@ The highest launcher release must contain BOTH:
 - `Celesphonia-Delta-Launcher-CH1.zip.sha256.txt`
 
 The downloaded ZIP is SHA-256 verified. The ZIP may contain only the EXE,
-`EnglishRuntime.js`, `README.txt`, `mod-recipes.json`,
+`EnglishRuntime.js`, `README.txt`, `GAME MOD CHANGELOG.md`, `mod-recipes.json`,
 `version-fingerprints.json`, and the explicit English `manifest.json`,
 `catalog.json`, `dictionary.json` files. Unsafe paths, symlinks, unknown
 files, oversized ZIP entries, and missing assets are refused. The validated
@@ -48,10 +52,10 @@ their separate user file. If installation fails, rollback copies are retained.
 2. Update the `CurrentVersion` constant in `LauncherUpdate.cs`, rebuild
    the Windows launcher via `Build.ps1`, rerun the native tests and create
    the verified portable ZIP via `BuildPortablePackage.py`.
-3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.2`
+3. Run `PublishLauncherRelease.ps1 -Repository owner/repository -Version 1.0.3`
    to verify the ZIP and write its checksum asset, then, with GitHub CLI
    installed and authenticated, rerun adding `-Publish` to create
-   `launcher-v1.0.2` with both assets. Each future binary must have its
+   `launcher-v1.0.3` with both assets. Each future binary must have its
    own higher launcher version and matching release tag.
 4. Set **Help → GitHub source** to your repository and leave automatic checks
    enabled. You can also check manually at any time.

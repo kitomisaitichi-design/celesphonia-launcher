@@ -1,20 +1,29 @@
 CELESPHONIA MOD LIBRARY
 
-LAUNCHER 1.0.2 — V1.04 WINDOW TITLE RESTORED + GITHUB RELEASES UPDATES
+LAUNCHER 1.0.3 — OFFICIAL AUTOMATIC UPDATE CHECKS + ENGLISH CHANGELOG
+Fresh portable downloads automatically know the official GitHub source:
+kitomisaitichi-design/celesphonia-launcher, with startup checks enabled.
+The launcher notifies when a newer stable release is available and asks
+before downloading/installing it. Help → GitHub source allows opt-out or
+a custom repository; existing choices are preserved without overwriting.
+Help → Game changelog opens the included GAME MOD CHANGELOG.md containing
+English creator notes for Three-in-one 3.3.5 v1.01 through v1.04.
+
+PREVIOUS LAUNCHER 1.0.2 — V1.04 WINDOW TITLE RESTORED
 The v1.04 English dictionary now includes the translated Three-in-One
 window title and C/A/TAB controls plus native save-slot captions,
 while retaining every translation from the previous v1.04 package.
 The game's save titles and executable identification strings remain native
 internally for compatibility: only on-screen presentation is translated.
 The v1.0.1 orphan profile and safe launch fixes remain included.
-The Help page now has Check launcher updates and GitHub source. Choose a
-trusted dedicated GitHub owner/repository to enable checks on startup. New
+The Help page has Check launcher updates and GitHub source. The official
+trusted repository is preconfigured on fresh downloads. New
 launcher releases must use launcher-vX.Y.Z tags and include both the portable
 ZIP and matching .sha256.txt asset. Installation asks first, verifies every
 file and uses a separate launcher helper with retained rollback; games,
 saved profiles, English user translations and F8 sessions are untouched.
 The public update source is kitomisaitichi-design/celesphonia-launcher.
-The Help page offers version checks once this source is configured.
+The Help page offers manual checks and an option to disable startup checks.
 Orphan entries for missing/incomplete game installations are now excluded
 from the game library. The launcher also rejects an installation that
 disappears while it is open. Saved profile records and game saves are not
