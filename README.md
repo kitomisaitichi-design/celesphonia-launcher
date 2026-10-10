@@ -2,7 +2,15 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.4** (backward-compatible update package, following v1.0.3 automatic first-run release checks) and game-mod version 1.04 are independently versioned.
+**Launcher version 1.0.5** (repaired v1.04 English runtime-display fallback coverage, retaining the backward-compatible updater format) and game-mod version 1.04 are independently versioned.
+
+## Current maintenance priorities
+Going forward, prioritize **the two most recent Three-in-One 3.3.5 releases (currently v1.03 and v1.04)** and **new Maple releases** for development, translation maintenance, newly added content, regression tests, and upgrade work. Advance this two-version window as new creator releases arrive. Treat **Gorpg 1.23 and the CH English reference** as stable source/reference installations unless their content actually changes.
+
+Older Three-in-One 3.3.5 trial, v1.01 and v1.02 remain **supported for detection, English overlays, older saves and historical forward-upgrade routes**. This maintenance priority does not remove their code, recipes, dictionaries, developer verification fixtures, or backwards-compatibility tests. The old full game installations may be uninstalled locally to reclaim disk space, without affecting independent v1.03/v1.04 installations. Three-in-One 3.3.4 also remains a supported distinct branch.
+
+## v1.0.5 English regression fix
+The game-mod v1.04 English pack restores 472 verified historical runtime-display strings that fell outside a fresh game-source inventory, while excluding 12 changed older dialogue/database/description strings. A full v1.04 pack now includes 34,957 translated entries. Runtime displays, native game scripts and saved-game data remain separate; existing releases and user saves are never redistributed.
 
 ## v1.0.1 fixes
 The library no longer lists orphaned, moved, or incomplete game directories as installed. If an installation disappears while the launcher is open, launching it is blocked with a clear warning. Empty save folders remain valid; stored profiles, private saves and backups are not deleted. Fully independent mod copies tolerate a missing historical base-folder reference for optional runtime assets.
