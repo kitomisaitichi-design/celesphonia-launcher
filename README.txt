@@ -1,5 +1,17 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.8 -- ORIGINAL BEDROOM WARDROBE AND ENGLISH HELP
+The home-bedroom wardrobe remains the creator's original NARROW 1x3 tile
+column, exactly as in v1.04, Ver1.051 and Ver1.052. Neither the English
+runtime nor its image-localization hooks may turn it into a 2x3 cabinet.
+Both native interaction points remain at their authored coordinates:
+change clothes and the Shamelessness-unlocked transparency/coat choices.
+Regression checks verify the native tiles and those event positions.
+All five translated glossary/tutorial/help images and the hypnosis captions
+remain installed and reversible. Ticker translations, text-fit fixes, all
+supported creator versions and save data remain unchanged.
+The launcher ZIP keeps the same 35-file auto-update format.
+
 LAUNCHER 1.0.7 -- ENGLISH HELP IMAGES, GROPER TICKER AND TEXT FIT
 Reversible English image overlays now localize the native Glossary battle
 restraint examples, item/gear examples, Change Color controls and hypnosis

@@ -2,7 +2,11 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.7** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+**Launcher version 1.0.8** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+
+## v1.0.8 — Preserve the original bedroom wardrobe
+
+The bedroom wardrobe uses the same native **single-column, three-tile (1×3)** graphic in v1.04, Ver1.051, and Ver1.052. A proposed two-column rendering reconstruction was wrong and has been excluded; the English runtime does not override the native tile renderer or reposition the wardrobe, and both original interaction points remain untouched. Automated source/renderer checks now enforce these invariants. **All five translated help/glossary/hypnosis images stay enabled**, and the publisher's standard 35-file auto-update ZIP layout is unchanged.
 
 ## New in launcher v1.0.7 — Illustrated English help and improved text fitting
 
