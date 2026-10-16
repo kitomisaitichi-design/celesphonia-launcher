@@ -1,13 +1,11 @@
-# Celesphonia Launcher v1.0.7 — English Illustrated Help & Groper Ticker Fix
+# Celesphonia Launcher v1.0.8 — Original Bedroom Wardrobe Preserved
 
-Supports all ten historical/current English packs, including creator **Three-in-One Ver1.051** and **Ver1.052**, without replacing native game files or saved data.
+This release locks the original wardrobe presentation and retains the v1.0.7 English help/glossary artwork, translated animations, Ticker dialogue, and text wrapping.
 
-- **Illustrated help localized:** Combat-restraint glossary reference, gear-explanation pages, Change Color controller hints, and hypnosis caption animation use five localized PNG replacements. Original creator images are read-only; each replacement is source-hash-pinned and installed separately in `www/celesphonia-english/images` only while English is enabled. Versions Ver1.051 and Ver1.052 use the same proven original hashes.
-- **Untranslated groper dialogue fixed:** The game's `TMng Talk` system routes through `OriginalCommands.js` and a separately implemented `Ticker.js` escape converter, bypassing ordinary English window rendering. v1.0.7 translates the source-exact Aged Man/Amane comment variants in a local ticker display call without mutating stored variables, source strings, actor IDs, or save files. Adjacent groper HUD captions are also translated.
-- **English overflow reduced:** Item Help wraps adjacent `[stat][trait]` effects and accounts for inline icon widths; 2,826 source-backed presentation scenarios were tested, with 328 improvements and zero previously fitting regressions.
-- **Backwards-compatible release format:** All five localized images are embedded inside the EXE, not added as new ZIP entries. The downloadable release retains the older launchers' strict **35-file** update allowlist and per-file size limits.
-- Creator **Ver1.052** boss-restraint hotfix, **Ver1.051** Engram corrections, both v1.04 forward-upgrade paths, Maple, Gorpg, and all earlier English packs remain supported and unchanged.
+- **Original 1×3 wardrobe:** Compared the native `Map005.json` from game-mod v1.04, Ver1.051, and Ver1.052. All three define the same single-column wardrobe with native tile IDs 193 / 201 / 209. An experimental, never-published, 2×3 renderer reconstruction was rejected and removed. The launcher does not modify the native map tile renderer, map data, event positions, collision, or saved-game values.
+- **Two original interaction points unchanged:** the clothes-change event and the Shamelessness-unlocked trench-coat/transparency-curse event remain at their original coordinates. The creator's in-game unlock conditions remain unchanged.
+- **All five English help/tutorial image replacements retained:** the picture and animation redirections remain source-hash verified, reversible, and embedded in the launcher EXE. No creator game graphics or gameplay files are redistributed.
+- **Compatibility:** Three-in-One Ver1.051 and Ver1.052 and all ten English version packs remain supported; old update clients receive the same 35-file ZIP layout and can find this release through GitHub auto-update.
+- **QA:** Native original map tile IDs and event positions checked for all three creator versions; explicit test guards against reintroducing a Tilemap hook; runtime help-image/Ticker tests; launcher English/upgrade/recipe suites and legacy distribution layout tests. Isolated extracted release verifies English enable/restore across all ten supported versions.
 
-**Verification:** Exact in-game original image hashes compared to both creator installations, two real English overlay ON/OFF/ON install/restore tests, native game data and save immutability, source-exact native Ticker escape-code tests, full launcher native regression and UI layout checks, GitHub release asset integrity. The separate 60-case ten-version extracted-package regression check also validates the portable ZIP. Full late-game battle/glossary scene playthrough coverage is not claimed.
-
-This release does not contain creator game archives, original installations or personal saves. As before, GitHub update installation requires user confirmation.
+No new Shamelessness rules or clothing assets are injected. Creator installations, personal saves and previous launcher rollback files are not included in this ZIP.
