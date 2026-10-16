@@ -1,0 +1,56 @@
+{
+  "version": "1.051",
+  "derived_aliases": {
+    "更换开场页面": "Change Opening Screen",
+    "切换为无垢天衣页面": "Switch to Innocent Gear Screen",
+    "切换为永恒天衣页面": "Switch to Eternal Gear Screen",
+    "扒衣服:开": "Strip Clothes: On",
+    "扒衣服:关": "Strip Clothes: Off",
+    "调整风衣": "Adjust Trench Coat"
+  },
+  "provenance": [
+    {
+      "native_authored_key": "更换开场页面if(s[3500])",
+      "native_renderer_input": "更换开场页面",
+      "native_renderer_english": "Change Opening Screen",
+      "producer": "MPP_ChoiceEX.js::Game_Interpreter.addChoices strips native if() guard",
+      "english_does_not_change_guard": true
+    },
+    {
+      "native_authored_key": "切换为无垢天衣页面if(s[3498])",
+      "native_renderer_input": "切换为无垢天衣页面",
+      "native_renderer_english": "Switch to Innocent Gear Screen",
+      "producer": "MPP_ChoiceEX.js::Game_Interpreter.addChoices strips native if() guard",
+      "english_does_not_change_guard": true
+    },
+    {
+      "native_authored_key": "切换为永恒天衣页面if(!s[3498])",
+      "native_renderer_input": "切换为永恒天衣页面",
+      "native_renderer_english": "Switch to Eternal Gear Screen",
+      "producer": "MPP_ChoiceEX.js::Game_Interpreter.addChoices strips native if() guard",
+      "english_does_not_change_guard": true
+    },
+    {
+      "native_authored_key": "扒衣服:开 if(!ConfigManager.noUndress)",
+      "native_renderer_input": "扒衣服:开",
+      "native_renderer_english": "Strip Clothes: On",
+      "producer": "MPP_ChoiceEX.js::Game_Interpreter.addChoices strips native if() guard",
+      "english_does_not_change_guard": true
+    },
+    {
+      "native_authored_key": "扒衣服:关 if(ConfigManager.noUndress)",
+      "native_renderer_input": "扒衣服:关",
+      "native_renderer_english": "Strip Clothes: Off",
+      "producer": "MPP_ChoiceEX.js::Game_Interpreter.addChoices strips native if() guard",
+      "english_does_not_change_guard": true
+    },
+    {
+      "native_authored_key": "调整风衣if(s[582])",
+      "native_renderer_input": "调整风衣",
+      "native_renderer_english": "Adjust Trench Coat",
+      "producer": "MPP_ChoiceEX.js::Game_Interpreter.addChoices strips native if() guard",
+      "english_does_not_change_guard": true
+    }
+  ],
+  "count": 6
+}

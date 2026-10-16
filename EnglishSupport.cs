@@ -68,7 +68,16 @@ public static class EnglishSupport {
         if(result.Pack!=null&&!result.Modified){var problems=EnglishRelease.LooseProblems(result.VersionId);if(problems.Count>0)result.Detail+="\r\nUsing the verified built-in English pack; "+problems.Count+" loose pack files are missing or from a different release. Extract the complete ZIP into "+Store.Home+" to refresh them.";}
         return result;
     }
-    static Dictionary<string,object> Catalog(string id,EnglishManifest pack){byte[] bytes=EnglishRelease.Read(id,"catalog.json");if(EnglishRelease.Hash(bytes)!=pack.CatalogHash)throw new IOException("Bundled English catalog does not match its manifest: "+id);var result=Store.Json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(bytes));string observed=Path.Combine(PackFolder(id),"observed-catalog.json");if(File.Exists(observed))foreach(var item in Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(observed,Encoding.UTF8)))if(Cjk.IsMatch(item.Key)&&item.Key.Length<6000&&!result.ContainsKey(item.Key))result[item.Key]=item.Value;return result;}
+    static Dictionary<string,object> Catalog(string id,EnglishManifest pack){byte[] bytes=EnglishRelease.Read(id,"catalog.json");if(EnglishRelease.Hash(bytes)!=pack.CatalogHash)throw new IOException("Bundled English catalog does not match its manifest: "+id);var result=Store.Json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(bytes));string observed=Path.Combine(PackFolder(id),"observed-catalog.json");if(File.Exists(observed))foreach(var item in Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(observed,Encoding.UTF8)))if(Cjk.IsMatch(item.Key)&&item.Key.Length<6000&&!result.ContainsKey(item.Key))result[item.Key]=item.Value;
+        // Portable catalogs deduplicate an identical source value: the JSON
+        // object key is itself the complete native source text. Restore the
+        // redundant field in memory for existing export/MTool consumers.
+        foreach(var item in result){
+            var row=item.Value as Dictionary<string,object>;
+            if(row!=null){object source;if(row.TryGetValue("source",out source)){if(Convert.ToString(source)!=item.Key)throw new IOException("Catalog source key does not match its metadata.");}
+                else row["source"]=item.Key;}
+        }
+        return result;}
     static Dictionary<string,string> Dictionary(string id,EnglishManifest pack){
         byte[] bytes=EnglishRelease.Read(id,"dictionary.json");if(EnglishRelease.Hash(bytes)!=pack.DictionaryHash)throw new IOException("Bundled English dictionary does not match its manifest: "+id);
         var catalog=Catalog(id,pack);var data=Store.Json.Deserialize<Dictionary<string,string>>(Encoding.UTF8.GetString(bytes));

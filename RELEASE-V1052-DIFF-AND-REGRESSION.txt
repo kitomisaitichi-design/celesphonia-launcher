@@ -1,0 +1,218 @@
+﻿SOURCE-AUTHENTICATED Ver1.052 BOSS RESTRAINT FIX: v1.04 / v1.051 / v1.052
+Report date: 2026-10-16. Immutable creator RARs extracted with required bundled full 7z.exe 26.02.
+
+SOURCE ARCHIVES (full compressed RAR SHA256)
+ v1.04   547,633,402 bytes  SHA256 9fd713c92af378134f4b957a38704f7a890d324e83e87bac462e2934a5fdedfd
+ v1.051  547,645,039 bytes  SHA256 feda86817320cd548a56fc17afa41cc8e345d93b3dae3d44f7535538c9a5d8ac
+ v1.052  547,645,049 bytes  SHA256 5dc382a21ed8db8d5597dbabefa6b82ff243937b51199f5b66e45b4854b7e1a2
+
+ FULL 7Z 26.02 RAR integrity Ver1.052: PASS, Everything is Ok; 5,171 files, 42 dirs, 621,129,397 uncompressed bytes.
+ FULL extraction for ALL THREE: PASS; every internal RAR entry verified during extraction.
+ Full SHA256 calculated for all 5,163 game content files in each version: 15,489 individual hashes.
+ The other 8 files sit directly in the creator archive wrapper: readme/changelog/docx metadata, not game payload.
+
+GAME FILE CHANGE COUNTS (SHA256)
+ 1.051 -> 1.052: 1 changed; 5,162 unchanged; zero added; zero removed: data/Enemies.json ONLY.
+ 1.04 -> 1.052: 18 changed; 5,145 unchanged; zero added; zero removed.
+ 1.04 -> 1.051: 18 changed; 5,145 unchanged; zero added; zero removed.
+
+ALL 18 GAME PAYLOAD PATHS CHANGED SINCE v1.04:
+  data/Armors.json
+  data/CommonEvents.json
+  data/Enemies.json
+  data/Items.json
+  data/Map002.json
+  data/Map005.json
+  data/Map023.json
+  data/Map117.json
+  data/Map250.json
+  data/MapInfos.json
+  data/Skills.json
+  data/States.json
+  data/System.json
+  data/TagSkillList.json
+  js/plugins.js
+  js/plugins/CallStand.js
+  js/plugins/ParaChecker.js
+  js/rpg_managers.js
+
+IMPORTANT: V1.052 IS A ONE-FILE GAME HOTFIX FOR v1.051.
+ System.json, plugins.js, Skills.json, States.json, CommonEvents.json, all other game files exactly identical to 1.051.
+ It must not be detected solely by System.json + plugins.js hashes; those are identical to v1.051.
+ Use data/Enemies.json SHA256 as a required per-version marker, or the complete RAR SHA256.
+
+RECOMMENDED v1.052 DETECTION FINGERPRINTS
+ Ver1.052  data/System.json: 52d97137d9f7af4febc9f28d8456c7a715abb9aa8e9b7eecb1726aa94493c0a5
+ Ver1.052  js/plugins.js:    637235c30cffad2e4ce2bea33787add7e67471e9d171ecce4170f930b3399bde
+ Ver1.052  data/Enemies.json: 0244796ec95ba25e6657d56d6cb87c032ed851277026b5c12d80dba0bb94d8fd
+ Ver1.051  data/Enemies.json: 98a963ee4fbea02583bad1fa31b2648204e0391afa05cf62088dfa951e23aaae
+ Ver1.04   data/Enemies.json: 0f71d1a163084691fccf061d90599498d8f0f3aba32696071d055e7554886687
+
+ SHAs for all 5,163 game paths in all three versions are in ALL-5163-GAME-FILE-HASHES.tsv
+ and independent machine-readable PAYLOAD-SHA256-104/1051/1052.json.
+ Stable aggregate manifest digests are in PROFILE-FINGERPRINTS.json.
+
+CHANGES OUTSIDE GAME PAYLOAD (creator wrapper)
+ The creator release log 三合一体验版修复日志.txt grew from 2192B to 2252B.
+ Appended source note: Ver1.052 / 1. 修复BOSS单位拘束不会生效的问题
+ English: Ver1.052 / 1. Fixed an issue where boss-unit restraint effects would not take effect.
+ Old file 技能增强更新日志Ver3.3.5-201.txt was renamed to 技能增强更新日志Ver3.3.5-206.txt.
+ These two files have identical SHA256 content despite the filename change; no skill-changelog content changed.
+ Loose entries: 1 modified, 1 added name, 1 removed name (the renamed file); 6 other loose files byte-identical.
+
+BOSS RESTRAINT FIX: SOURCE-MAPPED
+ data/Enemies.json contains 22 modified enemy records (ids below). All changed entries are action AI and one metadata note.
+ Old AI state 199: 袭击准备 (Assault Preparation).
+ New state 200: 袭击准备(压迫) (Assault Preparation (Oppression)).
+ Existing State200 has one additional trait vs State199: code 14 / dataId 48 / value1; both states identical in other traits.
+ The RPG Maker enemy AI action conditionType=4 checks whether the enemy has the indicated state.
+ v1.051 contains 33 state199 action conditions +1 state200. v1.052 contains 13 state199 +22 state200.
+ State199 remains in 13 other original actions; the creator did not globally replace the old state.
+ Several enemies change from direct attack skill656 (丸吞 / swallowing) to skill650 (丸吞系AI / swallowing AI).
+ Skill650 already exists in 1.051 and invokes CommonEvent1083; Skill656 already exists and invokes CommonEvent184.
+ v1.052 did NOT modify the relevant CommonEvent definitions, engine plugins or states.
+ Enemy279 adds <TYAddState; 256> to its note; that tag grants the preexisting State256 through the existing runtime spawn metadata path.
+ State256: 压迫(不可打断拘束), or Oppression (Restraint Cannot Be Interrupted).
+ The source strongly supports routing boss AI through preexisting protected preparation and AI handlers.
+ Native battle acceptance still requires a Game.exe test; file equality and valid conditions alone do not prove gameplay outcome.
+
+22 MODIFIED ENEMY IDs AND THEIR ACTIONS
+  ID49: 触手:霸王花
+    action index 12
+      1.051 skill=650, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID72: 魔蠕虫:潜伏者
+    action index 1
+      1.051 skill=656, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=590, conditionType=2, conditionParam1=0, conditionParam2=0.1, rating=9
+    action index 2
+      1.051 skill=590, conditionType=2, conditionParam1=0, conditionParam2=0.1, rating=9
+      1.052 skill=536, conditionType=0, conditionParam1=0, conditionParam2=0, rating=6
+    action index 3
+      1.051 skill=536, conditionType=0, conditionParam1=0, conditionParam2=0, rating=6
+      1.052 skill=474, conditionType=0, conditionParam1=0, conditionParam2=0, rating=6
+    action index 4
+      1.051 skill=474, conditionType=0, conditionParam1=0, conditionParam2=0, rating=6
+      1.052 skill=590, conditionType=2, conditionParam1=0, conditionParam2=0.25, rating=6
+    action index 5
+      1.051 skill=590, conditionType=2, conditionParam1=0, conditionParam2=0.25, rating=6
+      1.052 skill=615, conditionType=0, conditionParam1=0, conditionParam2=0, rating=3
+    action index 6
+      1.051 skill=615, conditionType=0, conditionParam1=0, conditionParam2=0, rating=3
+      1.052 skill=455, conditionType=0, conditionParam1=0, conditionParam2=0, rating=3
+    action index 7
+      1.051 skill=455, conditionType=0, conditionParam1=0, conditionParam2=0, rating=3
+      1.052 skill=577, conditionType=0, conditionParam1=0, conditionParam2=0, rating=2
+    action index 8
+      1.051 skill=577, conditionType=0, conditionParam1=0, conditionParam2=0, rating=2
+      1.052 skill=329, conditionType=6, conditionParam1=161, conditionParam2=0, rating=1
+    action index 9
+      1.051 skill=329, conditionType=6, conditionParam1=161, conditionParam2=0, rating=1
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID102: 粘液体:女王
+    action index 12
+      1.051 skill=650, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID132: 怪树:弗尔图
+    action index 18
+      1.051 skill=658, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=658, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID142: 变节者:复仇者
+    action index 13
+      1.051 skill=969, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=969, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID146: 触手怪人:触手魔（未成体）
+    action index 3
+      1.051 skill=656, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID147: 触手怪人:触手魔（半成体）
+    action index 7
+      1.051 skill=656, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID150: 触手怪人:触手魔
+    action index 12
+      1.051 skill=329, conditionType=6, conditionParam1=161, conditionParam2=0, rating=1
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID162: 透明怪人:斯科尔曼
+    action index 13
+      1.051 skill=663, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=663, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+    action index 14
+      1.051 skill=1016, conditionType=6, conditionParam1=190, conditionParam2=0, rating=9
+      1.052 (none)
+  ID175: 再生怪人:触手魔
+    action index 6
+      1.051 skill=656, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID181: 再生怪人:斯科尔曼
+    action index 14
+      1.051 skill=663, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=663, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID201: 强化怪人:触手魔
+    action index 11
+      1.051 skill=656, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID207: 强化怪人:斯科尔曼
+    action index 19
+      1.051 skill=663, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=663, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID210: 魔王:埃尔卡
+    action index 19
+      1.051 skill=663, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=663, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID236: 水魔:暗游者
+    action index 8
+      1.051 skill=650, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID237: 粘液体:吞噬怪魔
+    action index 7
+      1.051 skill=650, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID241: 变节者:终结者
+    action index 15
+      1.051 skill=969, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=969, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID242: 魔王:努尔
+    action index 12
+      1.051 skill=639, conditionType=6, conditionParam1=2925, conditionParam2=0, rating=9
+      1.052 (none)
+  ID243: 异神:埃律西昂
+    action index 16
+      1.051 skill=658, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=658, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID246: 魔神:阿波吕恩
+    action index 15
+      1.051 skill=656, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID279: 异形:完全体侵蚀原种
+    NOTE newly added metadata: ['<TYAddState; 256>']
+    action index 18
+      1.051 skill=650, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=650, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+  ID280: 魔王:种莳
+    action index 12
+      1.051 skill=663, conditionType=4, conditionParam1=199, conditionParam2=0, rating=9
+      1.052 skill=663, conditionType=4, conditionParam1=200, conditionParam2=0, rating=9
+
+SOURCE-VERIFIED REGRESSION WATCHLIST
+ 1. Enemy162 loses its last skill1016 action conditioned on switch190. Skill1016 has an empty name, empty effects, blank note in unchanged Skills.json; removal appears low-impact but merits playtest.
+ 2. Enemy242 loses its last skill639 action conditioned on switch2925. Skill639 is a NONEMPTY succubus AI router (CommonEvent1084). This is an unadvertised functional route deletion; determine whether that switch ever fires in this boss fight before asserting harmless.
+ 3. Enemy150 replaces a low-weight Suspicious Movement skill329 (switch161 condition) with a high-weight state200 AI dispatch skill650. Enemy72 retains skill329 but reorders the state200 dispatch to its end. These are real AI behavior changes beyond a pure string fix.
+ 4. The explicit <boss> enemy193 (冥神:阿波吕恩) still lacks <TYAddState; 256> and is byte-identical to its v1.051 record. This is the same preexisting coverage gap found in the 1.051 audit; whether its actual spawn path grants equivalent protection is unverified.
+ 5. Several others retain state199 AI conditions (13 total across all enemies), so only source-targeted preparation behaviors were revised. Verify battle outcomes for representative boss and minion spawns rather than assuming universal application.
+ 6. This release includes no changes to scripts, scenes, graphics, translation, player saves, runtime EXE or other game assets compared with 1.051. Old 1.04 still differs in 18 game paths and should retain a distinct supported variant.
+
+VALIDATION PERFORMED
+ PASS: 7-Zip 26.02 extraction all 3 RARs, 5171 files+42 folders each; full 1.052 integrity test - Everything is Ok.
+ PASS: SHA256 all 5163 game files per version (15489 digests) with per-version manifest + 3-version TSV.
+ PASS: no missing/added game file paths across versions; exactly one game file changed 1.051->1.052.
+ PASS: Enemies.json parses; 22 modified enemy IDs and state IDs/skill IDs inspected in unchanged Skills/States JSON.
+ PASS: source notes and loose archive file rename identified byte-for-byte.
+ NOT RUN: live boss battle or player save migration; do not claim gameplay runtime acceptance.
+
+INTEGRATION RECOMMENDATION
+ Add a v1.052 recipe/profile fingerprint for data/Enemies.json SHA256=0244796ec95ba25e6657d56d6cb87c032ed851277026b5c12d80dba0bb94d8fd.
+ Retain v1.051 and v1.04 signatures. Since System.json and plugins.js are identical 1.051 vs 1.052, detection must compare the extra Enemies.json signature.
+ Compare the creator v1.052 RAR SHA256 exactly against 5dc382a21ed8db8d5597dbabefa6b82ff243937b51199f5b66e45b4854b7e1a2.
+ Native acceptance should cover affected enemy AI state200 and end-of-list action changes, especially boss 242 and 193 cases.
+ All files produced and all extracts kept inside fresh Staging/continuation-v1052-diff; no production edits.

@@ -2,12 +2,27 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.5** (repaired v1.04 English runtime-display fallback coverage, retaining the backward-compatible updater format) and game-mod version 1.04 are independently versioned.
+**Launcher version 1.0.6** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, and reversible English translations. Launcher and game-mod versions are independently versioned.
 
 ## Current maintenance priorities
-Going forward, prioritize **the two most recent Three-in-One 3.3.5 releases (currently v1.03 and v1.04)** and **new Maple releases** for development, translation maintenance, newly added content, regression tests, and upgrade work. Advance this two-version window as new creator releases arrive. Treat **Gorpg 1.23 and the CH English reference** as stable source/reference installations unless their content actually changes.
+Going forward, prioritize **the two most recent Three-in-One 3.3.5 releases (currently Ver1.051 and Ver1.052)** and **new Maple releases** for development, translation maintenance, newly added content, regression tests, and upgrade work. Advance this two-version window as new creator releases arrive. Treat **Gorpg 1.23 and the CH English reference** as stable source/reference installations unless their content actually changes.
 
 Older Three-in-One 3.3.5 trial, v1.01 and v1.02 remain **supported for detection, English overlays, older saves and historical forward-upgrade routes**. This maintenance priority does not remove their code, recipes, dictionaries, developer verification fixtures, or backwards-compatibility tests. The old full game installations may be uninstalled locally to reclaim disk space, without affecting independent v1.03/v1.04 installations. Three-in-One 3.3.4 also remains a supported distinct branch.
+
+## New: Creator Ver1.052 and Ver1.051 (launcher 1.0.6)
+Supports installing **either Ver1.051 or Ver1.052 from a verified v1.04 game**, plus a direct forward **Ver1.051 → Ver1.052** upgrade. The launcher verifies the exact creator RAR5 archive and 5,163 gameplay files, creates a separate installation and carries compatible saves forward only. Neither older game nor its original saves are overwritten. The integrated RAR5 extractor handles Chinese filenames without an external utility.
+
+**Ver1.052 fixes boss-unit restraint effects.** Its payload differs from Ver1.051 only in `data/Enemies.json`; the remaining 5,162 files are identical. Both versions include a different enemy-data hash in their native fingerprint, preventing misidentification even though the creator's Ver1.052 RAR still contains a folder labeled Ver1.051.
+
+The dedicated Ver1.051 English pack contains 34,996 translated display entries: 44 newly reviewed creator-source translations, nine repaired Skill Engram description keys, six stripped-condition menu captions, and compatible historical runtime display fallbacks. Its English overlay remains reversible and does not edit native gameplay scripts, source identifiers or saved variables. Original creator game archives and copyrighted assets are **not** included in the GitHub launcher ZIP.
+
+The separate **Ver1.052 English pack carries forward all 34,996 Ver1.051 translations**, including the nine Skill Engram line fixes and conditional-choice labels. Both English packs use source-verified display-only translations.
+
+The companion [Ver1.04 → Ver1.051 source diff and regression audit](RELEASE-V1051-DIFF-AND-REGRESSION.txt) identifies 18 changed gameplay files, changes #1–8 and #203–206, additional skill/state balance differences and remaining in-game test limitations. The newer creator release cannot be declared gameplay-regression-free solely from static comparison. Historical v1.03 and older support remains available alongside the rolling two-release maintenance focus.
+
+The [Ver1.051 → Ver1.052 full source diff and boss-restraint regression audit](RELEASE-V1052-DIFF-AND-REGRESSION.txt) contains hashes for the exact creator RARs, 22 altered enemy records, and a behavioral regression watchlist. Creator gameplay files and original archives are not redistributed.
+
+The bundled RAR5 helper uses [7-Zip](https://www.7-zip.org/) 26.02 components (Copyright Igor Pavlov); license and notices are included in `Vendor/SevenZip/License.txt`.
 
 ## v1.0.5 English regression fix
 The game-mod v1.04 English pack restores 472 verified historical runtime-display strings that fell outside a fresh game-source inventory, while excluding 12 changed older dialogue/database/description strings. A full v1.04 pack now includes 34,957 translated entries. Runtime displays, native game scripts and saved-game data remain separate; existing releases and user saves are never redistributed.

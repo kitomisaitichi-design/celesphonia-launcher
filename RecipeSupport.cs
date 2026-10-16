@@ -184,11 +184,27 @@ public static class RecipeSupport {
             ||full.Equals(Path.Combine(root,"debug.log"),StringComparison.OrdinalIgnoreCase);
     }
     public static void SelfTest(){
-        var settings=Store.Read();var baseProfile=settings.Profiles.First(x=>IsCleanBase(x.Root));
-        foreach(var p in settings.Profiles.Where(x=>x.Id!=baseProfile.Id))if(IsCleanBase(p.Root))throw new Exception("A modified branch was accepted as a clean base.");
+        var settings=Store.Read();var bases=settings.Profiles.Where(x=>IsCleanBase(x.Root)).ToArray();
+        if(bases.Length==0)throw new Exception("No verified clean Gorpg 1.23 base.");
+        // More than one independently verified clean Gorpg reference may be
+        // registered; neither is a patched branch merely because it is second.
+        foreach(var p in bases)if(UniversalSupport.Identify(p.Root)!="gorpg-1-23")
+            throw new Exception("A modified branch was accepted as a clean base.");
         bool rejected=false;try{ValidateBase(settings.Profiles.First(x=>x.Name.StartsWith("Maple")).Root);}catch(IOException){rejected=true;}if(!rejected)throw new Exception("Maple base rejection failed.");
         rejected=false;try{ValidateBase(settings.Profiles.First(x=>x.Name.Contains("3.3.4")).Root);}catch(IOException){rejected=true;}if(!rejected)throw new Exception("3.3.4 base rejection failed.");
-        foreach(var p in settings.Profiles)VerifyProfile(p);
+        var current=settings.Profiles.FirstOrDefault(x=>x.Name.Contains("1.051"));
+        if(current!=null){rejected=false;try{ValidateBase(current.Root);}catch(IOException){rejected=true;}
+            if(!rejected)throw new Exception("Ver1.051 upgrade was accepted as a clean Gorpg base.");}
+        string fixturePrefix=Path.GetFullPath(Path.Combine(Store.Home,"Tests","native-game-fixtures")).TrimEnd('\\')+"\\";
+        foreach(var p in settings.Profiles){
+            string path=Path.GetFullPath(p.Root);
+            // Marker-only historical compatibility fixtures intentionally
+            // contain neither the full NW runtime nor thousands of game files.
+            // Audit all actual, installed playable games, not these sentinels.
+            if(path.StartsWith(fixturePrefix,StringComparison.OrdinalIgnoreCase))continue;
+            if(!File.Exists(Path.Combine(path,"Game.exe"))&&!File.Exists(Path.Combine(path,"nw.exe")))continue;
+            VerifyProfile(p);
+        }
         if(settings.Profiles.Select(x=>Path.GetFullPath(x.SavePath)).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=settings.Profiles.Count)throw new Exception("Save paths are shared.");
         File.WriteAllText(Path.Combine(Store.Home,"recipe-test-result.txt"),"PASS: clean Gorpg accepted; CH/Maple/3.3.4 mixing rejected; applied-layer hashes verified; all profile save folders distinct.",Encoding.UTF8);
     }

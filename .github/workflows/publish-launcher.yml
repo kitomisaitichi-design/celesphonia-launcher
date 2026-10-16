@@ -46,7 +46,8 @@ jobs:
             'gorpg-1-23','maple-1-7-2','three-in-one-3-3-4',
             'three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01',
             'three-in-one-3-3-5-v1-02','three-in-one-3-3-5-v1-03',
-            'three-in-one-3-3-5-v1-04',
+            'three-in-one-3-3-5-v1-04','three-in-one-3-3-5-v1-051',
+            'three-in-one-3-3-5-v1-052',
           )
           allowed.update('English/'+v+'/'+item for v in versions for item in ('manifest.json','dictionary.json','catalog.json'))
           with zipfile.ZipFile(archive) as bundle:
@@ -54,6 +55,25 @@ jobs:
             assert set(bundle.namelist()) == allowed, 'Unknown or missing ZIP entries'
             changelog = bundle.read('README.txt').decode('utf-8')
             assert all(('v1.0'+str(n)) in changelog for n in range(1,5)), 'Game changelog missing historical releases'
+            assert 'v1.051' in changelog and 'v1.052' in changelog, 'Missing recent creator changelogs'
+            recipes = json.loads(bundle.read('mod-recipes.json'))['Recipes']
+            new_recipe = next(x for x in recipes if x['Id']=='three-in-one-3-3-5-v1-051')
+            assert new_recipe['UpgradeFrom']==['three-in-one-3-3-5-v1-04'], 'Wrong v1.051 forward upgrade'
+            assert new_recipe['SaveGeneration']==1051 and len(new_recipe['Files'])==5163, 'Unverified v1.051 creator archive'
+            assert new_recipe['ArchiveHash'].lower()=='feda86817320cd548a56fc17afa41cc8e345d93b3dae3d44f7535538c9a5d8ac'
+            latest = next(x for x in recipes if x['Id']=='three-in-one-3-3-5-v1-052')
+            assert latest['UpgradeFrom']==['three-in-one-3-3-5-v1-04','three-in-one-3-3-5-v1-051']
+            assert latest['SaveGeneration']==1052 and len(latest['Files'])==5163 and latest['ArchiveBytes']==547645049
+            assert latest['ArchiveHash'].lower()=='5dc382a21ed8db8d5597dbabefa6b82ff243937b51199f5b66e45b4854b7e1a2'
+            assert set(latest['Files'])==set(new_recipe['Files'])
+            assert [key for key in latest['Files'] if latest['Files'][key]!=new_recipe['Files'][key]]==['data/Enemies.json']
+            assert latest['Fingerprints']['data/Enemies.json']!=new_recipe['Fingerprints']['data/Enemies.json']
+            assert len(latest['Fingerprints'])==len(new_recipe['Fingerprints'])==6
+            fingerprints = json.loads(bundle.read('version-fingerprints.json'))['Versions']
+            new_fingerprint = next(x for x in fingerprints if x['Id']=='three-in-one-3-3-5-v1-051')
+            assert new_fingerprint['Fingerprints']==new_recipe['Fingerprints'], 'v1.051 native detection mismatch'
+            latest_fingerprint = next(x for x in fingerprints if x['Id']=='three-in-one-3-3-5-v1-052')
+            assert latest_fingerprint['Fingerprints']==latest['Fingerprints'], 'v1.052 native detection mismatch'
             assert 'kitomisaitichi-design/celesphonia-launcher' in source, 'Official update source not embedded'
             translation = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/dictionary.json'))
             catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/catalog.json'))
@@ -68,6 +88,32 @@ jobs:
                 '口腔侵蚀度': 'Oral Corruption',
             }.items():
                 assert translation.get(source)==target, 'Missing legacy display: '+source
+            new_manifest = json.loads(bundle.read('English/three-in-one-3-3-5-v1-051/manifest.json'))
+            new_dictionary = json.loads(bundle.read('English/three-in-one-3-3-5-v1-051/dictionary.json'))
+            new_catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-051/catalog.json'))
+            assert len(new_dictionary) >= 34996, 'Ver1.051 translation coverage regressed'
+            assert len(new_dictionary)==new_manifest['TranslatedTexts'] and len(new_catalog)==new_manifest['TotalTexts']
+            assert new_manifest['Fingerprints']==new_recipe['Fingerprints']
+            assert hashlib.sha256(bundle.read('English/three-in-one-3-3-5-v1-051/dictionary.json')).hexdigest()==new_manifest['DictionaryHash']
+            assert hashlib.sha256(bundle.read('English/three-in-one-3-3-5-v1-051/catalog.json')).hexdigest()==new_manifest['CatalogHash']
+            assert new_dictionary.get('污浊宝珠')=='Tainted Orb', 'Missing new crafting item translation'
+            assert new_dictionary.get('不知廉耻')=='Shamelessness', 'Missing new concept translation'
+            choice_aliases = json.loads(pathlib.Path('English/v1051-rendered-choice-aliases.json').read_text('utf-8'))['derived_aliases']
+            assert len(choice_aliases)==6
+            assert all(new_dictionary.get(k)==v for k,v in choice_aliases.items()), 'Native MPP_ChoiceEX menu label translation regressed'
+            engam = json.loads(pathlib.Path('English/v1051-engram-overrides.json').read_text('utf-8'))
+            assert len(engam)==9 and all(new_dictionary.get(k)==v for k,v in engam.items()), 'Creator Skill Engram line descriptions regressed'
+            latest_manifest = json.loads(bundle.read('English/three-in-one-3-3-5-v1-052/manifest.json'))
+            latest_dictionary = json.loads(bundle.read('English/three-in-one-3-3-5-v1-052/dictionary.json'))
+            latest_catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-052/catalog.json'))
+            assert latest_manifest['Fingerprints']==latest['Fingerprints']
+            assert latest_manifest['DictionaryHash']==hashlib.sha256(bundle.read('English/three-in-one-3-3-5-v1-052/dictionary.json')).hexdigest()
+            assert latest_manifest['CatalogHash']==hashlib.sha256(bundle.read('English/three-in-one-3-3-5-v1-052/catalog.json')).hexdigest()
+            assert len(latest_dictionary)==latest_manifest['TranslatedTexts']==34996
+            assert len(latest_catalog)==latest_manifest['TotalTexts']
+            assert all(latest_dictionary.get(k)==v for k,v in new_dictionary.items()), 'Ver1.052 lost an existing Ver1.051 translation'
+            assert all(latest_dictionary.get(k)==v for k,v in engam.items()), 'Ver1.052 Engram regression'
+            assert all(latest_dictionary.get(k)==v for k,v in choice_aliases.items()), 'Ver1.052 guard choice regression'
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 

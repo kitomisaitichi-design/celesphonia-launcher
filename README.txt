@@ -1,5 +1,33 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.6 -- THREE-IN-ONE 3.3.5 VER1.051 AND VER1.052 + ENGLISH
+Supports verified independent upgrades from v1.04 to Ver1.051 or Ver1.052
+using the corresponding creator RAR5 bundle. Installs a NEW independent version, preserves the v1.04 game,
+backs up originals, and carries compatible saves forward only.
+All 5,163 game overlay files are source-hash checked; exactly 18 data/JS
+files change, without any new or deleted game overlay files.
+Both Ver1.051 and Ver1.052 English packs preserve all 34,996 reviewed
+display strings, including nine Skill Engram descriptions, six conditional
+choice labels and historical runtime-display translations.
+Original internal game identifiers/scripts, source archives and saves remain
+unchanged; rollback and English ON/OFF/restore remain supported.
+RAR5 extraction is now bundled in the launcher so long Chinese creator archive
+names no longer require a separate 7-Zip installation. 7-Zip extractor © Igor
+Pavlov, LGPL/unRAR-restricted components; licensing information and upstream
+source are documented in Vendor/SevenZip/License.txt in the GitHub repository.
+The launcher automatically checks for updates from the official GitHub
+release, then asks for user approval before installing. Prior version
+dictionaries and upgrade routes remain supported.
+
+LATEST CREATOR VER1.052 -- OCTOBER 16, 2026
+Boss-type enemy restraint effects now take effect. Ver1.052 changes only
+data/Enemies.json versus Ver1.051; all 5,162 other overlay files are the
+same. The launcher hashes that enemy file to distinguish the two versions,
+even though Ver1.052's archive still contains a folder named Ver1.051.
+Start from verified v1.04 and choose Ver1.051 or Ver1.052; each installs
+independently and preserves original games/saves. Direct Ver1.051 ->
+Ver1.052 is also supported as a forward-only upgrade.
+
 LAUNCHER 1.0.5 — V1.04 ENGLISH RUNTIME LABEL PRESERVATION
 The game-mod v1.04 English pack restores 472 verified historical render-time
 translations omitted from v1.04's fresh source inventory, including native
@@ -228,17 +256,17 @@ After installation the row becomes a normal playable game with its own saves.
 
 CREATOR CHANGELOG — ENGLISH TRANSLATION
 See GAME MOD CHANGELOG.md beside this README for the complete English
-developer notes covering Three-in-one 3.3.5 v1.01 through v1.04,
-including full-release synchronized changes #200 and #201.
-These are game-mod versions, separate from launcher v1.0.2.
+developer notes covering Three-in-one 3.3.5 v1.01 through Ver1.052,
+including full-release synchronized changes #200, #201 and #203-206.
+These game-mod releases are separate from launcher v1.0.6.
 
 ======== ORIGINAL ENGLISH CREATOR CHANGELOG ========
 # Magical Girl Celesphonia — Three-in-One 3.3.5
 
-## Creator's English changelog (trial releases v1.01–v1.04)
+## Creator's English changelog (releases v1.01–v1.052)
 
 These are English translations of developer **Tian Ying (天影)**'s announcements
-dated October 3–10, 2026. They describe **game-mod versions**, not the Windows
+dated October 3–16, 2026. They describe **game-mod versions**, not the Windows
 launcher versions. The October 3 announcement repeated the first v1.01 change
 in consecutive messages; it is listed once below.
 
@@ -273,14 +301,36 @@ in consecutive messages; it is listed once below.
 
 8. In the **Recollection Room**, automatic transformations during recollection scenes no longer incur the special transformation cost. Players can also choose the degree of outfit damage.
 
+### v1.051 — October 16, 2026
+
+1. Fixed **Succubus's Contract Kiss** sometimes having no effect, and substantially increased kissing priority.
+2. Greatly increased the speed at which **monster pregnancies** progress to giving birth.
+3. The **transparency effect** now works both while transformed and while inside dungeons.
+4. Fixed the first conditional event after sleeping sometimes incorrectly requiring **Heat 100**.
+5. Fixed the older client sometimes failing to show up when the **Prostitution App** had been unlocked through a special method.
+6. Fixed incorrectly displayed **nipple rings** when the battle outfit was damaged.
+7. **Permanent Slave Contract** and **Fixed Lewd Crest** are now displayed in the menu.
+8. Revised several descriptions in the controller button settings and added controller assignments for **Detailed Information**, **Transformation** and **Smartphone**. The creator does not have a controller to test these bindings and cannot guarantee that they work correctly.
+
+**Synchronized with the full release — changes #203–206**
+
+203. Crafting items at **Yarus** no longer costs money.
+204. Added **Tainted Orbs** and **Evil Orbs**, craftable at the **Inner Forge** in the Forbidden Library.
+205. All boss-type enemies gain an effect that prevents their restraint preparation from being interrupted.
+206. Added the **Shamelessness** concept. It increases only through erotic achievements. Above 80, the player can choose at home to go without a trench coat or stop suppressing the transparency lewd curse.
+
+### v1.052 — October 16, 2026
+
+1. Fixed an issue that prevented **restraint effects from taking effect on boss-type enemies**.
+
 ---
 
 ## Source and terminology
 
-Translated from the author's Telegram messages supplied October 10, 2026,
+Translated from the author's Telegram messages supplied October 10 and 16, 2026,
 and cross-checked against the original Chinese `三合一体验版修复日志.txt`
-included in the v1.04 developer archive. The developer's original numbering
-**#200** and **#201** denotes changes inherited from the full release; these
+included in the creator archives. The developer's original numbering
+**#200**, **#201** and **#203–206** denotes changes inherited from the full release; these
 are not extra game-mod versions.
 
 Game terms follow the existing English translation where available:

@@ -95,7 +95,7 @@ public static class FileDiscovery {
         if((lower.Contains("maple")||lower.Contains("夜枫"))&&Regex.IsMatch(lower,@"1[._-]7[._-]2"))id="maple-1-7-2";
         else if(lower.Contains("3.3.4")||lower.Contains("3_3_4"))id="three-in-one-3-3-4";
         else if(lower.Contains("3.3.5")||lower.Contains("3_3_5")){
-            var number=Regex.Match(lower,@"(?:v|ver|版|[_ -])1[._-](\d{2})(?:[^0-9]|$)");
+            var number=Regex.Match(lower,@"(?:v|ver|版|[_ -])1[._-](\d{2,3})(?:[^0-9]|$)");
             if(number.Success){
                 id="three-in-one-3-3-5-v1-"+number.Groups[1].Value;
                 // An unknown future release must stay unverified, never be
@@ -188,56 +188,14 @@ public static class FileDiscovery {
     public static List<FoundSource> ProbeZip(string file){
         return ProbeZip(file,CancellationToken.None);
     }
-    // RAR cannot be inspected with ZipArchive. For an archive whose name,
-    // compression or RAR metadata changed, verify *internal game files*.
-    // Only version-marker paths are extracted into an owned temporary folder.
+    // RAR5 is inspected through the same bundled extractor used for installation.
+    // The probe extracts only the version-marker paths into private staging.
     public static List<FoundSource> ProbeRar(string file,CancellationToken cancellation){
-        var found=new List<FoundSource>();
-        if(ArchiveFormat(file)!="rar"||new FileInfo(file).Length>2L*1024*1024*1024)return found;
+        if(ArchiveFormat(file)!="rar"||new FileInfo(file).Length>2L*1024*1024*1024)return new List<FoundSource>();
         cancellation.ThrowIfCancellationRequested();
-        string listed,verbose;
-        try{
-            listed=Store.CommandArchive("tar.exe","-tf "+Store.Q(file));
-            verbose=Store.CommandArchive("tar.exe","-tvf "+Store.Q(file));
-        }catch(IOException){return found;}
-        if(verbose.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries)
-                .Any(line=>line.StartsWith("l",StringComparison.Ordinal)||line.StartsWith("h",StringComparison.Ordinal)))return found;
-        string[] names=listed.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries);
-        if(names.Length<3||names.Length>100000)return found;
-        var entries=new HashSet<string>(names.Select(x=>x.Replace('\\','/')),StringComparer.OrdinalIgnoreCase);
-        if(entries.Count!=names.Length||entries.Any(x=>x.StartsWith("/")||x.Contains(":")||x.Split('/').Any(part=>part==""||part=="."||part=="..")))return found;
-        string[] prefixes=entries.Where(x=>x.EndsWith("data/System.json",StringComparison.OrdinalIgnoreCase))
-            .Select(x=>x.Substring(0,x.Length-"data/System.json".Length))
-            .Where(x=>entries.Contains(x+"js/plugins.js")).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        if(prefixes.Length!=1)return found;
-        string prefix=prefixes[0];
-        var candidates=RecipeSupport.Catalog().Recipes.Where(x=>x.Fingerprints!=null&&x.Fingerprints.Count>=3
-            &&x.Fingerprints.Keys.All(marker=>entries.Contains(prefix+marker))).ToArray();
-        if(candidates.Length==0)return found;
-        string[] markers=candidates.SelectMany(x=>x.Fingerprints.Keys).Distinct(StringComparer.OrdinalIgnoreCase)
-            .Where(x=>entries.Contains(prefix+x)).ToArray();
-        string staging=Store.ArchiveStaging("verify");
-        try{
-            Directory.CreateDirectory(staging);
-            var arguments="-xf "+Store.Q(file)+" -C "+Store.Q(staging)+" "+
-                string.Join(" ",markers.Select(marker=>Store.Q(prefix+marker)).ToArray());
-            Store.CommandArchive("tar.exe",arguments);
-            Store.CheckLinks(staging);
-            foreach(var recipe in candidates){
-                cancellation.ThrowIfCancellationRequested();
-                bool correct=recipe.Fingerprints.All(mark=>{
-                    string path=Store.Child(staging,(prefix+mark.Key).Replace('/','\\'));
-                    return File.Exists(path)&&new FileInfo(path).Length<=64L*1024*1024&&Store.Hash(path)==mark.Value;
-                });
-                if(!correct)continue;
-                found.Add(new FoundSource{Kind="Original archive",Path=file,RecipeId=recipe.Id,
-                    Name=recipe.Name+" · RAR internal version hashes match",
-                    Detection="RAR signature / extracted version fingerprints; full payload verified before install"});
-                break;
-            }
-        }catch(IOException){}catch(UnauthorizedAccessException){}
-        finally{if(Directory.Exists(staging))Store.CleanArchiveStaging(staging);}
-        return found;
+        try{return RarSupport.ProbeFingerprints(file,cancellation);}
+        catch(IOException){return new List<FoundSource>();}
+        catch(UnauthorizedAccessException){return new List<FoundSource>();}
     }
     static string ArchiveFingerprint(System.IO.Compression.ZipArchiveEntry entry,Dictionary<string,string> hashes,CancellationToken cancellation){
         cancellation.ThrowIfCancellationRequested();string digest;if(hashes.TryGetValue(entry.FullName,out digest))return digest;
@@ -306,14 +264,26 @@ public static class FileDiscovery {
                 var sized=catalog.Recipes.Where(x=>x.ArchiveBytes>0&&x.ArchiveBytes==length).ToArray();
                 string detection=hint!=null?"Filename hint":sized.Length==1?"Exact byte-size hint":"Archive structure";
                 if(hint==null&&sized.Length==1)hint=sized[0];
-                if(format=="zip"&&hint==null){var probed=ProbeZip(file,budget.Cancellation);if(probed.Count>0){foreach(var item in probed){item.Bytes=length;item.Detection="Archive structure / fingerprints";}found.AddRange(probed);continue;}}
+                // Always verify creator ZIP contents, even if their names or
+                // byte counts imitate another version. Delta packs are routed
+                // through their separate manifest branch below.
+                if(format=="zip"&&!lower.EndsWith(".cgdelta.zip")){
+                    var probed=ProbeZip(file,budget.Cancellation);
+                    if(probed.Count>0){foreach(var item in probed){item.Bytes=length;item.Detection="Archive structure / fingerprints";}found.AddRange(probed);continue;}
+                    if(hint!=null||name.Contains("苍蓝星")||name.Contains("蒼藍星")||name.IndexOf("Celesphonia",StringComparison.OrdinalIgnoreCase)>=0)
+                        found.Add(new FoundSource{Kind="Unverified archive",Path=file,Name=name,Bytes=length,Detection="ZIP signature; internal version fingerprints unknown"});
+                    continue;
+                }
                 // A differently named RAR is identified from the embedded
                 // version markers even if its total size mimics another
                 // release. A filename hint with mismatched bytes is also
                 // rechecked against contents before a version is displayed.
-                if(format=="rar"&&(hint==null||hint.ArchiveBytes>0&&hint.ArchiveBytes!=length)){
+                if(format=="rar"){
                     var probed=ProbeRar(file,budget.Cancellation);
                     if(probed.Count>0){foreach(var item in probed)item.Bytes=length;found.AddRange(probed);continue;}
+                    if(name.Contains("苍蓝星")||name.Contains("蒼藍星")||name.IndexOf("Celesphonia",StringComparison.OrdinalIgnoreCase)>=0)
+                        found.Add(new FoundSource{Kind="Unverified archive",Path=file,Name=name,Bytes=length,Detection="RAR signature; internal version fingerprints unknown"});
+                    continue;
                 }
                 if(lower.EndsWith(".cgdelta.zip")){
                     try{using(var zip=System.IO.Compression.ZipFile.OpenRead(file)){var entry=zip.GetEntry("manifest.json");if(entry==null)continue;using(var reader=new StreamReader(entry.Open())){

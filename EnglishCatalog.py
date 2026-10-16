@@ -356,7 +356,12 @@ def inventory(web):
    name=plugin['name'];filename='js/plugins/'+name+'.js'
    for path,text in parametertexts(plugin.get('parameters',{})):
     context='/'.join(map(str,path))
-    if CJK.search(text) and not re.search(r'(?:Bind|Symbol|Script|Eval|Formula|SceneName|ColorCategory|ファイル)',context,re.I):
+    # The 1.051 creator release adds actual controller-menu captions under
+    # Mano_GamePadConfig/textSymbol6–8. These are human-facing descriptions,
+    # not the runtime symbol IDs excluded by the generic Symbol guard.
+    gamepad_caption=(name=='Mano_GamePadConfig' and path
+                     and str(path[0]) in ('textSymbol6','textSymbol7','textSymbol8'))
+    if CJK.search(text) and (gamepad_caption or not re.search(r'(?:Bind|Symbol|Script|Eval|Formula|SceneName|ColorCategory|ファイル)',context,re.I)):
      add('js/plugins.js',(name,)+path,text,'plugin-ui')
    f=web/filename
    if not f.exists():continue

@@ -37,13 +37,16 @@ def main():
             for ident in c.IDS:
                 marks=next(v['Fingerprints'] for v in versions if v['Id']==ident)
                 matched=[c.webroot(pathlib.Path(p['Root'])) for p in profiles if all(c.sha((c.webroot(pathlib.Path(p['Root']))/n).read_bytes())==h for n,h in marks.items())]
-                # The newly released v1.04 overlay is not automatically
-                # installed into any user's games. The native fixture contains
-                # only the five creator-verified marker files for exact tests.
-                if not matched and ident=='three-in-one-3-3-5-v1-04':
-                    candidate=HOME/'Tests/native-game-fixtures/three-in-one-3-3-5-v1-04/www'
-                    assert all((candidate/n).is_file() and c.sha((candidate/n).read_bytes())==h for n,h in marks.items())
-                    matched=[candidate]
+                # Test-only marker fixtures are intentionally NOT registered in
+                # the user's active game library. Retain historical support
+                # tests without cluttering or launching any private QA games.
+                if not matched:
+                    options=(HOME/'Tests/native-game-fixtures'/ident/'www',
+                             HOME/'Tests/native-game-fixtures'/(ident+'-reference')/'www')
+                    matched=[candidate for candidate in options if
+                             all((candidate/n).is_file() and c.sha((candidate/n).read_bytes())==h
+                                 for n,h in marks.items())]
+                    assert matched, 'No source-verifiable fixture for '+ident
                 source=matched[0]
                 game=fixture/'synthetic game';web=game/'www';web.mkdir(parents=True)
                 (game/'Game.exe').write_bytes(b'fixture sentinel: never execute')

@@ -80,7 +80,10 @@ public static class Store {
         if(!path.StartsWith(temp,StringComparison.OrdinalIgnoreCase)||
            !System.Text.RegularExpressions.Regex.IsMatch(name,@"^Cph-(up|verify|layers|legacy)-[a-f0-9]{12}$")||
            !Directory.Exists(path))return;
-        CheckLinks(path);Directory.Delete(path,true);
+        // RAR archives can contain extended Unicode paths that managed
+        // File.GetAttributes cannot traverse. Audit links before deleting;
+        // never mirror/delete through an unchecked reparse point.
+        ExtendedSafeCleanup.RemoveTreeSafely(path);
     }
     public static string WebRoot(string root) {
         var p = Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(Path.Combine(root, "package.json"), Encoding.UTF8));
@@ -237,6 +240,7 @@ public static class Store {
     public static string Extract(string archive, string target, bool allowPartial = false, bool raw = false) {
         Directory.CreateDirectory(target);
         string archiveFormat=FileDiscovery.ArchiveFormat(archive);
+        if(archiveFormat=="rar")return RarSupport.Extract(archive,target,allowPartial,raw);
         if (archiveFormat=="zip") {
             using (var zip = System.IO.Compression.ZipFile.OpenRead(archive)) {
                 foreach (var entry in zip.Entries) {

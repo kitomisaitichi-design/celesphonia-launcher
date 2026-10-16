@@ -38,6 +38,30 @@ const mapCalls=[];
 Spriteset_Map.prototype.createUpperLayer=function(){this._hzChoiceScreen={bitmap:{context:{font:'16px GameFont',measureText(text){return {width:text.length*10};},fillText(text,x,y,width){mapCalls.push({text,font:this.font,width});}}}};};
 Scene_Boot.prototype.start = function () { calls.push('boot'); };
 const realV104Titles=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-04','dictionary.json'),'utf8'));
+const realV1051=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-051','dictionary.json'),'utf8'));
+const realV1051Catalog=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-051','catalog.json'),'utf8'));
+const realV1051Manifest=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-051','manifest.json'),'utf8'));
+const realV1051Aliases=JSON.parse(fs.readFileSync(path.join(home,'English','v1051-rendered-choice-aliases.json'),'utf8')).derived_aliases;
+const realV1051Engrams=JSON.parse(fs.readFileSync(path.join(home,'English','v1051-engram-overrides.json'),'utf8'));
+const realV1052=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-052','dictionary.json'),'utf8'));
+const realV1052Catalog=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-052','catalog.json'),'utf8'));
+const realV1052Manifest=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-052','manifest.json'),'utf8'));
+assert.strictEqual(realV1052Manifest.VersionId,'three-in-one-3-3-5-v1-052');
+assert.strictEqual(Object.keys(realV1052).length,realV1052Manifest.TranslatedTexts);
+assert.strictEqual(Object.keys(realV1052Catalog).length,realV1052Manifest.TotalTexts);
+assert.strictEqual(Object.keys(realV1052).length,Object.keys(realV1051).length,'v1.052 must preserve the complete v1.051 English pack');
+for(const [key,value] of Object.entries(realV1051))
+    assert.strictEqual(realV1052[key],value,'Ver1.052 regressed existing translation: '+key);
+assert.notStrictEqual(realV1051Manifest.Fingerprints['data/Enemies.json'],realV1052Manifest.Fingerprints['data/Enemies.json'],
+    'v1.052 source-specific enemy marker must distinguish previous version');
+assert.strictEqual(Object.keys(realV1051).length,realV1051Manifest.TranslatedTexts);
+assert.strictEqual(Object.keys(realV1051Catalog).length,realV1051Manifest.TotalTexts);
+assert.strictEqual(Object.keys(realV1051Aliases).length,6);
+assert.strictEqual(Object.keys(realV1051Engrams).length,9);
+for(const [key,value] of Object.entries(realV1051Aliases)){
+    assert.strictEqual(realV1051[key],value,'the version 1.051 post-guard choice caption must translate');
+    assert.strictEqual(realV1051Catalog[key].kinds[0],'native-rendered-choice-alias');
+}
 const v103Dictionary=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-03','dictionary.json'),'utf8'));
 // Actual v1.04 native plugin labels and historical dynamic displays must
 // survive when the v1.04 catalog is rebuilt from game data.
@@ -89,6 +113,14 @@ Object.keys(realV104Titles).filter(k=>k.startsWith('魔法少女苍蓝星★三�
     k=>context.CelesphoniaEnglishDictionary[k]=realV104Titles[k]
 );
 restoredNativeLabels.forEach(k=>context.CelesphoniaEnglishDictionary[k]=realV104Titles[k]);
+for(const key of [...Object.keys(realV1051Aliases),'污浊宝珠','邪宝珠','不知廉耻','技能/状态/装备详细信息']){
+    assert.ok(realV1051[key],'missing creator Ver1.051 English label: '+key);
+    context.CelesphoniaEnglishDictionary[key]=realV1051[key];
+}
+for(const [key,value] of Object.entries(realV1051Engrams)){
+    assert.strictEqual(realV1051[key],value,'reviewed Skill Engram source must have exact English display');
+    context.CelesphoniaEnglishDictionary[key]=value;
+}
 Object.assign(context.CelesphoniaEnglishDictionary,{'交给\\n[1]。\n\\c[6]任务条件\\c[0]':'Give it to \\n[1].\n\\c[6]Quest requirements\\c[0]','变节者成员':'Renegade Member'});
 Object.assign(context.CelesphoniaEnglishDictionary,{
  '\\n<\\n[1]事情结束了。':'\\n<\\n[1]It is over.',
@@ -136,6 +168,18 @@ new Scene_Boot().updateDocumentTitle();
 assert.strictEqual(context.document.title,realV104Titles[nativeV104Title],
     'v1.04 boot window title and C/A/TAB instructions must be rendered in English');
 const window = new Window_Base();
+for(const [key,value] of Object.entries(realV1051Aliases)){
+    assert.strictEqual(window.drawText(key),value,'MPP_ChoiceEX displayed choice was not translated');
+    assert.strictEqual(context.CelesphoniaEnglish.translate(key),value,'original non-guarded menu choice did not translate');
+}
+for(const [key,value] of Object.entries(realV1051Engrams)){
+    assert.strictEqual(window.drawText(key),value,'Engram native description line was not translated');
+    assert.strictEqual(context.CelesphoniaEnglish.translate(key),value,'Engram exact string was not translated');
+}
+assert.strictEqual(window.drawText('污浊宝珠'),'Tainted Orb');
+assert.strictEqual(window.drawText('邪宝珠'),'Wicked Orb');
+assert.strictEqual(window.drawText('不知廉耻'),'Shamelessness');
+assert.strictEqual(window.drawText('技能/状态/装备详细信息'),'Skill/Status/Equip. Info');
 restoredNativeLabels.forEach(key=>{
     assert.strictEqual(context.CelesphoniaEnglish.translate(key),v103Dictionary[key],
         'legacy native/runtime display must render in English: '+key);

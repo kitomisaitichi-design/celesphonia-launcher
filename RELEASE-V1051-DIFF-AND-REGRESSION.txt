@@ -1,0 +1,84 @@
+CREATOR MOD v1.04 -> Ver1.051
+SOURCE-BACKED FILE DIFF, CHANGELOG MATCH, AND REGRESSION AUDIT
+Analysis completed 2026-10-16. This report compares original creator RAR5 archive contents. No live original game installation, saves, launcher production, or public releases were edited.
+
+ARCHIVES / INTEGRITY
+  v1.04:  547,633,402 bytes; SHA256 9fd713c92af378134f4b957a38704f7a890d324e83e87bac462e2934a5fdedfd
+  v1.051: 547,645,039 bytes; SHA256 feda86817320cd548a56fc17afa41cc8e345d93b3dae3d44f7535538c9a5d8ac
+  Both 7-Zip full archive 't' tests PASS, 5,171 files and 42 directories each, RAR5, 5,213 blocks, no encryption.
+  Normalized by dropping the single version-labeled top-level folder: 0 file additions; 0 file removals; 20 files with changed CRC32/size; 5,151 content-identical; six identical files have updated timestamps only.
+  All 40 changed-file versions were extracted and verified against the source archive's expected CRC32 and uncompressed size. Content SHA256 per version is in CHANGED-FILE-SHA256.json.
+
+CONTENT-CHANGED FILES, 20
+  data/Armors.json
+  data/CommonEvents.json
+  data/Enemies.json
+  data/Items.json
+  data/Map002.json
+  data/Map005.json
+  data/Map023.json
+  data/Map117.json
+  data/Map250.json
+  data/MapInfos.json
+  data/Skills.json
+  data/States.json
+  data/System.json
+  data/TagSkillList.json
+  js/plugins.js
+  js/plugins/CallStand.js
+  js/plugins/ParaChecker.js
+  js/rpg_managers.js
+  三合一体验版修复日志.txt
+  技能增强更新日志Ver3.3.5-201.txt
+  No changed img/audio/font or other program files; version label root path changed only.
+
+CREATOR CHANGELOG 1-8: CROSS-VERIFIED AGAINST v1.04->v1.051
+  1. Kiss contract / kiss priority: data/Skills.json ID641/642 notes/effects, CommonEvents ID1004 kiss script branch, CommonEvents ID1084 Succubus AI weighting 2 -> 999. CONFIRMED CODE CHANGE.
+  2. Monster birth acceleration: CommonEvents ID1089 variable249 (named 'monster pregnancy time') accumulation 1 -> 5 in the branch where its value exceeds 3; 10 remains in its other state-gated branch. CONFIRMED CODE CHANGE.
+  3. Transparency while transformed or in dungeon: js/plugins/ParaChecker.js changes the Skill722 check using switch131, switch2939, and map metadata EnemyBase/Depth_Mission; js/plugins/CallStand.js uses the same contextual flags in costume opacity; data/Skills.json ID722 text updated. CONFIRMED CODE CHANGE.
+  4. Post-sleep false 100-arousal condition: CommonEvents ID22 (Sleep) inserts a zero reset for variable2407 (conditional trigger arousal value) immediately after its initial condition check. CONFIRMED CODE CHANGE.
+  5. Older prostitution app customer failing to appear: data/Map002.json Event271 adds switch222 ON in two event pages; System switch222 explicitly names the customer. CONFIRMED CODE CHANGE; actual event arrival still needs a game test.
+  6. Broken-costume nipple-ring rendering: js/plugins/CallStand.js delays evaluating ClothNippleL/ClothNippleR until after costume substitute ID selection and conditional art treatment. CONFIRMED CODE CHANGE.
+  7. Permanent slave contract and fixed marking shown in menu: CommonEvents ID809 adds state335-339 checks and D_TEXT \state[...] calls. CONFIRMED CODE CHANGE.
+  8. Gamepad keys: js/plugins.js Mano_GamePadConfig fields add tab, commonKeyC, commonKeyS and matching labels, while leaving the existing core bindings. CONFIRMED CONFIG CHANGE; gamepad hardware test not available (creator likewise warns untested).
+
+OFFICIAL UPDATE 203-206: CROSS-VERIFIED
+  203. Free crafting: data/Map023.json Events5/15, Map117 Event50, Map250 Event16 replace shop goods price mode 'standard' (0) with 'explicit' (1) at a value of 0 for multiple crafting menus. CONFIRMED CODE CHANGE; no money charged by those shop commands.
+  204. Orbs: Items IDs53 (Polluted Orb; material I700 x5) and 54 (Evil Orb; material I700 x12) now implemented; Map250 Event15 adds both to its crafting goods. CONFIRMED CODE CHANGE.
+  205. Boss bind-preparation protection: new State256; 20 enemies receive metadata <TYAddState; 256>; CommonEvents ID186 now treats 256 or 260 as interrupt-resistant. Runtime js/plugins/MyselfPlugins.js line152 applies the metadata on creation of supporting enemies. PARTIAL COVERAGE: enemy193 '冥神:阿波吕恩' explicitly has <boss> and <BindSkill_ex> tags yet has no <TYAddState; 256>. The claimed 'all boss-type enemies' is not literally achieved by this metadata path for enemy193; this does not remove an old v1.04 ability. Confirm this one boss independently in-game.
+  206. Shamelessness: System variable1090 named 'Shamelessness'; TagSkillList key31 names the corresponding statistic; Skills857-874 add [31,N] modifiers alongside existing effects. Map002 Event165 adds a home interaction gated by variable1090 >=80 with choices for coat and curse suppression, implemented with switches2938/2939 and CallStand/ParaChecker support. CONFIRMED CODE CHANGE. The actual event gate is >=80 even though the translated creator changelog says 'above 80'.
+
+REGRESSION/UNADVERTISED CHANGE WATCHLIST
+  A. Several balance changes appear in data/Skills.json and are not named in the 1-8/203-206 notes: Skill37 (Pulse Assault) second state chance 1 -> .34 and third .1 -> .05; Skill39 (Sword God's Judgment) chances .5 -> .2 and .5 -> .14; Skill40 (Judgment!) primary 1.2 -> 1 and new state93 at .7; Skill128 adds effect code12 (MP recovery) value1=1, Skill1123 TP gain 0 -> 10. These are actual data changes. The exact runtime consequences depend on the skill-effect plugin and game mechanics.
+  B. State121 (Slime Self-Healing) trait values 0.05 -> 0.04 for two recovery-related properties. State354 drops state immunity trait14/state4 and lowers xparam code22/dataId7 0.075 -> 0.05; States357 and 364 each remove element resistance trait11/dataId16/value0.7. These are source-confirmed behavioral changes not explained by 1-8/203-206.
+  C. CommonEvents 857/858 are now empty (one end command each), but a complete recursive scan of all 362 new-version data JSONs found ZERO direct common-event command117 or effect44 references to IDs857/858. References in changed transformation/related flows are redirected to CommonEvents860. No broken direct call identified by this scan.
+  D. Map002 Event165 Shamelessness gate is >=80 in the map condition rather than strictly >80 as the creator states. Low-risk off-by-one in reachability.
+  E. CallStand and ParaChecker include switch2939 for enabled transparency, but only the main skill/visual gates include it; the secondary ClothShame calculation retains its narrower transformation/dungeon condition. Check whether this deliberately affects display only or also intended shame mechanics when using the special home toggle.
+  F. CommonEvents958 New Game+ version range now resets variables3421..4993 instead of 3421..4995, preserving 4994 (version marker used in ParaChecker migration) and 4995 (System labels as gallery/recollection full unlock). Confirm retention of 4995 is intentional when testing New Game+.
+  G. The source's CommonEvents event list changes are real 23 ID-level changes; raw positional JSON diff shows 7,832 atomic fields because inserted/deleted commands shift array indices. Stable command-aligned diff recovers the actual changes without treating every shifted command as a new gameplay modification.
+
+VALIDATION
+  PASS: 7z 't' full integrity on both RAR5 archives, 5,171 files per archive.
+  PASS: extraction CRC32 and byte length matched RAR5 metadata for all 40 old/new changed entries.
+  PASS: JSON parse of all 362 data JSONs from Ver1.051.
+  PASS: Node.js syntax check on all four changed JS files (plugins.js, CallStand.js, ParaChecker.js, rpg_managers.js).
+  PASS: static RPG Maker CommonEvents command117 and effect44 reference scan across all 362 data JSONs found no call to emptied 857/858.
+  NOT ESTABLISHED: in-game mechanical acceptance, custom plugin execution under save migration, boss193 behavior, controller hardware bindings. Static checks cannot certify gameplay regression-free runtime behavior.
+
+INTEGRATION RECOMMENDATION
+  The creator's v1.051 RAR is intact and structurally viable as a launcher target. Preserve every historically supported version and use a new profile/target fingerprint keyed to SHA256 feda86817320cd548a56fc17afa41cc8e345d93b3dae3d44f7535538c9a5d8ac. Before marking 'no regression' verified, exercise game-save upgrade and new-game workflows, the newly routed events, menu and controller, the unexpected skill/state balances, and missing boss193 protection. Avoid claiming complete dynamic gameplay coverage from a static diff.
+
+REPORTS AND EVIDENCE (all under Staging/continuation-v105-diff)
+  CREATOR-V104-V1051-CHANGED.txt  -- one changed/added/removed file per entry with old/new size and CRC32.
+  ARCHIVE-ENTRY-DIFF.json  -- machine-readable archive summary and exact metadata for 20 changed entries.
+  ARCHIVE-RAW-INVENTORY.json -- full 5,213-entry metadata for both archives.
+  ARCHIVE-INTEGRITY-TEST.json -- 7z t exact results.
+  CHANGED-FILE-SHA256.json -- each changed old/new file content hash, size and CRC.
+  GAMEPLAY-DATA-FIELD-DIFF.txt -- text field-level diff across 14 databases and 8 plugin settings.
+  GAMEPLAY-STRUCTURAL-DIFF.json -- full old/new changed atomic values (index shifts included).
+  EVENT-BEHAVIOR-SUMMARY.txt -- 33 changed events and 64 command edit regions with code/parameter excerpts.
+  EVENT-COMMAND-CHANGES.json -- full stable-alignment command changes.
+  GAMEPLAY-REFERENCE-AUDIT.json -- boss-tag coverage, referential scan, parser result.
+  SOURCE-*.patch.txt -- actual modified JS source unified diffs.
+  CHANGELOG-*.patch.txt -- textual creator changelog unified diffs.
+  CREATOR-V1051-CHANGELOG-ENGLISH.txt -- translation of all 8 fixes plus 203-206.

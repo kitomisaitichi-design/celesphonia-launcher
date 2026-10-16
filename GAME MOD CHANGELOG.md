@@ -1,9 +1,9 @@
 # Magical Girl Celesphonia — Three-in-One 3.3.5
 
-## Creator's English changelog (trial releases v1.01–v1.04)
+## Creator's English changelog (releases v1.01–v1.052)
 
 These are English translations of developer **Tian Ying (天影)**'s announcements
-dated October 3–10, 2026. They describe **game-mod versions**, not the Windows
+dated October 3–16, 2026. They describe **game-mod versions**, not the Windows
 launcher versions. The October 3 announcement repeated the first v1.01 change
 in consecutive messages; it is listed once below.
 
@@ -38,14 +38,36 @@ in consecutive messages; it is listed once below.
 
 8. In the **Recollection Room**, automatic transformations during recollection scenes no longer incur the special transformation cost. Players can also choose the degree of outfit damage.
 
+### v1.051 — October 16, 2026
+
+1. Fixed **Succubus's Contract Kiss** sometimes having no effect, and substantially increased kissing priority.
+2. Greatly increased the speed at which **monster pregnancies** progress to giving birth.
+3. The **transparency effect** now works both while transformed and while inside dungeons.
+4. Fixed the first conditional event after sleeping sometimes incorrectly requiring **Heat 100**.
+5. Fixed the older client sometimes failing to show up when the **Prostitution App** had been unlocked through a special method.
+6. Fixed incorrectly displayed **nipple rings** when the battle outfit was damaged.
+7. **Permanent Slave Contract** and **Fixed Lewd Crest** are now displayed in the menu.
+8. Revised several descriptions in the controller button settings and added controller assignments for **Detailed Information**, **Transformation** and **Smartphone**. The creator does not have a controller to test these bindings and cannot guarantee that they work correctly.
+
+**Synchronized with the full release — changes #203–206**
+
+203. Crafting items at **Yarus** no longer costs money.
+204. Added **Tainted Orbs** and **Evil Orbs**, craftable at the **Inner Forge** in the Forbidden Library.
+205. All boss-type enemies gain an effect that prevents their restraint preparation from being interrupted.
+206. Added the **Shamelessness** concept. It increases only through erotic achievements. Above 80, the player can choose at home to go without a trench coat or stop suppressing the transparency lewd curse.
+
+### v1.052 — October 16, 2026
+
+1. Fixed an issue that prevented **restraint effects from taking effect on boss-type enemies**.
+
 ---
 
 ## Source and terminology
 
-Translated from the author's Telegram messages supplied October 10, 2026,
+Translated from the author's Telegram messages supplied October 10 and 16, 2026,
 and cross-checked against the original Chinese `三合一体验版修复日志.txt`
-included in the v1.04 developer archive. The developer's original numbering
-**#200** and **#201** denotes changes inherited from the full release; these
+included in the creator archives. The developer's original numbering
+**#200**, **#201** and **#203–206** denotes changes inherited from the full release; these
 are not extra game-mod versions.
 
 Game terms follow the existing English translation where available:

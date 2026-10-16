@@ -66,7 +66,7 @@ def main():
   assert set(names)=={name for _,name in files}
   for p,name in files:assert archive.read(name)==p.read_bytes(),'Staged release changed since review: '+name
   assert not any(name.endswith('.md') or name.startswith(('Source/','Tests/')) for name in names)
-  assert all(version in archive.read('README.txt').decode('utf8') for version in ('v1.01','v1.02','v1.03','v1.04'))
+  assert all(version in archive.read('README.txt').decode('utf8') for version in ('v1.01','v1.02','v1.03','v1.04','v1.051'))
   for ident in ids:
    manifest=json.loads(archive.read('English/'+ident+'/manifest.json'));assert hashlib.sha256(archive.read('English/'+ident+'/dictionary.json')).hexdigest()==manifest['DictionaryHash'];assert hashlib.sha256(archive.read('English/'+ident+'/catalog.json')).hexdigest()==manifest['CatalogHash']
  if args.stage_only:
