@@ -725,8 +725,58 @@
         wrapped._celesphoniaEnglishReinforcementOriginal = command;
         Game_Interpreter.prototype.pluginCommand = wrapped;
     }
+    function installSeparateBedroomToggle() {
+        // The original bedroom stacks wardrobe actions at (4,16) and
+        // (4,15). Keep native 1x3 furniture and both original menus,
+        // but move the second marker to walkable floor at (5,15).
+        var version=global.CelesphoniaEnglishMeta && global.CelesphoniaEnglishMeta.version;
+        if(version!=='three-in-one-3-3-5-v1-051' &&
+           version!=='three-in-one-3-3-5-v1-052') return;
+        if(!global.Game_Map || !global.Game_Event ||
+            typeof Game_Map.prototype.update!=='function' ||
+            typeof Game_Event.prototype.meetsConditions!=='function') return;
+        var nativeUpdate=Game_Map.prototype.update;
+        if(nativeUpdate._celesphoniaSeparateWardrobe) return;
+        function targetMap(map) {
+            if(!map || typeof map.mapId!=='function' || map.mapId()!==5 ||
+               !global.$dataMap || !$dataMap.events) return false;
+            var outfit=$dataMap.events[19], toggle=$dataMap.events[83];
+            return outfit && toggle && outfit.x===4 && outfit.y===16 &&
+                toggle.x===4 && toggle.y===15 &&
+                typeof toggle.note==='string' &&
+                toggle.note.indexOf('<TE:不知廉耻立绘调整>')!==-1;
+        }
+        Game_Map.prototype.update=function(){
+            if(targetMap(this) && typeof this.event==='function'){
+                var toggle=this.event(83);
+                if(toggle && toggle._eventId===83 &&
+                   typeof toggle.locate==='function' &&
+                   toggle.x===4 && toggle.y===15) {
+                    toggle.locate(5,15);
+                    if(typeof toggle.refresh==='function')toggle.refresh();
+                }
+            }
+            return nativeUpdate.apply(this,arguments);
+        };
+        Game_Map.prototype.update._celesphoniaSeparateWardrobe=true;
+        var nativeConditions=Game_Event.prototype.meetsConditions;
+        Game_Event.prototype.meetsConditions=function(page){
+            // Creator recalculation can reset Shamelessness immediately
+            // after a slot with value 80 loads. Make only this separated
+            // menu accessible; never change gameplay variables, skills,
+            // saved events, or other unlock conditions.
+            if(this._mapId===5 && this._eventId===83 &&
+               targetMap(global.$gameMap) && page &&
+               page.conditions && page.conditions.variableValid &&
+               page.conditions.variableId===1090 &&
+               page.conditions.variableValue===80)
+                return true;
+            return nativeConditions.apply(this,arguments);
+        };
+    }
     function install() {
         if (installed) return; installed = true;
+        installSeparateBedroomToggle();
         // SceneGlossary loads its authored help pictures through
         // ImageManager.loadPicture. Redirect only the four source-verified
         // picture/animation names to this English overlay's own assets.

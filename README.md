@@ -2,7 +2,17 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.8** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+**Launcher version 1.0.9** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+
+## v1.0.9 — Separate wardrobe interactions
+
+Fixes the overlapping home-bedroom wardrobe interactions in creator Ver1.051 and Ver1.052. Change Clothes stays at its native location; the second menu moves to the adjacent walkable floor tile. The narrow 1x3 furniture and native map files remain unchanged. The second menu remains accessible after the creator recalculates Shamelessness, without editing progression values or granting skills.
+
+Preserves the existing English dictionaries, all five translated help images, and F8 controls 1.1.4 including the resource editing/restoration and startup movement fixes. The portable ZIP retains the 35-file layout accepted by older automatic updaters. No games, saves or personal profiles are included.
+
+**Activate the repair:** close the game after saving, install the launcher update, then use the English tab to apply/update English for Ver1.051 or Ver1.052 before launching again. Launcher updates do not silently patch a running game.
+
+Verification: native engine event activation and source-map preservation checks; portable extraction/repair tests for ten supported variants; current native launcher layout checks. Private synthetic fixtures only; no user save was edited and no complete gameplay playthrough was claimed.
 
 ## v1.0.8 — Preserve the original bedroom wardrobe
 

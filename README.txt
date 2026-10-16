@@ -1,5 +1,16 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.9 -- SEPARATE BEDROOM INTERACTIONS
+Ver1.051 / Ver1.052: the second wardrobe action is now on the adjacent
+floor tile, separate from Change Clothes. The original narrow 1x3 artwork
+is unchanged. The transparency/coat menu stays available after the creator
+recalculates Shamelessness. This does not grant skills or change its value.
+The correction is part of the reversible English overlay. After updating,
+apply/update English on the game's English tab and restart the game.
+Existing saves, translated text, all five English images and F8 controls
+are retained. Runtime controls include resource Set/Lock/Restore repairs
+and the startup movement fix (controls version 1.1.4).
+
 LAUNCHER 1.0.8 -- ORIGINAL BEDROOM WARDROBE AND ENGLISH HELP
 The home-bedroom wardrobe remains the creator's original NARROW 1x3 tile
 column, exactly as in v1.04, Ver1.051 and Ver1.052. Neither the English
