@@ -347,26 +347,39 @@
         };
         wrapped._celesphoniaEnglishFieldWidth=true;proto.drawSoloParameter=wrapped;
     }
+    function panelLineWidth(win, text) {
+        // MV draws \I icons as fixed-size blits, not font glyphs.  Count them
+        // before choosing a wrap point, as well as in the final width check.
+        var rendered = win.convertEscapeCharacters(text);
+        var icons = rendered.match(/\x1bi\[\d+\]/gi) || [];
+        var plain = rendered.replace(/\x1b[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g, '').replace(/\x1b[.$|!><^{}\\]/g, '');
+        return win.textWidth(plain) + icons.length * (Window_Base._iconWidth + 4);
+    }
     function fitPanelText(win, text, width, height) {
         width = Math.max(1, width - 8);height = Math.max(1, height);
         var original = win.contents.fontSize, start = win.standardFontSize(), chosen;
         for (var size = start; size >= 12; size -= 2) {
             win.contents.fontSize = size;var lines = [], widest = 0;
             text.split('\n').forEach(function (paragraph) {
-                var line = '';
-                paragraph.split(/\s+/).forEach(function (word) {
-                    var next = line ? line + ' ' + word : word;
-                    var plain = win.convertEscapeCharacters(next).replace(/\x1b[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g, '').replace(/\x1b[.$|!><^{}\\]/g, '');
-                    var measured = win.textWidth(plain);
-                    if (line && measured > width) { lines.push(line);line = word; }
+                var line = '', joiner = '';
+                // ItemDescription assembles adjacent [stat][trait] fields
+                // without spaces. A soft boundary between those fields gives
+                // English help a legal wrap without changing their wording.
+                paragraph.replace(/\]\[/g, ']\u0001[').split(/(\s+|\u0001)/).forEach(function (part) {
+                    if (!part) return;
+                    if (part === '\u0001') { joiner = '';return; }
+                    if (/^\s+$/.test(part)) { joiner = ' ';return; }
+                    var next = line ? line + joiner + part : part;
+                    if (line && panelLineWidth(win, next) > width) { lines.push(line);line = part; }
                     else line = next;
+                    joiner = '';
                 });
                 lines.push(line);
             });
             var totalHeight = 0;
-            lines.forEach(function (line) { var rendered = win.convertEscapeCharacters(line), icons = rendered.match(/\x1bi\[\d+\]/gi) || [], plain = rendered.replace(/\x1b[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g, '').replace(/\x1b[.$|!><^{}\\]/g, '');widest = Math.max(widest, win.textWidth(plain) + icons.length * 36);totalHeight += Math.max(size + 8, icons.length ? 32 : 0); });
-            chosen = {text:lines.join('\n'),fontSize:size,lines:lines.length,width:widest,height:totalHeight,availableWidth:width,availableHeight:height};
-            if (chosen.width <= width && chosen.height <= height) break;
+            lines.forEach(function (line) { var rendered = win.convertEscapeCharacters(line), icons = rendered.match(/\x1bi\[\d+\]/gi) || [];widest = Math.max(widest, panelLineWidth(win, line));totalHeight += Math.max(size + 8, icons.length ? Window_Base._iconHeight : 0); });
+            chosen = {text:lines.join('\n'),fontSize:size,lines:lines.length,width:widest,height:totalHeight,availableWidth:width,availableHeight:height,fits:widest <= width && totalHeight <= height};
+            if (chosen.fits) break;
         }
         win.contents.fontSize = original;return chosen;
     }
@@ -400,6 +413,39 @@
             if (liveCommentRendering && this.constructor && this.constructor.name === 'Window_LiveComment') return this.lineHeight();
             return height.apply(this, arguments);
         };
+    }
+    function installGroperTicker() {
+        // Map002 E474 and its siblings use TMng Talk -> variable 2944, then
+        // CE97 selects that variable through 2995, and CE881 draws a Ticker.
+        // Ticker.js bypasses Window_Base.convertEscapeCharacters entirely.
+        // Resolve only that exact native template, from an exact reviewed key,
+        // while the native synchronous ticker draws; never change stored data.
+        if (!global.TickerManager || typeof TickerManager.show !== 'function' ||
+            TickerManager.show._celesphoniaEnglishGroperTicker) return;
+        var native=TickerManager.show, template='\\i[\\v[119]]\\c[\\v[118]]\\v[\\v[2995]]';
+        var wrapped=function(text){
+            var variables=global.$gameVariables;
+            if (text!==template || !variables || typeof variables.value!=='function' ||
+                Number(variables.value(2995))!==2944) return native.apply(this,arguments);
+            var raw=variables.value(2944);
+            if (typeof raw!=='string' || raw.indexOf('\x1b')<0) return native.apply(this,arguments);
+            var source=raw.replace(/\x1b/g,'\\');
+            if (!own.call(dict,source)) return native.apply(this,arguments);
+            var target=dict[source];
+            if (target===source || typeof target!=='string') return native.apply(this,arguments);
+            var rendered=target.replace(/\\/g,'\x1b');
+            var originalReader=variables.value, wasOwn=own.call(variables,'value');
+            variables.value=function(id){
+                return Number(id)===2944 ? rendered : originalReader.apply(this,arguments);
+            };
+            try{return native.apply(this,arguments);}
+            finally{
+                if(wasOwn)variables.value=originalReader;
+                else delete variables.value;
+            }
+        };
+        wrapped._celesphoniaEnglishGroperTicker=true;
+        TickerManager.show=wrapped;
     }
     function fitFixedLines(win, text, width, height, start) {
         var prior = win.contents.fontSize, chosen;
@@ -681,6 +727,32 @@
     }
     function install() {
         if (installed) return; installed = true;
+        // SceneGlossary loads its authored help pictures through
+        // ImageManager.loadPicture. Redirect only the four source-verified
+        // picture/animation names to this English overlay's own assets.
+        // The native bitmap, animation frames, and game data stay untouched.
+        var artwork = global.CelesphoniaEnglishImageOverrides || {};
+        if (global.ImageManager && typeof ImageManager.loadBitmap === 'function') {
+            [
+                {method:'loadPicture',names:artwork.picture},
+                {method:'loadAnimation',names:artwork.animation}
+            ].forEach(function (entry) {
+                if (!entry.names || !Object.keys(entry.names).length ||
+                    typeof ImageManager[entry.method] !== 'function') return;
+                var original=ImageManager[entry.method], mapping=entry.names;
+                if (original._celesphoniaEnglishPictureRedirect) return;
+                var redirected=function (name,hue) {
+                    if (typeof name==='string' && own.call(mapping,name)) {
+                        return this.loadBitmap('celesphonia-english/images/',
+                            mapping[name],hue,true);
+                    }
+                    return original.apply(this,arguments);
+                };
+                redirected._celesphoniaEnglishPictureRedirect=true;
+                redirected._celesphoniaEnglishOriginal=original;
+                ImageManager[entry.method]=redirected;
+            });
+        }
         if (global.$dataEnemies) $dataEnemies.forEach(function (enemy) {
             if (!enemy || typeof enemy.name !== 'string' || !enemy.name) return;
             var english = exact(enemy.name);enemyNames[enemy.name] = english;enemyNames[english] = english;
@@ -761,6 +833,41 @@
             var makePicture = Sprite_Picture.prototype.makeDynamicBitmap;
             Sprite_Picture.prototype.makeDynamicBitmap = function () {
                 var info = this.dTextInfo, raw = info && info.originalValue;
+                // Common Events 463/468 draw the single/group groper HUD with
+                // D_TEXT. Translate only the three verified caption lines.
+                // The native turn and excitement/crowd variable values,
+                // originalValue, picture ID and game logic stay untouched.
+                if (typeof raw === 'string' && info && typeof info.value === 'string') {
+                    var hudNative=raw.replace(/\x1b/g,'\\').replace(/\r/g,'').split('\n');
+                    var hudDisplay=info.value.replace(/\r/g,'').split('\n');
+                    if (hudNative.length === 4 && hudDisplay.length === 4 &&
+                        /^Turn \\v\[1506\] \/ 10$/i.test(hudNative[0]) &&
+                        /^(痴汉兴奋度|痴汉聚集度) \\v\[1507\]$/i.test(hudNative[1]) &&
+                        /^痴汉LV (熟练|普通|生疏)$/.test(hudNative[2]) &&
+                        hudNative[3] === '' && hudDisplay[3] === '' &&
+                        /^Turn /.test(hudDisplay[0])) {
+                        var groperMetric=/^痴汉兴奋度/.test(hudNative[1])?'痴汉兴奋度':'痴汉聚集度';
+                        var metricName=groperMetric==='痴汉兴奋度'?'Groper Excitement':'Groper Crowd';
+                        var shownMetric=hudDisplay[1].replace(
+                            new RegExp('^'+groperMetric+'(?=\\s|$)'),metricName);
+                        var ranks={'熟练':'Groper Level: Technician',
+                                   '普通':'Groper Level: Normal',
+                                   '生疏':'Groper Level: Clumsy'};
+                        var oldRank=hudNative[2].substring('痴汉LV '.length);
+                        if ((shownMetric!==hudDisplay[1]||
+                             hudDisplay[1].indexOf(metricName)===0) &&
+                            (hudDisplay[2]===hudNative[2]||
+                             hudDisplay[2]===ranks[oldRank])) {
+                            var localized={};
+                            Object.keys(info).forEach(function(key){localized[key]=info[key];});
+                            localized.value=[hudDisplay[0],shownMetric,
+                                ranks[oldRank],''].join('\n');
+                            this.dTextInfo=localized;
+                            try{return makePicture.apply(this,arguments);}
+                            finally{this.dTextInfo=info;}
+                        }
+                    }
+                }
                 // CommonEvent 814 uses fixed 230px columns for skill-title icons.
                 // Keep the canonical picture and variable values intact; fit only
                 // this native title-caption shape on the local drawing copy.
@@ -825,6 +932,7 @@
         installSaveTitles();
         installDiagnosticPresentation();
         installLiveComments();
+        installGroperTicker();
     }
     function flushSeen() {
         try {

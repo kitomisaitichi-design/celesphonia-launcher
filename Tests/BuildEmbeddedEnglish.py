@@ -7,6 +7,11 @@ import sys
 sys.path.insert(0,str(HOME));import EnglishCatalog as c
 ids=c.IDS
 payload={'EnglishRuntime.js':(HOME/'EnglishRuntime.js').read_bytes()}
+art=HOME/'English/ImageLocalization'
+if art.is_dir():
+    for path in sorted(art.iterdir()):
+        if path.is_file() and (path.suffix=='.png' or path.name=='manifest.json'):
+            payload['English/ImageLocalization/'+path.name]=path.read_bytes()
 for ident in ids:
     m=json.loads((HOME/'English'/ident/'manifest.json').read_text('utf8'))
     assert m['VersionId']==ident and m['Format']==1 and m['Mode']=='display-only'

@@ -1,5 +1,20 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.7 -- ENGLISH HELP IMAGES, GROPER TICKER AND TEXT FIT
+Reversible English image overlays now localize the native Glossary battle
+restraint examples, item/gear examples, Change Color controls and hypnosis
+animation captions on exact-verified Ver1.051 and Ver1.052 source images.
+Native game pictures, animations, save files and gameplay data stay untouched.
+English ON installs replacements inside www/celesphonia-english/images;
+English OFF restores the original index.html entry point and native artwork.
+The groper/aged-man comment HUD now translates using the exact existing
+reviewed Chinese source keys even where the native Ticker plugin bypasses
+ordinary English text hooks; game variables and stored text remain original.
+Item help and tooltip layouts also wrap adjacent effect tags without clipping
+or shrinking every line, and account for inline icon width.
+The translated artwork is embedded in the launcher executable, maintaining
+the historical 35-file ZIP allowlist for older GitHub auto-updaters.
+
 LAUNCHER 1.0.6 -- THREE-IN-ONE 3.3.5 VER1.051 AND VER1.052 + ENGLISH
 Supports verified independent upgrades from v1.04 to Ver1.051 or Ver1.052
 using the corresponding creator RAR5 bundle. Installs a NEW independent version, preserves the v1.04 game,
@@ -258,7 +273,7 @@ CREATOR CHANGELOG — ENGLISH TRANSLATION
 See GAME MOD CHANGELOG.md beside this README for the complete English
 developer notes covering Three-in-one 3.3.5 v1.01 through Ver1.052,
 including full-release synchronized changes #200, #201 and #203-206.
-These game-mod releases are separate from launcher v1.0.6.
+These game-mod releases are separate from launcher v1.0.7.
 
 ======== ORIGINAL ENGLISH CREATOR CHANGELOG ========
 # Magical Girl Celesphonia — Three-in-One 3.3.5

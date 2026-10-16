@@ -34,6 +34,8 @@ Window_SaveInfo.prototype=Object.create(Window_SavefileList.prototype);
 Window_SaveInfo.prototype.drawGameTitle=function(y){if(this.raise)throw Error('native draw failure');this.drawText(this._info.title,0,y,this.contents.width);return y+54;};
 const promptCalls=[];
 function Spriteset_Map() {}
+function Sprite_Picture() {}
+Sprite_Picture.prototype.makeDynamicBitmap=function(){return this.dTextInfo.value;};
 const mapCalls=[];
 Spriteset_Map.prototype.createUpperLayer=function(){this._hzChoiceScreen={bitmap:{context:{font:'16px GameFont',measureText(text){return {width:text.length*10};},fillText(text,x,y,width){mapCalls.push({text,font:this.font,width});}}}};};
 Scene_Boot.prototype.start = function () { calls.push('boot'); };
@@ -79,7 +81,18 @@ restoredNativeLabels.forEach(key=>{
 const nativeV104Title=Object.keys(realV104Titles).find(k=>k.startsWith('魔法少女苍蓝星★三合一改 C变身/'));
 assert.ok(nativeV104Title,'real v1.04 source title must be inventoried and translated');
 Scene_Boot.prototype.updateDocumentTitle=function(){context.document.title=nativeV104Title;};
-const context = {Bitmap, Window_Base, Window_Message, Window_SavefileList, Window_SaveInfo, Scene_Boot, Spriteset_Map, console, document:{title:''}, location: {pathname: '/C:/fixture/www/index.html'},
+const imageRequests=[];
+const imageLoader={
+    loadBitmap(folder,name,hue,smooth){
+        const result={folder,name,hue,smooth};imageRequests.push(result);return result;
+    },
+    loadPicture(name,hue){return this.loadBitmap('img/pictures/',name,hue,true);},
+    loadAnimation(name,hue){return this.loadBitmap('img/animations/',name,hue,true);}
+};
+const context = {Bitmap, Window_Base, Window_Message, Window_SavefileList, Window_SaveInfo, Scene_Boot, Spriteset_Map, Sprite_Picture, console, document:{title:''}, location: {pathname: '/C:/fixture/www/index.html'},
+    TickerManager:{show:function(text){this.lastText=text;return context.$gameVariables.value(2944);}},
+    ImageManager:imageLoader,
+    CelesphoniaEnglishImageOverrides:{picture:{Glossary_1:'Glossary_1',Glossary_2:'Glossary_2',Glossary_4:'Glossary_4',hair_win_UI:'hair_win_UI'},animation:{'催眠用语':'HypnosisWords'}},
     Yanfly:{Param:{SaveNotePrompt:'请为该记忆添加专属刻印描述'}},prompt:function(){promptCalls.push(Array.from(arguments));return this.promptResult;},promptResult:null,
     $gameVariables: {value: id => data.variables[id]},
     $dataItems: data.items,
@@ -164,6 +177,63 @@ vm.runInContext(fs.readFileSync(path.join(home, 'EnglishRuntime.js'), 'utf8'), c
 const boot = Scene_Boot.prototype.start;
 Scene_Boot.prototype.start = function () { calls.push('plugin'); return boot.call(this); };
 new Scene_Boot().start();
+const tickerOriginal='\\i[\\v[119]]\\c[\\v[118]]\\v[\\v[2995]]';
+const tickerSource=Object.keys(realV1052).find(k=>k.includes('舔得这么津津有味'));
+assert(tickerSource && realV1052[tickerSource]);
+const originalVariablesReader=context.$gameVariables.value;
+const originalSavedVariable=data.variables[2944];
+const originalSelector=data.variables[2995];
+context.CelesphoniaEnglishDictionary[tickerSource]=realV1052[tickerSource];
+// The runtime keeps a reference to the English dictionary; this is an
+// isolated test fixture, not an update to the installed game dictionary.
+assert.strictEqual(context.TickerManager.show('Unrelated ticker'),originalSavedVariable,
+    'Unrelated tickers must retain the native result');
+data.variables[2944]=tickerSource.replace(/\\/g,'\x1b');
+data.variables[2995]=2944;
+assert.strictEqual(context.$gameVariables.value,originalVariablesReader);
+const savedGroperSource=data.variables[2944];
+const localizedGroper=context.TickerManager.show(tickerOriginal);
+assert(localizedGroper.includes('Licking it so eagerly'),
+    'The source-matched groper ticker must render the reviewed English sentence');
+assert.strictEqual(context.TickerManager.lastText,tickerOriginal,
+    'Native ticker command arguments must remain unchanged');
+assert.strictEqual(data.variables[2944],savedGroperSource);
+assert.strictEqual(context.$gameVariables.value,originalVariablesReader);
+if(originalSavedVariable===undefined)delete data.variables[2944];
+else data.variables[2944]=originalSavedVariable;
+if(originalSelector===undefined)delete data.variables[2995];
+else data.variables[2995]=originalSelector;
+for(const metric of ['痴汉兴奋度','痴汉聚集度']){
+    for(const rank of ['熟练','普通','生疏']){
+        const pic=new Sprite_Picture();
+        const original='Turn \\v[1506] / 10\n'+metric+' \\v[1507]\n痴汉LV '+rank+'\n';
+        const rendered='Turn 5 / 10\n'+metric+' 23\n痴汉LV '+rank+'\n';
+        pic.dTextInfo={originalValue:original,value:rendered,realTime:true,size:20};
+        const liveInfo=pic.dTextInfo;
+        const english=pic.makeDynamicBitmap();
+        assert(english.startsWith('Turn 5 / 10\nGroper '));
+        assert(english.includes(' 23\nGroper Level: '));
+        assert.strictEqual(pic.dTextInfo,liveInfo,'Groper HUD must never modify native source info');
+        assert.strictEqual(pic.dTextInfo.value,rendered,'Groper HUD must never mutate game numeric variables');
+    }
+}
+const unknownSprite=new Sprite_Picture();
+unknownSprite.dTextInfo={originalValue:'Turn \\v[1506] / 10\nUnknown \\v[1507]\n痴汉LV 熟练\n',
+                         value:'Turn 5 / 10\nUnknown 23\n痴汉LV 熟练\n'};
+assert.strictEqual(unknownSprite.makeDynamicBitmap(),unknownSprite.dTextInfo.value,
+    'Unknown native HUDs must not receive the groper translation');
+for(const name of ['Glossary_1','Glossary_2','Glossary_4','hair_win_UI']){
+    const bmp=imageLoader.loadPicture(name,0);
+    assert.strictEqual(bmp.folder,'celesphonia-english/images/');
+    assert.strictEqual(bmp.name,name);
+}
+const animated=imageLoader.loadAnimation('催眠用语',0);
+assert.strictEqual(animated.folder,'celesphonia-english/images/');
+assert.strictEqual(animated.name,'HypnosisWords');
+assert.strictEqual(imageLoader.loadPicture('OtherPicture').folder,'img/pictures/',
+    'An unrelated native picture must not be redirected');
+assert.strictEqual(imageLoader.loadAnimation('OtherAnimation').folder,'img/animations/',
+    'An unrelated native animation must not be redirected');
 new Scene_Boot().updateDocumentTitle();
 assert.strictEqual(context.document.title,realV104Titles[nativeV104Title],
     'v1.04 boot window title and C/A/TAB instructions must be rendered in English');

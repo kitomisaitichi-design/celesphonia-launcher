@@ -16,6 +16,23 @@ public class EnglishManifest {
     public int? DeveloperVariableLabels {get;set;}
     public string DictionaryHash {get;set;} public string CatalogHash {get;set;}
 }
+public class LocalizedImageInfo {
+    public string originalSHA256 {get;set;}
+    public string localizedSHA256 {get;set;}
+    public int width {get;set;}
+    public int height {get;set;}
+    public string kind {get;set;}
+    public string nativePath {get;set;}
+    public string nativeName {get;set;}
+    public string localizedName {get;set;}
+    public bool renderOnly {get;set;}
+    public bool nativePictureUnchanged {get;set;}
+}
+public class LocalizedImageManifest {
+    public int format {get;set;}
+    public string[] versionIds {get;set;}
+    public Dictionary<string,LocalizedImageInfo> images {get;set;}
+}
 public class EnglishState {
     public int Format {get;set;} public string VersionId {get;set;} public string Entry {get;set;}
     public string OriginalHash {get;set;} public string PatchedHash {get;set;}
@@ -35,6 +52,14 @@ public static class EnglishSupport {
     static string StateFile(string root){return Path.Combine(Folder(root),"state.json");}
     static EnglishState ReadState(string root){string file=StateFile(root);return File.Exists(file)?Store.Json.Deserialize<EnglishState>(File.ReadAllText(file,Encoding.UTF8)):null;}
     static string PackFolder(string id){return Store.Child(Path.Combine(Store.Home,"English"),id);}
+    static LocalizedImageManifest ImagesFor(string id){
+        byte[] bytes=EnglishRelease.ArtManifest();
+        if(bytes==null)return null;
+        var result=Store.Json.Deserialize<LocalizedImageManifest>(Encoding.UTF8.GetString(bytes));
+        if(result==null||result.format!=1||result.versionIds==null||result.images==null)
+            throw new IOException("Invalid localized help-art manifest.");
+        return result.versionIds.Contains(id,StringComparer.Ordinal)?result:null;
+    }
     static EnglishManifest ReadPack(string id){return Store.Json.Deserialize<EnglishManifest>(Encoding.UTF8.GetString(EnglishRelease.Read(id,"manifest.json")));}
     static string Entry(string root){var package=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,"package.json"),Encoding.UTF8));return Store.Child(root,Convert.ToString(package["main"]));}
     static void Atomic(string file,byte[] bytes){string temp=file+".new";File.WriteAllBytes(temp,bytes);if(File.Exists(file))File.Replace(temp,file,null);else File.Move(temp,file);}
@@ -64,7 +89,26 @@ public static class EnglishSupport {
         if(result.VersionId=="ch-current"){result.Detail="Existing English CH reference. Overlays apply only to Gorpg, Maple, 3.3.4 and 3.3.5 trial.";return result;}
         result.Supported=true;
         try{result.Pack=ReadPack(result.VersionId);if(result.Pack!=null){result.AvailableTexts=result.Pack.TranslatedTexts;result.TotalTexts=result.Pack.TotalTexts;string statistics=Path.Combine(PackFolder(result.VersionId),"user-statistics.json");if(File.Exists(statistics)){var stats=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(statistics,Encoding.UTF8));if(Convert.ToString(stats["DictionaryHash"])==result.Pack.DictionaryHash){result.AvailableTexts+=Convert.ToInt32(stats["AdditionalTexts"]);result.TotalTexts+=Convert.ToInt32(stats["ExtraCatalogTexts"]);}}}var state=ReadState(profile.Root);if(state!=null){Verify(profile.Root);result.Enabled=Store.Hash(Entry(profile.Root))==state.PatchedHash;result.AppliedTexts=state.TranslatedTexts;if(result.Enabled)result.TotalTexts=state.TotalTexts;}result.Detail=result.Enabled?"English display overlay is enabled. Untranslated lines remain in their original language.":"Original text is active. Enable this version's English overlay to use the available translations.";}catch(Exception e){result.Modified=true;result.Detail=e.Message;}
-        if(result.Enabled&&result.Pack!=null&&!result.Modified){var state=ReadState(profile.Root);result.UpdateAvailable=state.DictionaryHash!=result.Pack.DictionaryHash||result.AppliedTexts!=result.AvailableTexts||state.Assets["runtime.js"]!=EnglishRelease.Hash(EnglishRelease.Runtime());}
+        if(result.Enabled&&result.Pack!=null&&!result.Modified){
+            var state=ReadState(profile.Root);
+            result.UpdateAvailable=state.DictionaryHash!=result.Pack.DictionaryHash||
+                result.AppliedTexts!=result.AvailableTexts||
+                state.Assets["runtime.js"]!=EnglishRelease.Hash(EnglishRelease.Runtime());
+            var pictures=ImagesFor(result.VersionId);
+            if(pictures!=null)foreach(var image in pictures.images){
+                var originalAsset=Store.Child(Store.WebRoot(profile.Root),
+                    image.Value.nativePath.Replace('/','\\'));
+                // Incomplete or reduced game copies might not contain this
+                // optional tutorial asset. The English *text* pack still
+                // applies; no visual override is installed for a missing image.
+                if(!File.Exists(originalAsset))continue;
+                if(Store.Hash(originalAsset)!=image.Value.originalSHA256)continue;
+                string recorded;
+                if(!state.Assets.TryGetValue("images/"+image.Key,out recorded)||
+                   recorded!=EnglishRelease.Hash(EnglishRelease.Art(image.Key)))
+                    result.UpdateAvailable=true;
+            }
+        }
         if(result.Pack!=null&&!result.Modified){var problems=EnglishRelease.LooseProblems(result.VersionId);if(problems.Count>0)result.Detail+="\r\nUsing the verified built-in English pack; "+problems.Count+" loose pack files are missing or from a different release. Extract the complete ZIP into "+Store.Home+" to refresh them.";}
         return result;
     }
@@ -168,12 +212,43 @@ public static class EnglishSupport {
                 if(!display.ContainsKey(source)&&Compatible(source,target))display[source]=target;
             }
         }
-        var payload=new UTF8Encoding(false).GetBytes("window.CelesphoniaEnglishMeta="+Store.Json.Serialize(new{version=id,texts=data.Count,mode="display-only",webPath=webPath})+";\nwindow.CelesphoniaEnglishDictionary="+Store.Json.Serialize(display).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishLabels="+Store.Json.Serialize(labels).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishHumanLabels="+Store.Json.Serialize(humanLabels).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishDescriptions="+Store.Json.Serialize(descriptions).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishEnemyPrefixes="+Store.Json.Serialize(enemyPrefixes)+";\nwindow.CelesphoniaEnglishEnemyNames="+Store.Json.Serialize(enemyNames)+";\n");
+        var pictureRedirects=new Dictionary<string,string>();
+        var animationRedirects=new Dictionary<string,string>();
+        var artwork=ImagesFor(id);
+        if(artwork!=null)foreach(var image in artwork.images){
+            string name=image.Key;var info=image.Value;
+            if(info==null||!Regex.IsMatch(name,@"^[\p{L}\p{N}_-]+\.png$")||
+               info.nativePath==null||!Regex.IsMatch(info.nativePath,@"^img/(?:pictures|animations)/[^/\\]+\.png$")||
+               string.IsNullOrWhiteSpace(info.nativeName)||string.IsNullOrWhiteSpace(info.localizedName)||
+               !(info.kind=="picture"||info.kind=="animation")||
+               !info.renderOnly||!info.nativePictureUnchanged)
+                throw new IOException("Unsupported localized artwork mapping.");
+            string originalAsset=Store.Child(web,info.nativePath.Replace('/','\\'));
+            if(!File.Exists(originalAsset))continue;
+            if(Store.Hash(originalAsset)!=info.originalSHA256)
+                throw new IOException("Creator help/animation image changed: "+info.nativePath);
+            var bytes=EnglishRelease.Art(name);
+            if(EnglishRelease.Hash(bytes)!=info.localizedSHA256)
+                throw new IOException("Localized English artwork was altered: "+name);
+            if(info.kind=="picture")pictureRedirects.Add(info.nativeName,info.localizedName);
+            else animationRedirects.Add(info.nativeName,info.localizedName);
+        }
+        var payload=new UTF8Encoding(false).GetBytes("window.CelesphoniaEnglishMeta="+Store.Json.Serialize(new{version=id,texts=data.Count,mode="display-only",webPath=webPath})+";\nwindow.CelesphoniaEnglishImageOverrides="+Store.Json.Serialize(new{picture=pictureRedirects,animation=animationRedirects})+";\nwindow.CelesphoniaEnglishDictionary="+Store.Json.Serialize(display).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishLabels="+Store.Json.Serialize(labels).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishHumanLabels="+Store.Json.Serialize(humanLabels).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishDescriptions="+Store.Json.Serialize(descriptions).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\nwindow.CelesphoniaEnglishEnemyPrefixes="+Store.Json.Serialize(enemyPrefixes)+";\nwindow.CelesphoniaEnglishEnemyNames="+Store.Json.Serialize(enemyNames)+";\n");
         var state=new EnglishState{Format=1,VersionId=id,DictionaryHash=pack.DictionaryHash,Entry=entry.Substring(profile.Root.TrimEnd('\\').Length+1).Replace('\\','/'),OriginalHash=Store.Hash(Path.Combine(folder,"original-entry.bin")),TotalTexts=Catalog(id,pack).Count,TranslatedTexts=data.Count,Updated=DateTimeOffset.Now.ToString("o"),Assets=new Dictionary<string,string>()};
         // Restore entry before updating assets: a failed update leaves the original game launchable.
         if(old!=null)Atomic(entry,original);
         Atomic(Path.Combine(folder,"dictionary.js"),payload);Atomic(Path.Combine(folder,"runtime.js"),runtimeBytes);
         foreach(string name in new[]{"dictionary.js","runtime.js"})state.Assets[name]=Store.Hash(Path.Combine(folder,name));
+        if(artwork!=null&&artwork.images.Count>0){
+            Directory.CreateDirectory(Path.Combine(folder,"images"));
+            foreach(var image in artwork.images){
+                string originalAsset=Store.Child(web,image.Value.nativePath.Replace('/','\\'));
+                if(!File.Exists(originalAsset))continue;
+                string destination=Path.Combine(folder,"images",image.Key);
+                Atomic(destination,EnglishRelease.Art(image.Key));
+                state.Assets["images/"+image.Key]=Store.Hash(destination);
+            }
+        }
         string digest;using(var sha=System.Security.Cryptography.SHA256.Create())digest=BitConverter.ToString(sha.ComputeHash(patched)).Replace("-","").ToLowerInvariant();state.PatchedHash=digest;
         JsonWrite(Path.Combine(folder,"state.json"),state);Atomic(entry,patched);Verify(profile.Root);
     }

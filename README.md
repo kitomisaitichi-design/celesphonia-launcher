@@ -2,7 +2,16 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.6** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, and reversible English translations. Launcher and game-mod versions are independently versioned.
+**Launcher version 1.0.7** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+
+## New in launcher v1.0.7 — Illustrated English help and improved text fitting
+
+- Localizes five source-verified native picture/animation assets used in combat-restraint help, glossary gear examples, Change Color control help and hypnosis animation captions. The installed English layer redirects only the verified original asset names, preserving native files and saves and fully reversing when English is disabled.
+- Fixes the groper/aged-man dialogue screenshot and matching events: the native **Ticker** plugin draws its speech through a separate variable/escape-code path, which previously bypassed the normal English window translator. v1.0.7 translates reviewed exact source entries temporarily for the ticker's local display only; saved variables, speakers, numbers and gameplay are unchanged.
+- Improves help and equipment-description wrapping for adjacent English effect tags (such as `[Effect A][Effect B]`) and native icon widths. The dedicated presentation sweep checked 2,826 cases, improving 328 without changing wording or regressing a previously fitting case.
+- The localized image payload is embedded in the launcher executable, rather than added as extra ZIP entries. The public ZIP retains the historical **35-file allowlist** required for older launchers' GitHub auto-update compatibility.
+
+The original game/mod archives are not redistributed. Artwork replacements only activate when their native source hashes match an approved Ver1.051 or Ver1.052 release.
 
 ## Current maintenance priorities
 Going forward, prioritize **the two most recent Three-in-One 3.3.5 releases (currently Ver1.051 and Ver1.052)** and **new Maple releases** for development, translation maintenance, newly added content, regression tests, and upgrade work. Advance this two-version window as new creator releases arrive. Treat **Gorpg 1.23 and the CH English reference** as stable source/reference installations unless their content actually changes.

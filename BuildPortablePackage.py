@@ -41,6 +41,9 @@ def main():
   assert row['catalogHash']==hashlib.sha256((HOME/'English'/ident/'catalog.json').read_bytes()).hexdigest()
  files=[(HOME/name,name) for name in top]
  files.extend((HOME/'English'/ident/name,'English/'+ident+'/'+name) for ident in ids for name in ('manifest.json','dictionary.json','catalog.json'))
+ # The pre-1.0.3 auto-update allowlist rejects arbitrary new ZIP entries.
+ # Localized PNGs are embedded inside the EXE resource; the public ZIP must
+ # retain exactly the historical five roots plus three files per game pack.
  assert len(files)==len({name for _,name in files})==5+3*len(ids)
  assert b'Celesphonia.RuntimePanel.js' in (HOME/top[0]).read_bytes(),'Runtime controls must be embedded in the EXE.'
  ui=json.loads((HOME/'Tests/launcher-ui-review/layout-check.json').read_text('utf8'))

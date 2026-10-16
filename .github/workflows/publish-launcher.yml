@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, pathlib, re, zipfile
+          import hashlib, json, os, pathlib, re, struct, zipfile
           tag = os.environ['GITHUB_REF_NAME']
           match = re.fullmatch(r'launcher-v(\d+\.\d+\.\d+)', tag)
           assert match, 'Unexpected release tag'
@@ -53,6 +53,24 @@ jobs:
           with zipfile.ZipFile(archive) as bundle:
             assert bundle.testzip() is None, 'Corrupt ZIP entry'
             assert set(bundle.namelist()) == allowed, 'Unknown or missing ZIP entries'
+            # Older launchers permit only these 35 entries. The five English
+            # pictures are embedded inside the EXE, never separate ZIP files.
+            assert len(allowed) == 35
+            executable = bundle.read('Celesphonia Portable Switcher.exe')
+            runtime = bundle.read('EnglishRuntime.js')
+            assert b'installGroperTicker' in runtime, 'Native Ticker groper rendering fix missing'
+            assert b'Groper Level: Technician' in runtime, 'Native groper HUD captions missing'
+            assert b'celesphonia-english/images/' in runtime, 'Help image redirection missing'
+            assert b'English/ImageLocalization/manifest.json' in executable, 'Embedded localized artwork missing'
+            artwork = json.loads(pathlib.Path('English/ImageLocalization/manifest.json').read_text('utf-8'))
+            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052'}
+            assert len(artwork['images']) == 5
+            for name, info in artwork['images'].items():
+              data = pathlib.Path('English/ImageLocalization',name).read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n'
+              assert list(struct.unpack('>II',data[16:24])) == [info['width'],info['height']]
+              assert hashlib.sha256(data).hexdigest() == info['localizedSHA256']
+              assert name.encode('utf-8') in executable, 'Executable omitted localized image: '+name
             changelog = bundle.read('README.txt').decode('utf-8')
             assert all(('v1.0'+str(n)) in changelog for n in range(1,5)), 'Game changelog missing historical releases'
             assert 'v1.051' in changelog and 'v1.052' in changelog, 'Missing recent creator changelogs'
