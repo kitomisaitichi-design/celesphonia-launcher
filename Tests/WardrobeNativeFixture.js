@@ -20,6 +20,7 @@ var timer=setInterval(function(){try{
  check('no progression variable edited by runtime separation',JSON.stringify($gameVariables._data)===vars,{});
  var sprites=new Spriteset_Map();sprites.update();
  check('complete wardrobe fits existing one-tile footprint',sprites._celesphoniaWardrobe&&sprites._celesphoniaWardrobe.bitmap.width===$gameMap.tileWidth()&&sprites._celesphoniaWardrobe.bitmap.height===$gameMap.tileHeight()*3,{});
+ check('cabinet renders below native event indicators',sprites._celesphoniaWardrobe.z<a.screenZ()&&sprites._celesphoniaWardrobe.z<b.screenZ(),{cabinet:sprites._celesphoniaWardrobe.z,clothes:a.screenZ(),upper:b.screenZ()});
  [a,b].forEach(function(ev,i){
   $gameMap._interpreter.clear();$gameMessage.clear();$gamePlayer.locate(5,i===0?16:14);$gamePlayer.setDirection(4);
   $gamePlayer.checkEventTriggerThere([0]);

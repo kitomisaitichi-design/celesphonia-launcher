@@ -780,7 +780,7 @@
                 var map=global.$gameMap,tw=map.tileWidth(),th=map.tileHeight();
                 if(!this._celesphoniaWardrobe){
                     var sprite=this._celesphoniaWardrobe=new Sprite(new Bitmap(tw,th*3));
-                    sprite.anchor.y=1;sprite.z=3;this._tilemap.addChild(sprite);
+                    sprite.anchor.y=1;sprite.z=1;this._tilemap.addChild(sprite);
                     ImageManager.loadTileset('Modern_Living Room').addLoadListener(function(source){
                         sprite.bitmap.blt(source,384,384,96,144,0,0,tw,th*3);
                     });

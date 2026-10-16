@@ -1,5 +1,10 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.10 -- RESTORE BOTH BLINKING INTERACTION MARKERS
+The complete narrow wardrobe now renders below native event indicators,
+so the lower Change Clothes marker blinks normally again. The second
+action remains above the wardrobe. Saves and native game data are unchanged.
+
 LAUNCHER 1.0.9 -- SEPARATE BEDROOM INTERACTIONS
 Ver1.051 / Ver1.052: the second wardrobe action is above the wardrobe,
 separate from Change Clothes. Complete cabinet artwork is fitted into the
