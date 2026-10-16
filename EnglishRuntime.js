@@ -306,7 +306,13 @@
                     fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
                 }
             }
-            if (method === 'drawTextEx' && name === 'Window_Glossary' && args[0] !== text) fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
+            if (method === 'drawTextEx' && name === 'Window_Glossary') {
+                var glossaryLayout=this._celesphoniaEnglishGlossaryLayout;
+                if(glossaryLayout && glossaryLayout.item===this._itemData &&
+                   glossaryLayout.page===this._pageIndex &&
+                   (text===glossaryLayout.source || args[0]===glossaryLayout.display)) fit=glossaryLayout.fit;
+                else if(args[0]!==text) fit=fitPanelText(this,args[0],this.contentsWidth()-args[1],this.contentsHeight()-args[2]);
+            }
             if (method === 'drawTextEx' && name === 'Window_Help' && args[0] !== text) fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
             if (method === 'drawTextEx' && global.SceneManager && SceneManager._scene && SceneManager._scene._hzChoiceHelpWindow === this && args[0] !== text) fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
             var reset = this.resetFontSettings, hadReset = own.call(this, 'resetFontSettings'), font = this.contents && this.contents.fontSize;
@@ -806,9 +812,46 @@
             return nativeConditions.apply(this,arguments);
         };
     }
+    function installGlossaryPictureLayout() {
+        if(!global.Window_Glossary || !Window_Glossary.prototype.drawItemSub ||
+           !Window_Glossary.prototype.getPictureScale) return;
+        var proto=Window_Glossary.prototype,draw=proto.drawItemSub,scale=proto.getPictureScale;
+        if(draw._celesphoniaEnglishPictureLayout) return;
+        proto.getPictureScale=function(item,bitmap,text){
+            var layout=this._celesphoniaEnglishGlossaryLayout;
+            if(layout && layout.item===item && layout.page===this._pageIndex && layout.bitmap===bitmap)
+                return layout.scale;
+            return scale.apply(this,arguments);
+        };
+        proto.drawItemSub=function(bitmap){
+            this._celesphoniaEnglishGlossaryLayout=null;
+            var picture=this.getPictureName(this._pageIndex);
+            if(!bitmap || !bitmap.width || !bitmap.height ||
+               !/^Glossary_[124]$/.test(picture || '') || this.getPicturePosition()!=='text')
+                return draw.apply(this,arguments);
+            var source=this.getDescription(this._pageIndex) || '',display=translate(source);
+            var width=this.contentsWidth(),height=this.contentsHeight();
+            var top=Math.max(0,Math.min(this.getTextPosition(),height)),gap=display.trim()?12:0;
+            var nativeScale=scale.call(this,this._itemData,bitmap,source);
+            var imageBudget=display.trim()?Math.min(240,(height-top)*0.32):height-top;
+            var fit=fitPanelText(this,display,width,Math.max(1,height-top-imageBudget-gap));
+            if(!display.trim())fit={text:'',fontSize:this.standardFontSize(),height:0,fits:true};
+            var available=Math.max(0,height-top-fit.height-gap);
+            var imageScale=Math.max(0,Math.min(nativeScale,1,(width-8)/bitmap.width,
+                Math.min(imageBudget,available)/bitmap.height));
+            this._celesphoniaEnglishGlossaryLayout={item:this._itemData,page:this._pageIndex,
+                bitmap:bitmap,source:source,display:display,fit:fit,scale:imageScale,
+                imageHeight:bitmap.height*imageScale};
+            this.drawItemText(source,top);
+            this.drawPicture(bitmap,source,top+fit.height+gap);
+            this.drawPlusPictures();
+        };
+        proto.drawItemSub._celesphoniaEnglishPictureLayout=true;
+    }
     function install() {
         if (installed) return; installed = true;
         installSeparateBedroomToggle();
+        installGlossaryPictureLayout();
         // SceneGlossary loads its authored help pictures through
         // ImageManager.loadPicture. Redirect only the four source-verified
         // picture/animation names to this English overlay's own assets.

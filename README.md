@@ -2,7 +2,11 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.10** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+**Launcher version 1.0.11** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+
+## v1.0.11 — Fit glossary illustrations around English text
+
+Illustrated glossary help now measures wrapped English text before placing pictures, scales images proportionally, and prevents text/image overlap and clipping. Image-only pages retain room for their diagrams. Source artwork, game data, saves and earlier fixes are preserved.
 
 ## v1.0.10 — Restore the lower blinking marker
 

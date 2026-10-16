@@ -1,5 +1,11 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.11 -- GLOSSARY ILLUSTRATION LAYOUT
+The three illustrated help entries now measure wrapped English text before
+placing their images. Illustrations keep their aspect ratio, fit the panel,
+and leave most of the space for text. Text-only and image-only pages retain
+their appropriate layouts. Original pictures and game records are unchanged.
+
 LAUNCHER 1.0.10 -- RESTORE BOTH BLINKING INTERACTION MARKERS
 The complete narrow wardrobe now renders below native event indicators,
 so the lower Change Clothes marker blinks normally again. The second
