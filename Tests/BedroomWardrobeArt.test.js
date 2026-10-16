@@ -1,6 +1,6 @@
 'use strict';
-// Invariant: English translations NEVER create a wider closet, redraw tiles,
-// or move either of the original bedroom interaction events.
+// Native map cells never widen or move. The optional narrow cabinet renderer
+// and upper action are exercised with the real engine in WardrobeNativeFixture.
 const assert=require('assert'), fs=require('fs'), path=require('path'), vm=require('vm');
 const home=path.dirname(__dirname);
 const nativeRoot=process.env.CELESPHONIA_PROFILES_DIR ||
@@ -48,4 +48,4 @@ for(const version of ['three-in-one-3-3-5-v1-04',
     }
     assert.strictEqual(context.CelesphoniaEnglish.mode,'display-only');
 }
-console.log('PASS: v1.04, Ver1.051 and Ver1.052 all retain original 1x3 wardrobe and unchanged interactions; English has no native tilemap interception');
+console.log('PASS: native source maps retain their original 1x3 cells and event records; engine-less initialization leaves the tile renderer unchanged. Native cabinet/action checks are separate.');
