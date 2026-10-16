@@ -59,7 +59,7 @@ jobs:
             executable = bundle.read('Celesphonia Portable Switcher.exe')
             runtime = bundle.read('EnglishRuntime.js')
             assert b'installGroperTicker' in runtime, 'Native Ticker groper rendering fix missing'
-            assert b'installSeparateBedroomToggle' in runtime and b'toggle.locate(5,15)' in runtime, 'Separate bedroom interaction fix missing'
+            assert b'installSeparateBedroomToggle' in runtime and b'toggle.locate(4,14)' in runtime, 'Separate bedroom interaction fix missing'
             assert b'Groper Level: Technician' in runtime, 'Native groper HUD captions missing'
             assert b'celesphonia-english/images/' in runtime, 'Help image redirection missing'
             assert b'English/ImageLocalization/manifest.json' in executable, 'Embedded localized artwork missing'

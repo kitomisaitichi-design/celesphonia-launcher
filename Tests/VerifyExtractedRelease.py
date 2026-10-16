@@ -8,7 +8,8 @@ def remove_private_tree(root):
     for p in root.rglob('*'):assert not p.is_symlink() and not p.is_junction(),p
     shutil.rmtree(root)
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--archive',type=pathlib.Path,default=HOME.parent/'Celesphonia-Delta-Launcher.zip');parser.add_argument('--published-reference',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--archive',type=pathlib.Path,default=HOME.parent/'Celesphonia-Delta-Launcher.zip');parser.add_argument('--published-reference',action='store_true');parser.add_argument('--version',action='append',choices=c.IDS);args=parser.parse_args()
+    selected=args.version or c.IDS
     rows=[];fixture=pathlib.Path(tempfile.mkdtemp(prefix='extraction-fixture-',dir=HOME/'Tests'))
     portable=fixture/'existing portable 原始文件夹';portable.mkdir();exe=portable/'Celesphonia Portable Switcher.exe'
     original_config=b'{"Profiles":[],"SelectedId":null,"InstallRoot":"private fixture","SearchRoots":null}'
@@ -34,7 +35,7 @@ def main():
                     resolved=(HOME/profile['Root'][10:]).resolve();resolved.relative_to(HOME.resolve());profile['Root']=str(resolved)
             profiles=[p for p in profiles if (pathlib.Path(p['Root'])/'package.json').is_file()]
             versions=c.load(HOME/'version-fingerprints.json')['Versions']
-            for ident in c.IDS:
+            for ident in selected:
                 marks=next(v['Fingerprints'] for v in versions if v['Id']==ident)
                 matched=[c.webroot(pathlib.Path(p['Root'])) for p in profiles if all(c.sha((c.webroot(pathlib.Path(p['Root']))/n).read_bytes())==h for n,h in marks.items())]
                 # Test-only marker fixtures are intentionally NOT registered in
@@ -93,6 +94,8 @@ def main():
                 for name in ('manifest.json','dictionary.json','catalog.json'):(folder/name).write_bytes(z.read('English/'+ident+'/'+name))
                 print(ident,'6 extraction/apply/restore cases passed',flush=True)
         report={'status':'PASS','archiveHash':c.sha(args.archive.read_bytes()),'cases':rows,'versions':len(c.IDS),'extractionCases':len(rows),'fullArchiveRoundTrip':True,'unrelatedWorkingDirectory':True,'spacesAndChinesePath':True,'userFilesAndSettingsPreserved':True,'customTranslationsPreserved':True,'originalEntryBytesRestored':True,'userGamesLaunched':0,'userSavesRead':False,'userSavesWritten':False,'fullGameplayVerified':False,'launcherHash':c.sha((HOME/'Celesphonia Portable Switcher.exe').read_bytes())}
+        report['versions']=len(selected)
+        report['selectedVersions']=list(selected)
         c.dump(HOME/'Tests/extracted-release-check.json',report)
     finally:remove_private_tree(fixture)
 if __name__=='__main__':main()

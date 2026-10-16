@@ -1,9 +1,9 @@
 CELESPHONIA MOD LIBRARY
 
 LAUNCHER 1.0.9 -- SEPARATE BEDROOM INTERACTIONS
-Ver1.051 / Ver1.052: the second wardrobe action is now on the adjacent
-floor tile, separate from Change Clothes. The original narrow 1x3 artwork
-is unchanged. The transparency/coat menu stays available after the creator
+Ver1.051 / Ver1.052: the second wardrobe action is above the wardrobe,
+separate from Change Clothes. Complete cabinet artwork is fitted into the
+existing narrow 1x3 footprint. The transparency/coat menu stays available after the creator
 recalculates Shamelessness. This does not grant skills or change its value.
 The correction is part of the reversible English overlay. After updating,
 apply/update English on the game's English tab and restart the game.

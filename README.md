@@ -4,9 +4,9 @@ Portable Windows launcher for supported Celesphonia mod releases. It detects com
 
 **Launcher version 1.0.9** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
 
-## v1.0.9 — Separate wardrobe interactions
+## v1.0.9 — Complete narrow wardrobe and separate actions
 
-Fixes the overlapping home-bedroom wardrobe interactions in creator Ver1.051 and Ver1.052. Change Clothes stays at its native location; the second menu moves to the adjacent walkable floor tile. The narrow 1x3 furniture and native map files remain unchanged. The second menu remains accessible after the creator recalculates Shamelessness, without editing progression values or granting skills.
+Fixes the clipped home-bedroom wardrobe and overlapping interactions in creator Ver1.051 and Ver1.052. Complete cabinet artwork fits inside the existing narrow 1x3 footprint. Change Clothes stays at its native location; the second menu sits above the wardrobe. Native map files and collisions remain unchanged. The second menu remains accessible after the creator recalculates Shamelessness, without editing progression values or granting skills.
 
 Preserves the existing English dictionaries, all five translated help images, and F8 controls 1.1.4 including the resource editing/restoration and startup movement fixes. The portable ZIP retains the 35-file layout accepted by older automatic updaters. No games, saves or personal profiles are included.
 

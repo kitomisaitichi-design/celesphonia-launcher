@@ -13,13 +13,15 @@ var timer=setInterval(function(){try{
  $gameMap.update(false);
  var a=$gameMap.event(19),b=$gameMap.event(83);
  check('clothing event retains native coordinate',a.x===4&&a.y===16,[a.x,a.y]);
- check('second event moves onto separate floor tile',b.x===5&&b.y===15,[b.x,b.y]);
- check('adjacent target is passable native floor',$gameMap.isPassable(5,15,2),{});
+ check('second event is above the wardrobe',b.x===4&&b.y===14,[b.x,b.y]);
+ check('approach tile beside upper action is passable',$gameMap.isPassable(5,14,2),{});
  check('second template page activates below recalculated threshold',b.page()&&b.list().length>1,{page:b._pageIndex,commands:b.list().length});
  check('source map/tile/event data unchanged',JSON.stringify($dataMap)===before,{});
  check('no progression variable edited by runtime separation',JSON.stringify($gameVariables._data)===vars,{});
+ var sprites=new Spriteset_Map();sprites.update();
+ check('complete wardrobe fits existing one-tile footprint',sprites._celesphoniaWardrobe&&sprites._celesphoniaWardrobe.bitmap.width===$gameMap.tileWidth()&&sprites._celesphoniaWardrobe.bitmap.height===$gameMap.tileHeight()*3,{});
  [a,b].forEach(function(ev,i){
-  $gameMap._interpreter.clear();$gameMessage.clear();$gamePlayer.locate(5,16);$gamePlayer.setDirection(i===0?4:8);
+  $gameMap._interpreter.clear();$gameMessage.clear();$gamePlayer.locate(5,i===0?16:14);$gamePlayer.setDirection(4);
   $gamePlayer.checkEventTriggerThere([0]);
   check('native adjacent action targets menu '+ev.eventId(),ev.isStarting(),{event:ev.eventId(),position:[ev.x,ev.y]});
   $gameMap.setupStartingEvent();var n=0;

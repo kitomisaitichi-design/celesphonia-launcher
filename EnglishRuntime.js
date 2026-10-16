@@ -728,7 +728,7 @@
     function installSeparateBedroomToggle() {
         // The original bedroom stacks wardrobe actions at (4,16) and
         // (4,15). Keep native 1x3 furniture and both original menus,
-        // but move the second marker to walkable floor at (5,15).
+        // but move the second marker above the wardrobe at (4,14).
         var version=global.CelesphoniaEnglishMeta && global.CelesphoniaEnglishMeta.version;
         if(version!=='three-in-one-3-3-5-v1-051' &&
            version!=='three-in-one-3-3-5-v1-052') return;
@@ -751,14 +751,46 @@
                 var toggle=this.event(83);
                 if(toggle && toggle._eventId===83 &&
                    typeof toggle.locate==='function' &&
-                   toggle.x===4 && toggle.y===15) {
-                    toggle.locate(5,15);
+                   (toggle.x===4 || toggle.x===5) && toggle.y===15) {
+                    toggle.locate(4,14);
                     if(typeof toggle.refresh==='function')toggle.refresh();
                 }
             }
             return nativeUpdate.apply(this,arguments);
         };
         Game_Map.prototype.update._celesphoniaSeparateWardrobe=true;
+        // Fit the complete two-column source artwork into its existing
+        // one-column footprint. These hooks affect rendering only: native
+        // map cells, passability and event command lists remain untouched.
+        if(global.Tilemap && Tilemap.prototype._readMapData &&
+           global.Spriteset_Map && Spriteset_Map.prototype.update && global.Sprite) {
+            var readTile=Tilemap.prototype._readMapData;
+            Tilemap.prototype._readMapData=function(x,y,z){
+                if(targetMap(global.$gameMap) && x===4 && y>=15 && y<=17 && z===3)
+                    return 0;
+                return readTile.apply(this,arguments);
+            };
+            var spriteUpdate=Spriteset_Map.prototype.update;
+            Spriteset_Map.prototype.update=function(){
+                var result=spriteUpdate.apply(this,arguments);
+                if(!targetMap(global.$gameMap) || !this._tilemap){
+                    if(this._celesphoniaWardrobe)this._celesphoniaWardrobe.visible=false;
+                    return result;
+                }
+                var map=global.$gameMap,tw=map.tileWidth(),th=map.tileHeight();
+                if(!this._celesphoniaWardrobe){
+                    var sprite=this._celesphoniaWardrobe=new Sprite(new Bitmap(tw,th*3));
+                    sprite.anchor.y=1;sprite.z=3;this._tilemap.addChild(sprite);
+                    ImageManager.loadTileset('Modern_Living Room').addLoadListener(function(source){
+                        sprite.bitmap.blt(source,384,384,96,144,0,0,tw,th*3);
+                    });
+                }
+                this._celesphoniaWardrobe.visible=true;
+                this._celesphoniaWardrobe.x=map.adjustX(4)*tw;
+                this._celesphoniaWardrobe.y=map.adjustY(18)*th;
+                return result;
+            };
+        }
         var nativeConditions=Game_Event.prototype.meetsConditions;
         Game_Event.prototype.meetsConditions=function(page){
             // Creator recalculation can reset Shamelessness immediately
