@@ -1,5 +1,28 @@
 # Celesphonia: any starting version, original files, and separate saves
 
+## Fresh clean GoRPG 1.23 ZIP + Three-in-One 3.3.5 Ver1.052
+
+Two downloads are sufficient: the complete clean GoRPG 1.23 ZIP or
+complete split 7z archive and the creator's full Ver1.052 RAR mod bundle.
+Select **Install > Three-in-One 3.3.5 Ver1.052 > Use the original bundle /
+game > Install fresh mod + English**. The launcher can use a verified
+registered clean GoRPG 1.23, or extract the original full GoRPG archive;
+it checks the clean base and complete creator bundle, makes a separate
+game, and automatically enables that version's English display overlay.
+
+Verified with a freshly generated pristine GoRPG ZIP containing 7,210
+files (3,040,989,656 bytes) and the actual creator Ver1.052 RAR
+(547,645,049 bytes; SHA-256
+`5dc382a21ed8db8d5597dbabefa6b82ff243937b51199f5b66e45b4854b7e1a2`).
+The installed game identified as Ver1.052, all creator files and native
+integrity checks passed, the English overlay was enabled (34,996 of
+56,080 catalog entries), and no saves were inherited. No preexisting
+game or save was overwritten. This establishes the full file-install
+chain, not completion of every gameplay route.
+
+Forward upgrades from registered v1.04 or v1.051 remain available to
+carry saves; fresh clean-GoRPG installation starts with empty saves.
+
 ## Creator v1.03 RAR → v1.04 forward compatibility
 
 The original v1.03 author archive (547,643,719 bytes, SHA-256

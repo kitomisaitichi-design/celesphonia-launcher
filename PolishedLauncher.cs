@@ -266,7 +266,7 @@ public class PolishedLauncher : ReplacementAwareForm {
     }
     void BuildHelp(){
         helpPage=Page();LabelAt(helpPage,"HOW IT WORKS",0,0,760,24,10,true,muted);LabelAt(helpPage,"Choose the branch you want to play",0,32,812,54,23,true);
-        LabelAt(helpPage,"LATEST THREE-IN-ONE RELEASE: Ver1.052\r\nFrom a verified Three-in-One 3.3.5 v1.04 installation, choose the creator's Ver1.051 or Ver1.052 RAR. The launcher recognizes renamed RAR/ZIP files and extracted folders by their contents, keeps the original game, and installs a separate version with its matching English pack.\r\n\r\n01   Older versions remain supported\r\nCH, Gorpg 1.23, Maple 1.7.2, 3.3.4 and older Three-in-One releases retain installation and English support. Development focuses on the newest two releases and new Maple releases.\r\n\r\n02   Original files work\r\nUse complete game folders or ZIP/RAR/7z archives. The bundled RAR5 extractor handles both creator releases, including their Chinese filenames.\r\n\r\n03   Files shows what is ready\r\nInstalled games and matching source archives are detected together. Choose the desired version; verified v1.052 includes the boss-restraint fix.\r\n\r\n04   Saves and English remain separate\r\nUpgrades copy compatible saves forward and preserve originals. English restores original data and saves when disabled; illustrated glossary/help screens and battle hints are translated too.",0,110,800,404,11,false,muted);
+        LabelAt(helpPage,"LATEST THREE-IN-ONE RELEASE: Ver1.052\r\nFRESH INSTALL: get a clean GoRPG 1.23 ZIP (or complete split 7z) and the creator's Ver1.052 RAR. Select Ver1.052 > Install > Use the original bundle / game > Install fresh mod + English. GoRPG is extracted if needed; the mod is verified and English enabled automatically. No CH or older Three-in-One installation required.\r\n\r\n01   Older versions remain supported\r\nCH, GoRPG 1.23, Maple 1.7.2, 3.3.4, and prior Three-in-One versions retain their own installations and saves.\r\n\r\n02   Forward upgrades can carry saves\r\nFrom an already installed 3.3.5 v1.04 or v1.051, use Upgrade & carry saves instead of fresh install. Original profiles are preserved.\r\n\r\n03   Original archives work\r\nThe built-in extractor handles ZIP, RAR5, and complete split 7z archives, including renamed creator filenames. The verified v1.052 update includes the boss-restraint fix.\r\n\r\n04   English is partial, reversible\r\n34,996 of 56,080 catalog entries are translated. Remaining text stays original. Disabling English restores the original entry; saved games are unchanged.",0,110,800,404,11,false,muted);
         ButtonAt(helpPage,"Quick start guide",0,540,345,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"README.txt")){UseShellExecute=true})),true);
         ButtonAt(helpPage,"Open delta packs",361,540,250,44,()=>Guard(()=>{Directory.CreateDirectory(Path.Combine(Store.Home,"Delta Packs"));Process.Start("explorer.exe",Store.Q(Path.Combine(Store.Home,"Delta Packs")));}),false);
         ButtonAt(helpPage,"Game changelog",625,540,180,44,()=>Guard(OpenGameChangelog),false);
@@ -395,9 +395,12 @@ public class PolishedLauncher : ReplacementAwareForm {
         var ch=CH();var clean=Clean();var any=AnyPack(recipe.Id);var delta=any??Found(recipe.Id,"Delta pack");bool found=delta!=null||File.Exists(DefaultPack(recipe));var bundle=Original(recipe.Id);
         if(UpgradeSupport.IsUpgrade(recipe.Id)&&route!=2){
             var source=UpgradeSupport.StartingProfile(settings,recipe.Id);var installed=Installed(recipe.Id);
-            installDiagram.Set(new[]{source==null?"Compatible source":source.Name,recipe.Name,"Keep your progress"},new[]{source==null?"Add a compatible source installation first.":"Verified source build; original folder retained.",bundle==null?"Choose the creator's complete update archive or extracted folder.":"Update found; all content hashes checked before copying.","New independent installation; saves backed up, copied and verified. Forward migration only."},new[]{source!=null,bundle!=null,installed!=null});
-            installNeed.Text=(source==null?"• Needed: registered compatible source":"✓ Starting version: "+source.Name)+"\r\n"+(bundle==null?"• Needed: the complete "+recipe.Name+" update bundle":"✓ Update: "+Path.GetFileName(bundle.Path))+"\r\n✓ 3.3.4 hypnosis stays separate; newer saves cannot move backward";
-            installNote.Text="Saves and English carry forward into a verified private copy.";installButton.Text=installed==null?"Upgrade & carry saves":"Use installed version";installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();return;
+            bool fresh=route==1||source==null;var baseGame=Clean();var baseArchive=Original("gorpg-1-23");
+            string basis=fresh?(baseGame!=null?baseGame.Name:baseArchive!=null?Path.GetFileName(baseArchive.Path):"Clean GoRPG 1.23 ZIP / 7z archive"):source.Name;
+            installDiagram.Set(new[]{basis,recipe.Name,fresh?"Fresh English installation":"Keep your progress"},new[]{fresh?(baseGame!=null?"Verified clean base registered.":baseArchive!=null?"GoRPG source archive found; it will be extracted automatically.":"Download or choose the clean GoRPG game archive."):"Verified forward-upgrade source; original folder retained.",bundle==null?"Choose the creator's complete v1.052 bundle.":"Creator bundle detected; every file is verified before installation.",fresh?"New independent game and empty saves; matching English text enabled automatically.":"Independent game; original saves backed up, copied, and verified."},new[]{fresh?(baseGame!=null||baseArchive!=null):source!=null,bundle!=null,installed!=null});
+            installNeed.Text=(fresh?(baseGame!=null?"✓ Verified clean GoRPG base: "+baseGame.Name:baseArchive!=null?"✓ Original GoRPG archive: "+Path.GetFileName(baseArchive.Path):"• Needed: clean GoRPG 1.23 ZIP or split 7z archive"):"✓ Upgrade source: "+source.Name)+"\r\n"+(bundle==null?"• Needed: the complete "+recipe.Name+" bundle":"✓ Mod bundle: "+Path.GetFileName(bundle.Path))+"\r\n"+(fresh?"✓ Fresh saves; matching English pack applied automatically":"✓ Compatible saves carried forward; English follows its verified pack");
+            installNote.Text=fresh?"A clean GoRPG archive plus the creator's complete mod bundle are sufficient. The launcher builds an independent English-enabled game.":"Forward upgrade from the prior mod; saves and English preserved.";
+            installButton.Text=installed!=null?"Use installed version":fresh?"Install fresh mod + English":"Upgrade & carry saves";installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();return;
         }
         if(route==0){
             var source=any==null?ch:SupportedSource(recipe.Id);bool already=Installed(recipe.Id)!=null;
@@ -486,7 +489,29 @@ public class PolishedLauncher : ReplacementAwareForm {
                 while(discovering&&!IsDisposed)await Task.Delay(25);
                 if(IsDisposed)return;
             }
-            if(UpgradeSupport.IsUpgrade(recipe.Id)&&route!=2){var already=Installed(recipe.Id);if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}var source=UpgradeSupport.StartingProfile(settings,recipe.Id);if(source==null){status.Text="Add a compatible source installation first.";return;}var detected=Original(recipe.Id);string update=detected==null?PickBundle(recipe):detected.Path;if(update==null)return;await RunInstall(()=>UpgradeSupport.Install(source,update,location,recipe.Id,true));return;}
+            if(UpgradeSupport.IsUpgrade(recipe.Id)&&route!=2){
+                var already=Installed(recipe.Id);if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
+                var source=UpgradeSupport.StartingProfile(settings,recipe.Id);bool fresh=route==1||source==null;
+                var detected=Original(recipe.Id);string update=detected==null?PickBundle(recipe):detected.Path;if(update==null)return;
+                if(!fresh){await RunInstall(()=>UpgradeSupport.Install(source,update,location,recipe.Id,true));return;}
+                var baseGame=Clean();var originalBase=Original("gorpg-1-23");
+                string archive=null;
+                if(baseGame==null){archive=originalBase==null?PickArchive("Choose your complete clean GoRPG 1.23 game ZIP or .7z.001","GoRPG game|*.zip;*.7z;*.001;*.rar|All files|*.*",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads"),null):originalBase.Path;if(archive==null)return;}
+                string gameArchive=archive;
+                await RunInstall(()=>{
+                    var cleanBase=baseGame;
+                    if(cleanBase==null){
+                        if(Directory.Exists(gameArchive))cleanBase=Store.Detect(UniversalSupport.FindGameRoot(gameArchive),"GoRPG 1.23 - base");
+                        else cleanBase=UniversalSupport.InstallOriginal(gameArchive,location,"gorpg-1-23");
+                    }
+                    RecipeSupport.ValidateBase(cleanBase.Root);
+                    var result=RecipeSupport.Install(cleanBase.Root,location,recipe.Name,new List<LayerInput>{new LayerInput{Source=update}});
+                    if(UniversalSupport.Identify(result.Root)!=recipe.Id)throw new IOException("Fresh install did not match the selected mod version.");
+                    EnglishSupport.Apply(result);RecipeSupport.VerifyProfile(result);
+                    result.Note="Fresh clean GoRPG + verified "+recipe.Name+"; English enabled; separate empty saves";
+                    return result;
+                });return;
+            }
             if(route==0){
                 var already=Installed(recipe.Id);if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
                 var detected=AnyPack(recipe.Id)??Found(recipe.Id,"Delta pack");string pack=detected==null?(File.Exists(DefaultPack(recipe))?DefaultPack(recipe):PickArchive("Choose an any-version pack or legacy delta pack","Celesphonia packs|*.cgdelta.zip;*.zip|All files|*.*",Path.Combine(Store.Home,"Delta Packs"),UniversalSupport.PackName)):detected.Path;if(pack==null)return;
@@ -507,7 +532,15 @@ public class PolishedLauncher : ReplacementAwareForm {
     }
     async Task RunInstall(Func<Profile> job){
         busy=true;SetEnabled(false);progress.Visible=true;status.Text="Installing a complete private copy and verifying its files. Please keep this window open.";UseWaitCursor=true;
-        try{var p=await Task.Run(job);Added(p);MessageBox.Show(this,"Installed "+p.Name+". It has its own save folder; all previous versions remain in your library.","Version ready");}
+        try{var p=await Task.Run(job);
+            string record=Path.Combine(p.Root,"launcher-build.json");
+            if(File.Exists(record)){
+                var layer=Store.Json.Deserialize<LayerState>(File.ReadAllText(record,System.Text.Encoding.UTF8));
+                if(layer!=null&&Directory.Exists(layer.BaseRoot)&&RecipeSupport.IsCleanBase(layer.BaseRoot)&&!settings.Profiles.Any(x=>Path.GetFullPath(x.Root).Equals(Path.GetFullPath(layer.BaseRoot),StringComparison.OrdinalIgnoreCase))){
+                    var baseProfile=Store.Detect(layer.BaseRoot,"GoRPG 1.23 - base");baseProfile.Note="Clean GoRPG source; original files preserved";settings.Profiles.Add(baseProfile);
+                }
+            }
+            Added(p);MessageBox.Show(this,"Installed "+p.Name+". It has its own save folder; all previous versions remain in your library.","Version ready");}
         catch(Exception e){status.Text="Installation did not finish. Existing games and saves were preserved.";MessageBox.Show(this,e.Message,"Installation",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally{UseWaitCursor=false;progress.Visible=false;busy=false;SetEnabled(true);UpdateActions();}
     }
@@ -556,7 +589,7 @@ public class PolishedLauncher : ReplacementAwareForm {
     void UpdateAvailability(){
         if(availability==null||targets==null)return;string prior=availability.SelectedRows.Count>0?Convert.ToString(availability.SelectedRows[0].Tag):null;availability.Rows.Clear();foreach(var recipe in targets.Items.Cast<ModRecipe>()){
             var game=Installed(recipe.Id);var original=Original(recipe.Id);var pack=AnyPack(recipe.Id)??Found(recipe.Id,"Delta pack");
-            bool ready=game!=null,canInstall=UpgradeSupport.IsUpgrade(recipe.Id)?original!=null&&Installed(UpgradeSupport.Trial)!=null:pack!=null&&(pack.Kind=="Any-version pack"?SupportedSource(recipe.Id)!=null:CH()!=null)||original!=null&&(recipe.Standalone||original.Kind=="Full game archive"||Clean()!=null);
+            bool ready=game!=null,canInstall=UpgradeSupport.IsUpgrade(recipe.Id)?original!=null&&(UpgradeSupport.StartingProfile(settings,recipe.Id)!=null||Clean()!=null||Original("gorpg-1-23")!=null):pack!=null&&(pack.Kind=="Any-version pack"?SupportedSource(recipe.Id)!=null:CH()!=null)||original!=null&&(recipe.Standalone||original.Kind=="Full game archive"||Clean()!=null);
             EnglishStatus cached;string textStatus=game!=null?(statusCache.TryGetValue(game.Id,out cached)?cached.Short:"Select to check English"):recipe.Id=="ch-current"?"English reference":"Install game first";
             int row=availability.Rows.Add(recipe.Name,ready?"Installed · "+CountSaves(game)+" saves":"Not installed",original==null?"Not found":original.Kind=="Full game archive"?"Version files match":original.Kind=="Extracted bundle"?"Folder found":"Archive found",UpgradeSupport.IsUpgrade(recipe.Id)?"Forward upgrade":pack==null?"Not found":pack.Kind=="Any-version pack"?"Any-version":"Legacy CH-only",textStatus,ready?"Ready to switch":canInstall?"Ready to install":"Needs files");availability.Rows[row].Tag=recipe.Id;
             availability.Rows[row].DefaultCellStyle.ForeColor=settings.LauncherTheme=="Daylight"?(ready?Color.FromArgb(21,112,76):canInstall?Color.FromArgb(105,62,154):Color.FromArgb(130,87,28)):ready?Color.FromArgb(141,220,188):canInstall?Color.FromArgb(208,194,249):Color.FromArgb(229,192,136);

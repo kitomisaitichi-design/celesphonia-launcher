@@ -1,5 +1,18 @@
 CELESPHONIA MOD LIBRARY
 
+FRESH THREE-IN-ONE 3.3.5 VER1.052 FROM GORPG ZIP + CREATOR RAR
+Download the clean GoRPG 1.23 game ZIP (or complete split 7z archive)
+and the creator's complete Three-in-One 3.3.5 Ver1.052 RAR.
+In Install choose Three-in-One 3.3.5 Ver1.052, select "Use the original
+bundle / game", then "Install fresh mod + English". The launcher
+finds those files automatically or lets you select them. It extracts
+GoRPG if required, verifies the creator's complete overlay, creates a
+separate Ver1.052 game with empty saves, and enables its reversible
+English text layer automatically. No CH game or older 3.3.5 version
+is needed. English is still partial: 34,996 of 56,080 text entries.
+If upgrading an installed v1.04 or v1.051 and carrying saves instead,
+choose the forward-upgrade route. Previous versions remain intact.
+
 LAUNCHER 1.0.11 -- GLOSSARY ILLUSTRATION LAYOUT
 The three illustrated help entries now measure wrapped English text before
 placing their images. Illustrations keep their aspect ratio, fit the panel,
