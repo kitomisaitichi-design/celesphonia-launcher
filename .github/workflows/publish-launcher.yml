@@ -61,7 +61,7 @@ jobs:
             # Require exact release-catalog bytes inside the distributed EXE.
             native_refs = {
               'NativeReferenceFiles.json': ('gorpg-1-23', 7208),
-              'NativeReferenceFiles-ch-current.json': ('ch-current', 13654),
+              'NativeReferenceFiles-ch-current.json': ('ch-current', 13536),
               'NativeReferenceFiles-maple-1-7-2.json': ('maple-1-7-2', 9727),
               'NativeReferenceFiles-three-in-one-3-3-4.json': ('three-in-one-3-3-4', 9474),
             }

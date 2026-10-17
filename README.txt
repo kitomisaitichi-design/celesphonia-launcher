@@ -450,7 +450,7 @@ or contain a previous reversible English overlay. Use the first .7z.001 file
 for a split archive and keep all following volumes alongside it.
 
 The launcher contains a hash-only inventory of the EXACT native files for
-GoRPG 1.23 (7,208), CH (13,654), Maple 1.7.2 (9,727), and hypnosis/3.3.4
+GoRPG 1.23 (7,208), CH (13,536), Maple 1.7.2 (9,727), and hypnosis/3.3.4
 (9,474). No original game data or saves are distributed. The installer uses
 those hashes to select intact original files across your sources. Wrong-version
 files are ignored even when their filenames match. Missing files are listed;
@@ -538,3 +538,7 @@ is the optional reversible display layer. SAVES handles backup, restore and
 forward-compatible copy, not unrelated-branch save conversion. HELP provides
 launcher updates and preferences. Existing game and save locations remain
 unchanged by this launcher-only update.
+
+LAUNCHER v1.0.15 — CLEAN CH NATIVE REFERENCE
+-----------------------------------------
+CH detection still uses three original SHA-256 identity markers: www/data/System.json, www/js/plugins.js and www/js/rpg_managers.js. The exact native target inventory now contains 13,536 required game/runtime files rather than 13,654 entries from the CH reference folder. We removed 118 non-runtime references (MTool TrsData translation bins, external decryptors and their three .NET support DLLs, inactive clipboard extraction helpers, Visual Studio/.vs cache, editor spreadsheet/project files, Windows desktop.ini, optional text/credit notes, and Chromium locales/*.pak.info source maps). True NW.js .pak locale files, Game.exe and DLLs, game data, scripts, audio, images and encrypted resource assets remain required. The catalog contains only path/size/hash metadata, not a single original game file. Excluded utilities remain untouched in the real CH folder and are not targets for managed native-file uninstall. Missing excluded utilities no longer block exact CH recovery.
