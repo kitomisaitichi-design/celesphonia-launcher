@@ -98,7 +98,7 @@ public static class UpgradeTests {
             Assert(UpgradeSupport.CanTransfer("three-in-one-3-3-5-v1-04",previous.Id) &&
                    UpgradeSupport.CanTransfer(previous.Id,latest.Id),
                    "Independent v1.04→v1.051 and v1.051→v1.052 paths must remain valid");
-            Assert(!UpgradeSupport.CanTransfer("three-in-one-3-3-5-v1-03",UpgradeSupport.Latest),"Direct v1.03 to v1.052 unexpectedly allowed");
+            Assert(UpgradeSupport.CanTransfer("three-in-one-3-3-5-v1-03",UpgradeSupport.Latest),"Direct v1.03 to v1.052 should be supported");
             foreach(var prior in RecipeSupport.Catalog().Recipes.Where(x=>RecipeSupport.Catalog().Recipes.First(y=>y.Id==UpgradeSupport.Latest).UpgradeFrom.Contains(x.Id))){
                 Assert(UpgradeSupport.CanTransfer(prior.Id,UpgradeSupport.Latest),"Prior combined release migration rejected: "+prior.Id);
                 Assert(!UpgradeSupport.CanTransfer(UpgradeSupport.Latest,prior.Id),"Downgrade migration accepted: "+prior.Id);

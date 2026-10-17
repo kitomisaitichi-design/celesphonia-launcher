@@ -29,13 +29,20 @@ public static class DetectionCache {
 public static class UpgradeSupport {
     public const string Trial="three-in-one-3-3-5-trial";
     public static string Latest {get{return RecipeSupport.Catalog().Recipes.Where(x=>x.Family=="combined-story"&&x.UpgradeFrom!=null&&x.UpgradeFrom.Length>0).OrderByDescending(x=>x.SaveGeneration).First().Id;}}
+    public static bool IsDirect1052(string source,string target){
+        return source=="three-in-one-3-3-5-v1-03"&&target=="three-in-one-3-3-5-v1-052";
+    }
+    public static bool MayUpgrade(string source,string target){
+        var recipe=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==target);
+        return recipe!=null&&recipe.UpgradeFrom!=null&&(recipe.UpgradeFrom.Contains(source)||IsDirect1052(source,target));
+    }
     public static Profile StartingProfile(Settings settings,string target){
         var recipe=RecipeSupport.Catalog().Recipes.First(x=>x.Id==target);
-        return settings.Profiles.Where(x=>!FileDiscovery.IsNativeProbe(x.Root)&&recipe.UpgradeFrom.Contains(UniversalSupport.Identify(x.Root))).OrderByDescending(x=>RecipeSupport.Catalog().Recipes.First(r=>r.Id==UniversalSupport.Identify(x.Root)).SaveGeneration).FirstOrDefault();
+        return settings.Profiles.Where(x=>!FileDiscovery.IsNativeProbe(x.Root)&&MayUpgrade(UniversalSupport.Identify(x.Root),target)).OrderByDescending(x=>RecipeSupport.Catalog().Recipes.First(r=>r.Id==UniversalSupport.Identify(x.Root)).SaveGeneration).FirstOrDefault();
     }
     public static bool IsUpgrade(string id){var r=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==id);return r!=null&&r.UpgradeFrom!=null&&r.UpgradeFrom.Length>0;}
     public static bool CanTransfer(string source,string target){
-        if(source==target)return true;
+        if(source==target||IsDirect1052(source,target))return true;
         var a=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==source);var b=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==target);
         if(a!=null&&a.SaveGeneration>100)return b!=null&&b.SaveGeneration>a.SaveGeneration&&b.UpgradeFrom!=null&&b.UpgradeFrom.Contains(source);
         if(b!=null&&b.UpgradeFrom!=null&&b.UpgradeFrom.Length>0)return b.UpgradeFrom.Contains(source);
@@ -53,7 +60,7 @@ public static class UpgradeSupport {
     }
     public static void RequireRoute(string source,string target){
         if(IsUpgrade(source)&&source!=target)RequireTransfer(source,target);
-        if(IsUpgrade(target)&&source!=target){var r=RecipeSupport.Catalog().Recipes.First(x=>x.Id==target);if(!r.UpgradeFrom.Contains(source))throw new IOException("Choose a registered compatible source for "+r.Name+". Other branches remain separate.");}
+        if(IsUpgrade(target)&&source!=target){var r=RecipeSupport.Catalog().Recipes.First(x=>x.Id==target);if(!MayUpgrade(source,target))throw new IOException("Choose a registered compatible source for "+r.Name+". Other branches remain separate.");}
     }
     public static void VerifyBundle(string root,ModRecipe recipe){
         if(recipe.Files==null)return;Store.CheckLinks(root);var actual=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);

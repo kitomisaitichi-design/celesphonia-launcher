@@ -227,3 +227,17 @@ These are findings from supplied documents and local archive contents. The messa
 - Archive SHA-256: `90622feb8376e336becae31d793ed84fd8f39509c4a936382447e2663269e24e`.
 
 The supplied trial is distinct from the fuller testing release mentioned in Telegram. This launcher keeps the trial label. Title-screen startup and file reconstruction checks do not establish complete gameplay or save migration compatibility.
+
+
+## Flexible verified sources and v1.052 (2026-10-17)
+
+The original Ver1.052 full creator overlay is an independently verified recipe
+with 5,163 files. The launcher accepts a **direct forward upgrade** from
+v1.03, v1.04, or v1.051 when the starting game is a recognized intact version.
+The source game remains untouched, and migrating saves creates a verified
+backup and copies the saves into a new installation. A direct v1.03 upgrade
+still undergoes the exact destination fingerprints and file checks; no generic
+cross-branch save transfer has been enabled.
+
+For a fresh mod installation, the base may be an already registered clean GoRPG
+1.23 folder, an intact full-game ZIP/RAR/7z 

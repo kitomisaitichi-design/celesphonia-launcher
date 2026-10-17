@@ -63,9 +63,13 @@ public static class RarSupport {
             throw new IOException("RAR file inventory is empty or unexpectedly large.");
         return entries;
     }
+    public static bool Supported(string archive) {
+        string format=FileDiscovery.ArchiveFormat(archive);
+        return format=="rar"||format=="7z"||archive.EndsWith(".001",StringComparison.OrdinalIgnoreCase);
+    }
     public static List<FoundSource> ProbeFingerprints(string archive,CancellationToken cancellation) {
         var found=new List<FoundSource>();
-        if(FileDiscovery.ArchiveFormat(archive)!="rar")return found;
+        if(!Supported(archive))return found;
         cancellation.ThrowIfCancellationRequested();
         string owned=Path.Combine(Path.GetTempPath(),"CphRAR-"+Guid.NewGuid().ToString("N"));
         string staging=Store.ArchiveStaging("verify");
@@ -85,15 +89,21 @@ public static class RarSupport {
             string prefix=prefixes[0];
             var recipes=RecipeSupport.Catalog().Recipes.Where(x=>x.Fingerprints!=null&&x.Fingerprints.Count>=3
                 &&x.Fingerprints.Keys.All(marker=>entries.Contains(prefix+marker))).ToArray();
-            if(recipes.Length==0)return found;
-            string[] markers=recipes.SelectMany(x=>x.Fingerprints.Keys).Distinct(StringComparer.OrdinalIgnoreCase)
+            bool completeGame=entries.Any(x=>x.EndsWith("package.json",StringComparison.OrdinalIgnoreCase))
+                &&entries.Any(x=>x.EndsWith("Game.exe",StringComparison.OrdinalIgnoreCase)||x.EndsWith("nw.exe",StringComparison.OrdinalIgnoreCase));
+            var games=completeGame?UniversalSupport.ReadIndex().Versions.Where(x=>x.Fingerprints!=null
+                &&x.Fingerprints.Keys.All(marker=>entries.Contains(prefix+marker))).ToArray():new VersionBuild[0];
+            if(recipes.Length==0&&games.Length==0)return found;
+            string[] markers=recipes.SelectMany(x=>x.Fingerprints.Keys)
+                .Concat(games.SelectMany(x=>x.Fingerprints.Keys))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(x=>entries.First(e=>e.Equals(prefix+x,StringComparison.OrdinalIgnoreCase))).ToArray();
             cancellation.ThrowIfCancellationRequested();
             Directory.CreateDirectory(staging);
             Run(exe,"x -y -p- -sccUTF-8 -bso0 -bsp0 -o"+Store.Q(staging)+" "+Store.Q(archive)+" "+
                 string.Join(" ",markers.Select(Store.Q).ToArray()));
             Store.CheckLinks(staging);
-            foreach(var recipe in recipes) {
+            if(!completeGame)foreach(var recipe in recipes) {
                 cancellation.ThrowIfCancellationRequested();
                 if(!recipe.Fingerprints.All(mark=>{
                     string path=Store.Child(staging,(prefix+mark.Key).Replace('/','\\'));
@@ -102,6 +112,17 @@ public static class RarSupport {
                 found.Add(new FoundSource{Kind="Original archive",Path=archive,RecipeId=recipe.Id,
                     Name=recipe.Name+" · RAR internal version hashes match",
                     Detection="RAR signature / extracted version fingerprints; full payload verified before install"});
+                break;
+            }
+            if(found.Count==0)foreach(var game in games){
+                cancellation.ThrowIfCancellationRequested();
+                if(!game.Fingerprints.All(mark=>{
+                    string path=Store.Child(staging,(prefix+mark.Key).Replace('/','\\'));
+                    return File.Exists(path)&&new FileInfo(path).Length<=64L*1024*1024&&Store.Hash(path)==mark.Value;
+                }))continue;
+                found.Add(new FoundSource{Kind="Full game archive",Path=archive,RecipeId=game.Id,
+                    Name=game.Name+" · native game files match",
+                    Detection="Embedded archive structure / version fingerprints; complete files checked after extraction"});
                 break;
             }
             return found;
@@ -115,8 +136,8 @@ public static class RarSupport {
         }
     }
     public static string Extract(string archive,string target,bool allowPartial,bool raw) {
-        if(FileDiscovery.ArchiveFormat(archive)!="rar")
-            throw new IOException("The supplied file is not a RAR archive.");
+        if(!Supported(archive))
+            throw new IOException("Choose a ZIP, RAR, 7z or first split .001 archive.");
         string owned=Path.Combine(Path.GetTempPath(),"CphRAR-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(owned);
         try {
