@@ -263,6 +263,29 @@ public static class PortableMain {
                 LauncherLayoutTests.TestOrphans(args[1],args[2]);return 0;
             }
             if(args.Length>2 && args[0]=="--prepare-control-session"){var p=Store.Detect(args[1],"Private runtime verification");p.Id="control-verification-fixture";File.WriteAllText(args[2],RuntimeSupport.Prepare(p),new UTF8Encoding(false));return 0;}
+            if(args.Length==2 && args[0]=="--native-reference-report") {
+                var manifests=new List<object>();
+                foreach(string id in new[]{"gorpg-1-23","ch-current","maple-1-7-2","three-in-one-3-3-4"}) {
+                    var reference=MixedSourceRecovery.LoadEmbeddedReference(id);
+                    string resource=id=="gorpg-1-23"?"Celesphonia.NativeReferenceFiles.json":"Celesphonia.NativeReferenceFiles."+id+".json";
+                    using(var stream=typeof(MixedSourceRecovery).Assembly.GetManifestResourceStream(resource))
+                    using(var hash=System.Security.Cryptography.SHA256.Create()) {
+                        string digest=BitConverter.ToString(hash.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
+                        manifests.Add(new{version=id,files=reference.Files.Count,resource=resource,sha256=digest});
+                    }
+                }
+                File.WriteAllText(args[1],Store.Json.Serialize(new{status="PASS",versions=manifests}),new UTF8Encoding(false));return 0;
+            }
+            if(args.Length>=4 && args[0]=="--native-recovery-probe") {
+                var reference=MixedSourceRecovery.LoadEmbeddedReference(args[1]);
+                var result=MixedSourceRecovery.Probe(reference,args.Skip(3),System.Threading.CancellationToken.None);
+                File.WriteAllText(args[2],Store.Json.Serialize(new{
+                    status=result.Complete?"PASS":"INCOMPLETE",version=result.VersionId,
+                    required=result.RequiredCount,found=result.FoundCount,missing=result.Missing.Count,
+                    missingSample=result.Missing.Take(24).ToArray(),
+                    sources=args.Skip(3).Count(),wroteGameFiles=false
+                }),new UTF8Encoding(false));return result.Complete?0:2;
+            }
             if(args.Length>1 && args[0]=="--english-pack-report") {File.WriteAllText(args[1],Store.Json.Serialize(EnglishRelease.Report()),new UTF8Encoding(false));return 0;}
             if(args.Length>2 && args[0]=="--english-status") {File.WriteAllText(args[2],Store.Json.Serialize(EnglishSupport.Status(Store.Detect(args[1],"Selected game"))),new UTF8Encoding(false));return 0;}
             if(args.Length>2 && args[0]=="--verify-upgrade-bundle") {

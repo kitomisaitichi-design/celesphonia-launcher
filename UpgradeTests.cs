@@ -9,6 +9,105 @@ using System.Windows.Forms;
 
 public static class UpgradeTests {
     static void Assert(bool pass,string message){if(!pass)throw new Exception(message);}
+    // No game extraction or save writes: exercise all registered forward
+    // creator overlay shortcuts and prove the branch boundaries stay closed.
+    public static int ForwardCreatorRoutes(){
+        var catalog=RecipeSupport.Catalog();
+        string[] releases={"01","02","03","04","051","052"};
+        var ids=releases.Select(x=>"three-in-one-3-3-5-v1-"+x).ToArray();
+        int checkedRoutes=0;
+        for(int i=0;i<ids.Length;i++){
+            var a=catalog.Recipes.Single(x=>x.Id==ids[i]);
+            Assert(UpgradeSupport.CanTransfer(ids[i],ids[i]),"Same-version restore rejected: "+ids[i]);
+            for(int j=0;j<ids.Length;j++){
+                var b=catalog.Recipes.Single(x=>x.Id==ids[j]);
+                bool expected=i<j;
+                if(expected){
+                    Assert(a.Files!=null&&b.Files!=null&&a.Files.Keys.All(x=>b.Files.ContainsKey(x)),
+                        "Direct creator overlay leaves obsolete files: "+ids[i]+" -> "+ids[j]);
+                    Assert(UpgradeSupport.MayUpgrade(ids[i],ids[j]),"Forward creator update rejected: "+ids[i]+" -> "+ids[j]);
+                    UpgradeSupport.RequireRoute(ids[i],ids[j]);
+                    Assert(UpgradeSupport.CanTransfer(ids[i],ids[j]),"Forward saves rejected: "+ids[i]+" -> "+ids[j]);
+                    checkedRoutes++;
+                }else if(i>j){
+                    Assert(!UpgradeSupport.MayUpgrade(ids[i],ids[j]),"Downgrade update accepted: "+ids[i]+" -> "+ids[j]);
+                    Assert(!UpgradeSupport.CanTransfer(ids[i],ids[j]),"Downgrade saves accepted: "+ids[i]+" -> "+ids[j]);
+                }
+            }
+        }
+        foreach(string source in new[]{"01","02","03"}){
+            string id="three-in-one-3-3-5-v1-"+source;
+            foreach(string target in new[]{"051","052"}){
+                string to="three-in-one-3-3-5-v1-"+target;
+                Assert(UpgradeSupport.MayUpgrade(id,to),"Direct early-to-final overlay unavailable: "+id+" -> "+to);
+                if(target=="052")Assert(UpgradeSupport.IsDirect1052(id,to),"Direct v1.052 helper lost route: "+id);
+            }
+        }
+        string unknown="three-in-one-3-3-5-v1-05";
+        foreach(string known in ids){
+            Assert(!UpgradeSupport.MayUpgrade(unknown,known)&&!UpgradeSupport.MayUpgrade(known,unknown),"Unknown v1.05 entered an update route");
+            Assert(!UpgradeSupport.CanTransfer(unknown,known)&&!UpgradeSupport.CanTransfer(known,unknown),"Unknown v1.05 entered save migration");
+        }
+        foreach(string other in new[]{UpgradeSupport.Trial,"gorpg-1-23","maple-1-7-2","three-in-one-3-3-4","ch-current"}){
+            Assert(!UpgradeSupport.MayUpgrade(other,ids.Last()),"Separate/unverified branch entered direct v1.052 path: "+other);
+            Assert(!UpgradeSupport.CanTransfer(other,ids.Last())&&!UpgradeSupport.CanTransfer(ids.Last(),other),
+                "Cross-branch v1.052 save transfer accepted: "+other);
+        }
+        Assert(UpgradeSupport.MayUpgrade(UpgradeSupport.Trial,"three-in-one-3-3-5-v1-04"),"Existing trial-to-v1.04 route lost");
+        Assert(!UpgradeSupport.CanTransfer(null,null)&&!UpgradeSupport.CanTransfer("ch-current","maple-1-7-2")
+               &&!UpgradeSupport.CanTransfer("gorpg-1-23",UpgradeSupport.Trial),"Unknown or cross-branch save transfer accepted");
+        return checkedRoutes;
+    }
+    public static int SourceAutomationTests(){
+        const string prefix="three-in-one-3-3-5-v1-";
+        var saved=new UpgradeSourceChoice {Path="C:\\fake-saved",VersionId=prefix+"02",
+            Kind="Installed",SaveGeneration=102,SaveCount=11,Profile=new Profile{Id="saved"}};
+        var later=new UpgradeSourceChoice {Path="C:\\fake-new",VersionId=prefix+"051",
+            Kind="Installed",SaveGeneration=1051,SaveCount=0,Profile=new Profile{Id="new"}};
+        var archive=new UpgradeSourceChoice {Path="C:\\fake-archive",VersionId=prefix+"051",
+            Kind="Full game archive",SaveGeneration=1051,SaveCount=0};
+        var savedNext=new UpgradeSourceChoice {Path="C:\\fake-saved-next",VersionId=prefix+"04",
+            Kind="Installed",SaveGeneration=104,SaveCount=11,Profile=new Profile{Id="saved-next"}};
+        var ordered=UpgradeSupport.RankCompatibleSources(new[]{archive,later,saved,savedNext},"new");
+        Assert(ordered.Count==4&&ordered[0]==savedNext&&ordered[1]==saved&&
+               ordered[2]==later&&ordered[3]==archive,
+               "Saved compatible installs must outrank empty recent installs and tentative archives");
+        var tied=UpgradeSupport.RankCompatibleSources(new[]{later,new UpgradeSourceChoice{
+            Path="C:\\fake-other",VersionId=prefix+"051",Kind="Installed",SaveGeneration=1051,
+            Profile=new Profile{Id="other"}}},"other");
+        Assert(tied[0].Profile.Id=="other","Selected profile must resolve ties among equivalent valid sources");
+        Assert(UpgradeSupport.BestCompatibleSource(
+            new Settings{Profiles=new List<Profile>{new Profile{
+                Id="missing",Root=Path.Combine(Path.GetTempPath(),"cph-uninstalled-never-"+Guid.NewGuid().ToString("N"))}}},
+            prefix+"052",null,System.Threading.CancellationToken.None)==null,
+            "Stale installed profile was treated as an available source");
+        Assert(!UpgradeSupport.MayUpgrade(prefix+"05",prefix+"052"),
+            "Unknown v1.05 source was accepted for automated migration");
+        string scratch=Path.Combine(Path.GetTempPath(),"Cph-upgrade-select-"+Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(scratch);
+        try{
+            string bogus=Path.Combine(scratch,"future-1.05.zip");
+            using(var zip=new ZipArchive(File.Create(bogus),ZipArchiveMode.Create)){
+                var entry=zip.CreateEntry("future.txt");
+                using(var output=new StreamWriter(entry.Open()))output.Write("NOT A GAME");
+            }
+            string untouched=Path.Combine(scratch,"no-install");
+            bool rejected=false;
+            try{UpgradeSupport.InstallFromGameArchive(bogus,bogus,untouched,prefix+"052",false);}
+            catch(IOException error){rejected=error.Message.Contains("not a recognized earlier full game");}
+            Assert(rejected&&!Directory.Exists(untouched),
+                "Invalid full-game archive created installation files or was accepted by filename");
+            rejected=false;
+            try{UpgradeSupport.PlanMixedGoRpg(new[]{scratch},System.Threading.CancellationToken.None);}
+            catch(IOException error){rejected=error.Message.Contains("missing")&&error.Message.Contains("7208");}
+            Assert(rejected,"Incomplete mixed source was accepted without canonical native SHA-256 bytes");
+            return 5;
+        }finally{
+            if(Directory.Exists(scratch)&&Path.GetFileName(scratch).StartsWith("Cph-upgrade-select-",StringComparison.Ordinal)
+               &&Path.GetDirectoryName(scratch).Equals(Path.GetFullPath(Path.GetTempPath()).TrimEnd('\\'),StringComparison.OrdinalIgnoreCase))
+                Directory.Delete(scratch,true);
+        }
+    }
     // Exercise the real v1.03 -> v1.04 path without registering test profiles,
     // modifying existing games, or using a placeholder native-probe fixture.
     public static void RealChain(string cleanBase,string archive103,string archive104,string report){
@@ -75,6 +174,12 @@ public static class UpgradeTests {
     public static void Run(){
         string root=Store.Child(Store.Home,Path.Combine("Staging","upgrade-fixture-"+Guid.NewGuid().ToString("N")));Directory.CreateDirectory(root);var checks=new List<string>();
         try{
+            int sourceChecks=SourceAutomationTests();
+            Assert(sourceChecks==5,"Automated source checks were skipped");
+            checks.Add("Compatible saved-profile priority, selected tie break, stale profile exclusion, unknown 1.05, archive fail-closed, native-mixed missing-byte rejection");
+            int directRoutes=ForwardCreatorRoutes();
+            Assert(directRoutes==15,"Expected all 15 ordered creator version upgrades");
+            checks.Add("All 15 creator forward routes verified, including v1.01/v1.02/v1.03 directly to v1.051/v1.052; reverse, unknown v1.05 and cross-branch saves rejected");
             Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-052","The latest developer release must be v1.052");
             var catalog=RecipeSupport.Catalog();
             var latest=catalog.Recipes.First(x=>x.Id==UpgradeSupport.Latest);

@@ -270,3 +270,55 @@ The shared installation index records the verified current path/version. It
 compacts a stale metadata entry only if the former game folder is absent and
 its immediate parent remains available. No user saves, games or unknown files
 are renamed or deleted by index maintenance.
+
+## Verified original-file interoperability — v1.0.13
+
+The installer's original-file workflow does not require the 7 GB
+Celesphonia-Any-Version.cgdelta.zip. All routes below use source folders,
+complete full-game archives, and/or the creator's corresponding Telegram
+update archive or extracted content. Every accepted target file is verified
+against the known creator or native reference SHA-256. An archive filename or
+a small set of version markers is only a candidate, not proof of a complete game.
+
+For GoRPG 1.23, the launcher has a complete *hash-only* native inventory of
+7,208 files (approximately 986 KB) embedded in its executable, not any game
+bytes or personal data. It may recover these exact files across multiple
+original archives and folders whose individual contents are incomplete,
+renamed, rearranged, or partly overwritten. Sources are never overwritten;
+missing matches are reported explicitly. A file with the right name but
+the wrong hash is never selected. Complete GoRPG files can also come directly
+from the original two-part 7z archive; both volumes must be co-located.
+
+**Game/branch convertibility without cgdelta:**
+
+| Desired target | Sufficient original inputs | Source-only promise |
+|---|---|---|
+| GoRPG 1.23 | A complete GoRPG source, or complete set of exact GoRPG native files across selected ZIP/RAR/7z/folders | Missing GoRPG bytes cannot be invented from CH/Maple/3.3.4 |
+| Maple 1.7.2 | Complete genuine Maple game RAR/folder | Its separate runtime/layout is not constructed by stacking onto GoRPG |
+| CH | Complete genuine CH game/archive | Existing CH translation/reference branch remains separate |
+| Three-in-one 3.3.4 hypnosis | Complete GoRPG base + complete verified 3.3.4 creator bundle, or a complete 3.3.4 game/archive | Hypnosis state/saves are not converted into the 3.3.5 branch |
+| Three-in-one 3.3.5 trial | Complete GoRPG base + complete trial bundle, or full installed game/archive | No hidden intermediate requirement |
+| Three-in-one 3.3.5 v1.01/v1.02/v1.03/v1.04/v1.051/v1.052 | Complete GoRPG base + full corresponding Telegram creator bundle, OR intact earlier 3.3.5 creator build plus the matching target bundle | Each target is verified before registration |
+
+Creator v1.01/v1.02/v1.03/v1.04/v1.051 full overlays have a compatible
+file-set subset of v1.052, so registered earlier creator builds can upgrade
+directly to later creator versions (including v1.051 and v1.052) when the full
+target Telegram bundle is supplied; the old installation is retained and
+source saves are backed up then copied, with their original bytes unchanged.
+The missing standalone **v1.05** is not a registered release and cannot be
+guessed from the v1.051/v1.052 filenames. For a fresh target, saves begin empty.
+
+English display is tied to the verified target version and is optional at
+installation. Native installs can have no English, the current reversible
+English layer, or recoverable older English sidecars. Unknown third-party
+rewrites, lost original entry pages, or altered game scripts cannot be silently
+approved. English translation is partial, not a conversion of game variables.
+Same-version saves can be restored; forward compatible 3.3.5 creator saves
+may be copied. CH/Maple/GoRPG/3.3.4 saves and newer-to-older story saves
+are not automatically translated or forced into another branch.
+
+A game build must not be called complete merely because it contains the
+three version markers. File inventory completeness, source byte hashes,
+and final target verification are separate required checks. Source discovery
+checks nearby launcher/game/download locations including five parent levels,
+with an eight-level child scan and a global folder budget.

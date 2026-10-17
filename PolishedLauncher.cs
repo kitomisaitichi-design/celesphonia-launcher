@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -66,14 +67,16 @@ public class PolishedLauncher : ReplacementAwareForm {
     Dictionary<Control,Tuple<Color,Color>> originalColors=new Dictionary<Control,Tuple<Color,Color>>();
     Settings settings;ListBox profiles=new ListBox();ContentScroller main=new ContentScroller();Panel sidebar,playPage,installPage,savePage,helpPage,filesPage,englishPage;
     Button addGame;Label sidebarNote;System.Threading.CancellationTokenSource scanCancellation;bool checkingRunning;
-    Label playName,playInfo,saveCount,savePath,status,installNeed,installNote,installLocation,saveTitle,saveNote,saveFolder;
-    Button controlsButton,playButton,installButton,copyButton,restoreButton,backupButton,gameFolderButton,saveFolderButton;ChoicePicker targets,methods;
+    Label playName,playInfo,saveCount,savePath,status,installNeed,installNote,installLocation,installNext,saveTitle,saveNote,saveFolder,saveGuide,filesGuide;
+    Button controlsButton,playButton,installButton,copyButton,restoreButton,backupButton,openSaveButton,gameFolderButton,saveFolderButton;ChoicePicker targets,methods;
     PathDiagram playDiagram=new PathDiagram(),installDiagram=new PathDiagram();
     readonly List<Button> navigation=new List<Button>();
     readonly System.Windows.Forms.Timer timer=new System.Windows.Forms.Timer();
     bool busy,running,discovering;string currentPage="Play";
     List<FoundSource> discovered=new List<FoundSource>();Label discoveryStatus;Button discoveryButton;ProgressBar progress;
     Dictionary<string,FoundSource> preferredSources=new Dictionary<string,FoundSource>();
+    readonly List<string> originalInputs=new List<string>();
+    Label sourceInputNote;
     DataGridView availability;Label availabilityNote;Profile startingSource;
     Label englishTitle,englishState,englishCounts,englishDetail,englishSeen;SleekProgress englishCoverage;
     Button englishEnable,englishRestore,englishImport,englishExport;PathDiagram englishDiagram=new PathDiagram();EnglishStatus englishCurrent;
@@ -192,39 +195,48 @@ public class PolishedLauncher : ReplacementAwareForm {
         BindHint(controlsButton,actionNote,"Open the separate control session and its edited saves.");
     }
     void BuildInstall(){
-        installPage=Page();LabelAt(installPage,"ADD A VERSION",0,0,760,24,10,true,muted);LabelAt(installPage,"What files do I need?",0,31,480,43,24,true);
-        LabelAt(installPage,"Choose a version and what you already have. The path below updates with your choice.",0,82,812,23,10,false,muted);
+        installPage=Page();LabelAt(installPage,"INSTALL · STEP BY STEP",0,0,760,24,10,true,muted);LabelAt(installPage,"Prepare a game version",0,31,480,43,24,true);
+        LabelAt(installPage,"Choose the target, let the launcher find sources, then review the route before installing.",0,82,812,23,10,false,muted);
+        LabelAt(installPage,"1 · TARGET VERSION",0,116,394,18,9,true,muted);
+        LabelAt(installPage,"2 · INSTALL FROM",410,116,392,18,9,true,muted);
         targets=new ChoicePicker{Location=new Point(0,137),Size=new Size(394,36),Font=new Font("Segoe UI",10),BackColor=card,ForeColor=ForeColor,AccessibleName="Version to install"};
         var recipes=RecipeSupport.Catalog().Recipes.Where(x=>x.Id!="abu-51-01").ToList();recipes.Add(new ModRecipe{Id="gorpg-1-23",Name="Gorpg 1.23 - clean base",RequiredBase="standalone",Components=new[]{"Clean Chinese Gorpg 1.23"},Standalone=true});
         recipes.Add(new ModRecipe{Id="ch-current",Name="CH",RequiredBase="standalone",Components=new[]{"CH reference build"},Standalone=true});
         targets.Items.AddRange(recipes.ToArray());installPage.Controls.Add(targets);
         methods=new ChoicePicker{Location=new Point(410,137),Size=new Size(402,36),Font=new Font("Segoe UI",10),BackColor=card,ForeColor=ForeColor,AccessibleName="Installation method"};
-        methods.Items.AddRange(new object[]{"Use a version-to-version pack","Use the original bundle / game","Add an already installed game"});installPage.Controls.Add(methods);
-        targets.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};methods.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};targets.SelectedIndex=0;methods.SelectedIndex=0;
-        installDiagram.Location=new Point(0,190);installDiagram.Size=new Size(812,183);installPage.Controls.Add(installDiagram);
+        methods.Items.AddRange(new object[]{"Use a version-to-version pack","Use original archives / folders","Register an existing installation"});installPage.Controls.Add(methods);
+        targets.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};methods.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};targets.SelectedIndex=0;methods.SelectedIndex=1;
+        installDiagram.Location=new Point(0,190);installDiagram.Size=new Size(812,173);installPage.Controls.Add(installDiagram);
+        LabelAt(installPage,"3 · CHECK THE REQUIRED FILES",0,370,812,18,9,true,muted);
         var checklist=new SleekCard{Location=new Point(0,389),Size=new Size(812,112),BackColor=card};installPage.Controls.Add(checklist);installNeed=LabelAt(checklist,"",17,12,778,94,10,false);
         installNote=LabelAt(installPage,"",0,512,800,37,9,false,muted);
         installNote.Width=560;ButtonAt(installPage,"Starting version...",580,512,232,35,()=>ChooseStartingVersion(),false);
         installButton=ButtonAt(installPage,"Choose files & install",0,556,260,42,()=>GuidedInstall(),true);
-        ButtonAt(installPage,"Bundle + hotfixes...",274,556,225,42,()=>Guard(OrderedLayers),false);
+        ButtonAt(installPage,"Advanced layers...",274,556,225,42,()=>Guard(OrderedLayers),false);
         ButtonAt(installPage,"Install location...",514,556,190,42,()=>Guard(ChangeLocation),false);
         installLocation=LabelAt(installPage,"",0,609,810,22,9,false,muted);
         englishOnInstall=new CheckBox{Location=new Point(3,639),Size=new Size(740,28),Text="Enable the matching English translation on the installed version",Checked=true,AutoSize=false,ForeColor=ForeColor,BackColor=background};installPage.Controls.Add(englishOnInstall);
+        englishOnInstall.CheckedChanged+=delegate{if(!busy)UpdateInstall();};
+        ButtonAt(installPage,"Combine original sources...",0,682,283,37,()=>Guard(ChooseOriginalInputs),false);
+        sourceInputNote=LabelAt(installPage,"Choose ZIP/RAR/7z files, extracted folders, or installed games together.",298,687,510,32,9,false,muted);
+        installNext=LabelAt(installPage,"Next: choose a game version and review its files.",0,738,812,100,10,false,muted);
         discoveryButton=ButtonAt(installPage,"Find files",668,31,144,36,()=>ScanAgain(),false);
         ButtonAt(installPage,"View found files",502,31,153,36,()=>ShowFoundFiles(),false);
-        discoveryStatus=LabelAt(installPage,"Scanning nearby files...",0,107,805,24,9,false,muted);
+        discoveryStatus=LabelAt(installPage,"Automatic source search is available.",0,844,805,54,9,false,muted);
     }
     void BuildSaves(){
-        savePage=Page();LabelAt(savePage,"SAVE LIBRARY",0,0,760,24,10,true,muted);saveTitle=LabelAt(savePage,"",0,32,812,48,24,true);
-        LabelAt(savePage,"Your saves return automatically when you switch back to this version.",0,91,790,34,11,false,muted);
+        savePage=Page();LabelAt(savePage,"SAVES · PER GAME VERSION",0,0,760,24,10,true,muted);saveTitle=LabelAt(savePage,"",0,32,812,48,24,true);
+        LabelAt(savePage,"1 · Select a game on the left. Its own save folder and backups appear below.",0,91,790,34,11,false,muted);
         var panel=new SleekCard{Location=new Point(0,150),Size=new Size(812,175),BackColor=card};savePage.Controls.Add(panel);saveNote=LabelAt(panel,"",18,16,776,31,15,true);saveFolder=LabelAt(panel,"",18,59,776,61,10,false,muted);
-        ButtonAt(panel,"Open save folder",18,126,210,36,()=>Guard(OpenSaves),false);
-        backupButton=ButtonAt(savePage,"Back up now",0,353,248,46,()=>Guard(()=>{if(!GameClosed())return;status.Text="Save backup created: "+Store.Backup(Selected);UpdateProfile();}),true);
+        openSaveButton=ButtonAt(panel,"Open this save folder",18,126,238,36,()=>Guard(OpenSaves),false);
+        backupButton=ButtonAt(savePage,"Back up now",0,353,248,46,()=>Guard(BackupNow),true);
         restoreButton=ButtonAt(savePage,"Restore a backup",264,353,252,46,()=>Guard(Restore),false);
         copyButton=ButtonAt(savePage,"Copy from another version...",531,353,281,46,()=>Guard(CopySaves),false);
         var caution=new SleekCard{Location=new Point(0,430),Size=new Size(812,173),BackColor=Color.FromArgb(40,33,36)};savePage.Controls.Add(caution);
-        LabelAt(caution,"Before copying saves across versions",18,18,775,28,13,true,Color.FromArgb(238,203,164));
-        LabelAt(caution,"Copying preserves the source and backs up the destination. It does not convert a save.\r\n\r\nThe 3.3.5 trial removed the hypnosis storyline. Older and newer versions can use different IDs or state. A transferred save may not work correctly. Keep your original save set.",18,61,775,99,10,false,muted);
+        LabelAt(caution,"3 · Check before restoring or copying",18,18,775,28,13,true,Color.FromArgb(238,203,164));
+        LabelAt(caution,"Back up before moving saves. Restore replaces the current save set after backing it up; Copy keeps the source and backs up the destination. Neither converts save data.\r\n\r\nThe 3.3.5 trial removed the hypnosis storyline. IDs and state can differ between releases.",18,61,775,99,10,false,muted);
+        saveGuide=LabelAt(savePage,"2 · Back up now creates a timestamped copy. Restore uses a previous backup; Copy chooses another compatible version.",0,621,812,66,10,false,muted);
+        ButtonAt(savePage,"Remove this version...",0,706,268,42,()=>RemoveVersion(Selected),false);
     }
     void BuildEnglish(){
         englishPage=Page();LabelAt(englishPage,"ENGLISH TEXT · REVERSIBLE",0,0,800,24,10,true,muted);
@@ -362,12 +374,21 @@ public class PolishedLauncher : ReplacementAwareForm {
             englishCurrent=null;playName.Text="Add your first game";playInfo.Text="Open Files or Install to use an original archive, extracted game folder, or starting version.";
             playDiagram.Set(new[]{"Add a version","Choose English","Ready to play"},new[]{"Register an installed game or prepare one in Install.","Enable the matching English display pack from the English page.","Each version keeps its own saves and launch settings."},new[]{false,false,false});
             saveCount.Text="No game selected";savePath.Text="Add an installed version to see its save folder.";
-            saveTitle.Text="Your save library";saveNote.Text="Add an installed version first";saveFolder.Text="Save folders and backups appear here after you choose a game.";
+            saveTitle.Text="Choose an installed game";saveNote.Text="No game selected";saveFolder.Text="Open Files to select a game, or Install to add one.";
+            if(saveGuide!=null)saveGuide.Text="2 · Choose a version first. Backup, restore, and copy actions then apply only to that game's saves.";
             UpdateEnglish();UpdateActions();return;
         }int count=CountSaves(p);playName.Text=p.Name.Replace(" - current installation","");statusCache.TryGetValue(p.Id,out englishCurrent);playInfo.Text=p.Note+"\r\nText: "+(englishCurrent==null?"Checking…":englishCurrent.Short);LoadEnglishStatus(p);
         playDiagram.Set(new[]{"Selected version","Its own saves","Back up & play"},new[]{p.Name,"Return to these saves every time you select this version.","A timestamped save backup is created before launch."},new[]{true,true,true});
         saveCount.Text=count+" save slots  ·  "+(count==0?"Ready for a new game":"Your progress is here");savePath.Text=p.SavePath;
-        saveTitle.Text=p.Name;saveNote.Text=count+" numbered save slots";saveFolder.Text=p.SavePath;
+        saveTitle.Text=p.Name;saveNote.Text=count+" numbered save slots for this version";saveFolder.Text=p.SavePath;
+        if(saveGuide!=null){
+            string backupRoot=Path.Combine(Store.Home,"Save Backups",p.Id);
+            int copies=Directory.Exists(backupRoot)?Directory.GetDirectories(backupRoot).Length:0;
+            int donors=LibraryProfiles.Count(x=>x.Id!=p.Id&&UpgradeSupport.CanTransfer(UniversalSupport.Identify(x.Root),UniversalSupport.Identify(p.Root)));
+            saveGuide.Text="2 · "+copies+" timestamped backup folder"+(copies==1?"":"s")+" available · "+
+                (donors==0?"No other verified compatible version to copy from.":donors+" compatible source version"+(donors==1?"":"s")+" for Copy.")+
+                "\r\nBackup creates a copy; Restore and Copy first preserve the destination's prior saves.";
+        }
         profiles.Invalidate();UpdateEnglish();UpdateActions();
     }
     async void LoadEnglishStatus(Profile profile){
@@ -382,6 +403,8 @@ public class PolishedLauncher : ReplacementAwareForm {
     Profile Installed(string id){return LibraryProfiles.FirstOrDefault(x=>UniversalSupport.Identify(x.Root)==id);}
     FoundSource AnyPack(string id){if(UpgradeSupport.IsUpgrade(id))return Found(id,"Any-version pack");return Found(id,"Any-version pack")??(File.Exists(Path.Combine(Store.Home,"Delta Packs",UniversalSupport.PackName))?new FoundSource{Kind="Any-version pack",Path=Path.Combine(Store.Home,"Delta Packs",UniversalSupport.PackName),RecipeId=id}:null);}
     FoundSource Original(string id){return Found(id,"Full game archive")??Found(id,"Extracted bundle")??Found(id,"Original archive");}
+    FoundSource OriginalCandidate(string id){return Found(id,"Game archive candidate");}
+    FoundSource LocatedOriginal(string id){return Original(id)??OriginalCandidate(id);}
     Profile Clean(){return Installed("gorpg-1-23");}
     string DefaultPack(ModRecipe recipe){return Path.Combine(Store.Home,"Delta Packs",recipe.Id+".cgdelta.zip");}
     FoundSource Found(string recipe,string kind){FoundSource chosen;if(preferredSources.TryGetValue(recipe+"/"+kind,out chosen)&&string.IsNullOrEmpty(chosen.Problem)&&(File.Exists(chosen.Path)||Directory.Exists(chosen.Path)))return chosen;return discovered.FirstOrDefault(x=>x.RecipeId==recipe&&x.Kind==kind&&string.IsNullOrEmpty(x.Problem));}
@@ -391,32 +414,84 @@ public class PolishedLauncher : ReplacementAwareForm {
         if(recipe.Id=="ch-current")return "The full CH game archive or extracted CH game folder";
         return "The complete 3.3.4 bundle (.001 through .004 together), or its extracted content folder";
     }
+    void UpdateInstallNext(ModRecipe recipe,int route){
+        if(installNext==null)return;
+        int bad=discovered.Count(x=>x.RecipeId==recipe.Id&&!string.IsNullOrEmpty(x.Problem));
+        int pending=discovered.Count(x=>x.RecipeId==recipe.Id&&x.Kind=="Game archive candidate"&&string.IsNullOrEmpty(x.Problem));
+        int stale=originalInputs.Count(x=>!Directory.Exists(x)&&!File.Exists(x));
+        string prefix="4 · NEXT: ";
+        if(route==2)
+            installNext.Text=prefix+"Select the existing extracted game directory. Its files and saves stay in that folder.";
+        else if(route==0)
+            installNext.Text=prefix+"Choose a verified version pack and starting installation; the launcher checks the build before installing.";
+        else if(Installed(recipe.Id)!=null)
+            installNext.Text=prefix+"This version is already registered. Use it directly from Files or Play.";
+        else if(recipe.Id=="three-in-one-3-3-4")
+            installNext.Text=prefix+"Combine original 3.3.4 files, or provide clean GoRPG plus the hypnosis overlay. All 9,474 native hashes must match.";
+        else if(HasNativeInventory(recipe.Id))
+            installNext.Text=prefix+"Choose original game archives/folders; missing bytes can come from several sources. Full native hashes are verified.";
+        else if(UpgradeSupport.IsUpgrade(recipe.Id))
+            installNext.Text=prefix+"Choose the matching creator update and a compatible installed source, or clean GoRPG for a fresh installation.";
+        else
+            installNext.Text=prefix+"Choose the intact creator bundle and original GoRPG base. The completed installation is checked before registration.";
+        if(pending>0)installNext.Text+="\r\n"+pending+" nearby archive candidate"+(pending==1?"":"s")+" still require"+(pending==1?"s":"")+" complete-file verification.";
+        if(bad>0)installNext.Text+="\r\n"+bad+" incomplete source"+(bad==1?"":"s")+" found; open View found files for details.";
+        if(stale>0)installNext.Text+="\r\n"+stale+" selected input"+(stale==1?" is":"s are")+" missing; open Combine original sources to replace.";
+    }
     void UpdateInstall(){
         if(Target==null || methods.SelectedIndex<0 || installNeed==null)return;var recipe=Target;int route=methods.SelectedIndex;
-        var ch=CH();var clean=Clean();var any=AnyPack(recipe.Id);var delta=any??Found(recipe.Id,"Delta pack");bool found=delta!=null||File.Exists(DefaultPack(recipe));var bundle=Original(recipe.Id);
+        UpdateInstallNext(recipe,route);
+        var ch=CH();var clean=Clean();var any=AnyPack(recipe.Id);var delta=any??Found(recipe.Id,"Delta pack");bool found=delta!=null||File.Exists(DefaultPack(recipe));var bundle=LocatedOriginal(recipe.Id);
+        if(sourceInputNote!=null)sourceInputNote.Text=originalInputs.Count==0
+            ?"Choose ZIP/RAR/7z files, extracted folders, or installed games together."
+            :originalInputs.Count+" selected original source"+(originalInputs.Count==1?"":"s")+" (verified during installation)";
         if(UpgradeSupport.IsUpgrade(recipe.Id)&&route!=2){
-            var chosen=startingSource??UpgradeSupport.StartingProfile(settings,recipe.Id);
-            var source=chosen!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(chosen.Root),recipe.Id)?chosen:UpgradeSupport.StartingProfile(settings,recipe.Id);
+            var chosen=startingSource??CompatibleFolderSource(recipe.Id)??UpgradeSupport.StartingProfile(settings,recipe.Id);
+            var source=chosen!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(chosen.Root),recipe.Id)?chosen:CompatibleFolderSource(recipe.Id)??UpgradeSupport.StartingProfile(settings,recipe.Id);
             var installed=Installed(recipe.Id);
-            bool fresh=route==1||source==null;var baseGame=Clean();var baseArchive=Original("gorpg-1-23");
-            string basis=fresh?(baseGame!=null?baseGame.Name:baseArchive!=null?Path.GetFileName(baseArchive.Path):"Verified CH/Maple + reconstruction pack, or clean GoRPG ZIP/folder"):source.Name;
-            installDiagram.Set(new[]{basis,recipe.Name,fresh?"Fresh English installation":"Keep your progress"},new[]{fresh?(baseGame!=null?"Verified clean base registered.":baseArchive!=null?"GoRPG source archive found; it will be extracted automatically.":"Download or choose the clean GoRPG game archive."):"Verified forward-upgrade source; original folder retained.",bundle==null?"Choose the creator's complete v1.052 bundle.":"Creator bundle detected; every file is verified before installation.",fresh?"New independent game and empty saves; matching English text enabled automatically.":"Independent game; original saves backed up, copied, and verified."},new[]{fresh?(baseGame!=null||baseArchive!=null||AnyPack("gorpg-1-23")!=null):source!=null,bundle!=null,installed!=null});
-            installNeed.Text=(fresh?(baseGame!=null?"✓ Verified clean GoRPG base: "+baseGame.Name:baseArchive!=null?"✓ Original GoRPG archive: "+Path.GetFileName(baseArchive.Path):"• Needed: clean GoRPG game ZIP/folder, or a verified CH/Maple and reconstruction pack"):"✓ Upgrade source: "+source.Name)+"\r\n"+(bundle==null?"• Needed: the complete "+recipe.Name+" bundle":"✓ Mod bundle: "+Path.GetFileName(bundle.Path))+"\r\n"+(fresh?"✓ Fresh saves; matching English pack applied automatically":"✓ Compatible saves carried forward; English follows its verified pack");
-            installNote.Text=fresh?"Verified source files + creator bundle produce an independent game; CH/Maple require an any-version reconstruction pack.":"Direct verified forward upgrade; backups retained. English is optional.";
+            bool fresh=source==null;var baseGame=Clean();var baseArchive=LocatedOriginal("gorpg-1-23");
+            installDiagram.Set(new[]{fresh?"GoRPG source":"Earlier version","Creator update",fresh?"New game":"Carry saves"},
+                new[]{fresh?(baseGame!=null?"Clean base registered.":baseArchive!=null?"Original found; full SHA check next.":"Add original GoRPG files below."):
+                        "Choose a compatible installed game.",
+                      bundle==null?"Choose the complete creator bundle.":"Detected files need final verification.",
+                      fresh?"Independent game; empty saves.":"Existing saves backed up and copied."},
+                new[]{fresh?(baseGame!=null||baseArchive!=null||AnyPack("gorpg-1-23")!=null):source!=null,bundle!=null,installed!=null});
+            installNeed.Text=(fresh?(baseGame!=null?"✓ Verified clean GoRPG base: "+baseGame.Name:baseArchive!=null?"• GoRPG source to check: "+Path.GetFileName(baseArchive.Path):"• Needed: complete GoRPG 1.23 originals. Combine ZIP/RAR/7z or folders below."):"✓ Earlier game: "+source.Name)+"\r\n"+(bundle==null?"• Needed: complete "+recipe.Name+" creator update":"• Source candidate: "+Path.GetFileName(bundle.Path)+" (verified during installation)")+"\r\n"+(fresh?"✓ New independent game with empty saves":"✓ Compatible saves carried forward after backup")+" · English "+(englishOnInstall.Checked?"requested":"not requested");
+            installNote.Text=fresh?"Native GoRPG files can be recovered from selected original sources, then combined with a verified creator bundle.":"Direct verified forward upgrade; backups retained. English is optional.";
             installButton.Text=installed!=null?"Use installed version":fresh?"Install fresh mod + English":"Upgrade & carry saves";installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();return;
+        }
+        if(route==1&&recipe.Id=="three-in-one-3-3-4"){
+            var native=LocatedOriginal(recipe.Id);var cleanBase=Clean();
+            installDiagram.Set(new[]{"Original 3.3.4","Hypnosis update","SHA-256 check"},
+                new[]{"Combine archives and game folders.",
+                      "Fallback: GoRPG plus creator bundle.",
+                      "All 9,474 native files must match."},
+                new[]{native!=null||originalInputs.Count>0,cleanBase!=null,Installed(recipe.Id)!=null});
+            installNeed.Text=(native!=null?"• Original candidate: "+Path.GetFileName(native.Path):"• Choose original 3.3.4 archives/folders")+
+                "\r\n"+(cleanBase!=null?"✓ GoRPG source: "+cleanBase.Name:"• GoRPG original sources can be combined if needed")+
+                "\r\n• Creator overlay must supply all 2,637 changed/new files with exact hashes";
+            installNote.Text="3.3.4 is registered only after all 9,474 native files pass SHA-256 verification.";
+            installButton.Text=Installed(recipe.Id)!=null?"Use installed version":"Verify sources & install";
+            installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();return;
         }
         if(route==0){
             var source=any==null?ch:SupportedSource(recipe.Id);bool already=Installed(recipe.Id)!=null;
-            installDiagram.Set(new[]{source==null?"Any supported version":UniversalSupport.DetectedName(source.Root)??source.Name,recipe.Name+" route",already?"Already installed":"Independent game"},new[]{source==null?"CH, Gorpg, Maple, 3.3.4, or 3.3.5. Choose Starting version.":"Version identified from its files, not its folder name.",any!=null?"Any-version pack found. No CH prerequisite.":found?"Legacy CH-only pack found.":"Choose the any-version pack.",already?"Use Files to switch directly with its existing saves.":"A complete new folder with its own empty saves."},new[]{source!=null,found,already});
+            installDiagram.Set(new[]{"Starting game","Version pack",already?"Installed":"New game"},
+                new[]{source==null?"Choose your source version.":"Recognized original game.",any!=null?"Any-version pack detected.":found?"Legacy pack is CH-only.":"Choose a verified pack.",already?"Switch to it from Files.":"Independent folder and saves."},
+                new[]{source!=null,found,already});
             installNeed.Text=(source!=null?"✓ Starting game: "+(UniversalSupport.DetectedName(source.Root)??source.Name):"• Choose a supported starting game folder or full archive")+"\r\n"+(any!=null?"✓ Any-version pack found":found?"• Legacy pack needs CH; use the any-version pack for other starting games":"• Needed: "+UniversalSupport.PackName)+"\r\n"+(already?"✓ This target is already installed — switch directly in Files":"✓ Original games and their saves stay intact");
             installNote.Text="Any-version routes verify the starting files. Old single-target packs remain CH-only.";
         }else if(route==1 && !recipe.Standalone && (bundle==null||bundle.Kind!="Full game archive")){
-            installDiagram.Set(new[]{"Clean Gorpg 1.23",recipe.Name+" bundle","Independent game"},new[]{clean==null?"Register or reconstruct the clean base first.":"Verified base is registered.",bundle==null?"Choose the complete bundle.":"Matching bundle found nearby.","Private base copy + ordered overwrites. Saves start empty."},new[]{clean!=null,bundle!=null,true});
+            installDiagram.Set(new[]{"GoRPG base","Creator bundle","New game"},
+                new[]{clean==null?"Add exact original base files.":"Clean game registered.",bundle==null?"Choose complete creator files.":"Matching candidate found.","Independent installation; empty saves."},
+                new[]{clean!=null,bundle!=null,true});
             installNeed.Text=(clean!=null?"✓ Clean Gorpg base is registered":"• Needed: clean Gorpg 1.23; reconstruct it from any supported version or use its original archive")+"\r\n"+(bundle==null?"• Needed bundle: "+ArchiveHint(recipe):"✓ Bundle found: "+Path.GetFileName(bundle.Path))+"\r\n• Never stack another complete bundle or Maple with this bundle";
             installNote.Text="Content folders overwrite matching folders inside www. 3.3.5 already contains its three components.";
         }else{
-            installDiagram.Set(new[]{"Complete game",recipe.Name,"Register & play"},new[]{"Folder containing Game.exe or nw.exe and package.json.","Use this branch's own complete installation.","Existing files and saves are kept in their current folder."},new[]{false,false,true});
-            installNeed.Text="• Use an extracted game folder, ZIP, RAR, or split .7z.001 full archive\r\n"+(route==1?(bundle!=null?"✓ Original files found: "+Path.GetFileName(bundle.Path):"• Original archive: "+ArchiveHint(recipe)):"• Select its game folder; wrapper folders are detected automatically")+"\r\n✓ Detection checks the game structure and version files";
+            installDiagram.Set(new[]{"Original game","Version check","Ready to play"},
+                new[]{"ZIP/RAR/7z or extracted folder.","Check native hashes and version.","Keep this game's own saves."},
+                new[]{false,false,true});
+            installNeed.Text="• Use an extracted game folder, ZIP, RAR, or split .7z.001 full archive\r\n"+(route==1?(bundle!=null?"• Source candidate: "+Path.GetFileName(bundle.Path):"• Original archive: "+ArchiveHint(recipe)):"• Select its game folder; wrapper folders are detected automatically")+"\r\n• Archive detection checks version markers; installation must verify the rest";
             installNote.Text=recipe.Id=="gorpg-1-23"?"Keep both .001 and .002 together. The launcher can extract and register the game.":"Full standalone games can be installed from original archives without CH or a delta pack.";
         }
         installButton.Text=route==0&&Installed(recipe.Id)!=null?"Use installed version":route==0&&found?"Install from detected pack":route==0?"Choose pack & install":route==1&&bundle!=null?"Use detected original files":route==1?"Choose original files":"Choose installed game folder";
@@ -427,6 +502,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         if(playButton==null)return;bool allowed=!busy&&!running&&!discovering;playButton.Enabled=!busy&&!running&&Selected!=null;
         gameFolderButton.Enabled=Selected!=null&&Directory.Exists(Selected.Root);saveFolderButton.Enabled=Selected!=null;
         if(copyButton!=null){copyButton.Enabled=allowed&&Selected!=null&&LibraryProfiles.Any(x=>x.Id!=Selected.Id&&UpgradeSupport.CanTransfer(UniversalSupport.Identify(x.Root),UniversalSupport.Identify(Selected.Root)));backupButton.Enabled=allowed&&Selected!=null;restoreButton.Enabled=allowed&&Selected!=null;}
+        if(openSaveButton!=null)openSaveButton.Enabled=allowed&&Selected!=null;
         if(controlsButton!=null)controlsButton.Enabled=Selected!=null&&!busy;
         if(controlsToggle!=null)controlsToggle.Enabled=!busy&&Selected!=null;
         if(installButton!=null)installButton.Enabled=!busy&&!running&&Target!=null;
@@ -436,6 +512,19 @@ public class PolishedLauncher : ReplacementAwareForm {
     }
     bool GameClosed(){running=Store.Running(settings);if(!running)return true;UpdateActions();MessageBox.Show(this,"Save and close the active game first.","Game is running");return false;}
     void Guard(Action action){try{action();}catch(Exception e){MessageBox.Show(this,e.Message,"Celesphonia Launcher",MessageBoxButtons.OK,MessageBoxIcon.Error);}}
+    static string InstallErrorAdvice(Exception error){
+        string message=error.Message??"";
+        if(message.IndexOf("space",StringComparison.OrdinalIgnoreCase)>=0)
+            return "Next: choose another Install location or make room for the independent game.";
+        if(message.IndexOf("missing",StringComparison.OrdinalIgnoreCase)>=0||
+           message.IndexOf("incomplete",StringComparison.OrdinalIgnoreCase)>=0)
+            return "Next: open Combine original sources and add the missing original archives or extracted folders.";
+        if(message.IndexOf("hash",StringComparison.OrdinalIgnoreCase)>=0||
+           message.IndexOf("mismatch",StringComparison.OrdinalIgnoreCase)>=0||
+           message.IndexOf("differ",StringComparison.OrdinalIgnoreCase)>=0)
+            return "Next: select the intact original version and matching creator update, then retry verification.";
+        return "Next: inspect the exact error and selected sources in View found files.";
+    }
     void Launch(){Launch(controlsToggle!=null&&controlsToggle.Checked);}
     async void Launch(bool controls){
         if(busy||Selected==null||!GameClosed())return;
@@ -470,9 +559,50 @@ public class PolishedLauncher : ReplacementAwareForm {
         var existing=LibraryProfiles.FirstOrDefault(x=>Path.GetFullPath(x.Root).Equals(Path.GetFullPath(root),StringComparison.OrdinalIgnoreCase));if(existing!=null){settings.SelectedId=existing.Id;RefreshProfiles();ShowPage("Play");status.Text="Selected existing installation · "+existing.Name;return;}
         string detected=UniversalSupport.DetectedName(root);string name=PromptName(detected??suggested);if(string.IsNullOrEmpty(name))return;var p=Store.Detect(root,name);if(detected!=null)p.Note="Detected "+detected+"; existing game files and saves";Added(p);
     }
-    void Added(Profile p){if(FileDiscovery.IsNativeProbe(p.Root))throw new IOException("This is an isolated verification copy. Choose your installed game folder.");var existing=LibraryProfiles.FirstOrDefault(x=>ProfileLibrary.Identity(x).Equals(ProfileLibrary.Identity(p),StringComparison.OrdinalIgnoreCase));if(existing!=null)p=existing;else settings.Profiles.Add(p);settings.SelectedId=p.Id;Store.Write(settings);RefreshProfiles();status.Text=p.Name+" selected · its own saves are ready.";UpdateInstall();ShowPage("Play");}
+    void Added(Profile p){if(FileDiscovery.IsNativeProbe(p.Root))throw new IOException("This is an isolated verification copy. Choose your installed game folder.");var existing=LibraryProfiles.FirstOrDefault(x=>ProfileLibrary.Identity(x).Equals(ProfileLibrary.Identity(p),StringComparison.OrdinalIgnoreCase));if(existing!=null)p=existing;else settings.Profiles.Add(p);Store.UnsuppressRoot(settings,p.Root);settings.SelectedId=p.Id;Store.Write(settings);RefreshProfiles();status.Text=p.Name+" selected · its own saves are ready.";UpdateInstall();ShowPage("Play");}
     void ChangeLocation(){if(busy)return;string path=Folder("Choose where NEW independent game profiles will be installed. Existing profiles stay where they are.",settings.InstallRoot);if(path==null)return;settings.InstallRoot=path;Store.Write(settings);UpdateInstall();}
     string PickArchive(string title,string filter,string initial,string fileName){using(var d=new OpenFileDialog{Title=title,Filter=filter,InitialDirectory=initial,FileName=fileName??""})return d.ShowDialog(this)==DialogResult.OK?d.FileName:null;}
+    void AddOriginalInput(string path){
+        if(string.IsNullOrWhiteSpace(path))return;
+        path=Path.GetFullPath(path);
+        if(!File.Exists(path)&&!Directory.Exists(path))throw new IOException("Source no longer exists: "+path);
+        if(!originalInputs.Any(x=>x.Equals(path,StringComparison.OrdinalIgnoreCase)))originalInputs.Add(path);
+    }
+    void ChooseOriginalInputs(){
+        if(busy)return;
+        using(var dialog=new Form{Text="Original game files · combine multiple sources",ClientSize=new Size(875,502),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
+            LabelAt(dialog,"Select as many original downloads, extracted folders and installed game directories as you have. Recovery checks every native file against its trusted hash.",16,12,841,50,10,false,Color.Black);
+            var items=new ListBox{Location=new Point(16,68),Size=new Size(843,245),HorizontalScrollbar=true};dialog.Controls.Add(items);
+            Action<string> add=path=>{if(string.IsNullOrWhiteSpace(path))return;string absolute=Path.GetFullPath(path);
+                if(!File.Exists(absolute)&&!Directory.Exists(absolute)){MessageBox.Show(dialog,"Missing source: "+absolute);return;}
+                if(!items.Items.Cast<string>().Any(x=>x.Equals(absolute,StringComparison.OrdinalIgnoreCase)))items.Items.Add(absolute);};
+            foreach(string path in originalInputs)add(path);
+            ButtonAt(dialog,"Add archives...",16,327,160,37,()=>{
+                using(var d=new OpenFileDialog{Title="Select all original ZIP, RAR or 7z archives (choose .001 for split archives)",Multiselect=true,
+                    Filter="Original archives|*.zip;*.rar;*.7z;*.001;*.7z.001|All files|*.*",
+                    InitialDirectory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads")})
+                    if(d.ShowDialog(dialog)==DialogResult.OK)foreach(string file in d.FileNames)add(file);
+            },false);
+            ButtonAt(dialog,"Add folder...",187,327,151,37,()=>{
+                using(var d=new FolderBrowserDialog{Description="Select an original game folder, extracted archive, or wrapper folder",ShowNewFolderButton=false})
+                    if(d.ShowDialog(dialog)==DialogResult.OK)add(d.SelectedPath);
+            },false);
+            var choices=discovered.Where(x=>(x.Kind=="Game archive candidate"||x.Kind=="Original archive"||x.Kind=="Extracted bundle"||x.Kind=="Installed game")&&string.IsNullOrEmpty(x.Problem))
+                .Concat(LibraryProfiles.Where(x=>Directory.Exists(x.Root)).Select(x=>new FoundSource{
+                    Kind="Installed game",Path=x.Root,RecipeId=UniversalSupport.Identify(x.Root),Name=x.Name}))
+                .GroupBy(x=>x.Path,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).OrderBy(x=>x.Name).ToArray();
+            var detected=new ComboBox{Location=new Point(16,378),Size=new Size(633,31),DropDownStyle=ComboBoxStyle.DropDownList,ForeColor=Color.Black};
+            detected.Items.AddRange(choices);if(detected.Items.Count>0)detected.SelectedIndex=0;dialog.Controls.Add(detected);
+            ButtonAt(dialog,"Add detected",663,376,196,37,()=>{var chosen=detected.SelectedItem as FoundSource;if(chosen!=null)add(chosen.Path);},false);
+            ButtonAt(dialog,"Remove selected",350,327,167,37,()=>{if(items.SelectedIndex>=0)items.Items.RemoveAt(items.SelectedIndex);},false);
+            ButtonAt(dialog,"Clear",528,327,121,37,()=>items.Items.Clear(),false);
+            LabelAt(dialog,"Installed versions can be selected from Found files or Starting version too. Nothing is extracted while choosing.",16,420,830,25,9,false,Color.DimGray);
+            var ok=new Button{Text="Use these sources",Location=new Point(636,451),Size=new Size(223,36),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;
+            if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+            originalInputs.Clear();foreach(string path in items.Items.Cast<string>())AddOriginalInput(path);
+            methods.SelectedIndex=1;UpdateInstall();
+        }
+    }
     string PickBundle(ModRecipe recipe){
         using(var dialog=new Form{Text="Choose the complete mod bundle",ClientSize=new Size(595,182),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
             LabelAt(dialog,"Choose an archive, or a folder already extracted from it.",18,16,565,35,11,false,Color.Black);
@@ -480,6 +610,246 @@ public class PolishedLauncher : ReplacementAwareForm {
             var choice=dialog.ShowDialog(this);if(choice==DialogResult.Yes)return PickArchive("Select ONE complete bundle; choose .001 for split archives","Mod archives|*.zip;*.rar;*r删ar;*.7z;*.001;*.7删z|All files|*.*",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Telegram Desktop"),recipe.ArchiveName);
             if(choice==DialogResult.No)return Folder("Select the bundle's extracted folder containing data, js, img, and audio.",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads"));return null;
         }
+    }
+    static bool HasNativeInventory(string id){
+        return id=="gorpg-1-23"||id=="ch-current"||id=="maple-1-7-2"||id=="three-in-one-3-3-4";
+    }
+    string[] NativeRecoveryInputs(string versionId,string explicitSource=null){
+        var paths=new List<string>(originalInputs);
+        var found=LocatedOriginal(versionId);
+        if(found!=null&&string.IsNullOrEmpty(found.Problem))paths.Add(found.Path);
+        if(!string.IsNullOrEmpty(explicitSource))paths.Add(explicitSource);
+        return paths.Where(x=>!string.IsNullOrWhiteSpace(x)&&(File.Exists(x)||Directory.Exists(x)))
+            .Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+    Profile CompatibleFolderSource(string targetId){
+        foreach(string input in originalInputs.Where(Directory.Exists)){
+            string game;
+            try{game=UniversalSupport.FindGameRoot(input);}
+            catch(IOException){continue;}
+            catch(UnauthorizedAccessException){continue;}
+            string id=UniversalSupport.Identify(game);
+            if(UpgradeSupport.MayUpgrade(id,targetId))
+                return LibraryProfiles.FirstOrDefault(x=>x.Root.Equals(game,StringComparison.OrdinalIgnoreCase))
+                    ??Store.Detect(game,UniversalSupport.DetectedName(game)??Path.GetFileName(game));
+        }
+        return null;
+    }
+    static MixedRecoveryReport VerifiedNativeSources(string versionId,string[] sources){
+        var reference=MixedSourceRecovery.LoadEmbeddedReference(versionId);
+        var report=MixedSourceRecovery.Probe(reference,sources,CancellationToken.None);
+        if(!report.Complete)
+            throw new IOException("Original "+versionId+" files are incomplete: "+report.FoundCount+"/"+report.RequiredCount+
+                " exact native files found. Missing "+report.Missing.Count+": "+
+                string.Join(", ",report.Missing.Take(6).ToArray())+
+                (report.Missing.Count>6?"…":"")+
+                ". Add another original archive or extracted folder using Combine original sources.");
+        return report;
+    }
+    static Profile InstallRecoveredVersion(string versionId,string[] sources,string location){
+        var report=VerifiedNativeSources(versionId,sources);
+        return InstallRecoveredVersion(versionId,report,location);
+    }
+    static Profile InstallRecoveredVersion(string versionId,MixedRecoveryReport report,string location){
+        if(report==null||!report.Complete||report.VersionId!=versionId)
+            throw new IOException("Full exact native source audit is required before installation.");
+        Directory.CreateDirectory(location);
+        string root=Path.Combine(location,"Original-"+versionId+"-"+Guid.NewGuid().ToString("N").Substring(0,8));
+        MixedSourceRecovery.Recover(report,root,CancellationToken.None);
+        if(UniversalSupport.Identify(root)!=versionId)
+            throw new IOException("Recovered native game failed its reference-version check.");
+        string name=UniversalSupport.ReadIndex().Versions.Where(x=>x.Id==versionId).Select(x=>x.Name).FirstOrDefault()??versionId;
+        var game=Store.Detect(root,name);
+        Directory.CreateDirectory(game.SavePath);
+        game.Note="Original "+name+" verified against "+report.RequiredCount+" native file hashes; independent game and saves";
+        return game;
+    }
+    static Profile InstallWithRecoveredGoRpg(string[] sources,string update,string location,ModRecipe recipe,bool english){
+        var report=VerifiedNativeSources("gorpg-1-23",sources);
+        Directory.CreateDirectory(location);
+        string staging=Path.Combine(location,".cph-original-"+Guid.NewGuid().ToString("N"));
+        try{
+            MixedSourceRecovery.Recover(report,staging,CancellationToken.None);
+            RecipeSupport.ValidateBase(staging);
+            var game=RecipeSupport.Install(staging,location,recipe.Name,new List<LayerInput>{new LayerInput{Source=update}});
+            if(UniversalSupport.Identify(game.Root)!=recipe.Id)
+                throw new IOException("Recovered original and creator bundle did not produce the selected version.");
+            SetInstalledEnglish(game,english);RecipeSupport.VerifyProfile(game);
+            game.Note="Independent "+recipe.Name+" from exact original native files and verified creator bundle; "+
+                (english?"English enabled":"native language")+"; empty saves";
+            return game;
+        }finally{
+            // This is the unique scratch directory owned by this invocation.
+            // The final layered profile has independently copied and hashed all its files.
+            if(Path.GetDirectoryName(Path.GetFullPath(staging)).TrimEnd('\\')==
+                Path.GetFullPath(location).TrimEnd('\\') &&
+                Path.GetFileName(staging).StartsWith(".cph-original-",StringComparison.Ordinal) &&
+                Directory.Exists(staging))Directory.Delete(staging,true);
+        }
+    }
+    static Dictionary<string,string> Validate334Overlay(string web,MixedNativeReference target,MixedNativeReference clean){
+        if(target.VersionId!="three-in-one-3-3-4"||target.Files.Count!=9474||
+           clean.VersionId!="gorpg-1-23"||clean.Files.Count!=7208)
+            throw new IOException("Complete 3.3.4 and GoRPG native inventories are required.");
+        Store.CheckLinks(web);
+        var required=target.Files.ToDictionary(x=>x.Path,x=>x,StringComparer.OrdinalIgnoreCase);
+        var baseline=clean.Files.ToDictionary(x=>x.Path,x=>x,StringComparer.OrdinalIgnoreCase);
+        var changed=target.Files.Where(x=>!baseline.ContainsKey(x.Path)||baseline[x.Path].Hash!=x.Hash).ToArray();
+        if(changed.Any(x=>!x.Path.StartsWith("www/",StringComparison.OrdinalIgnoreCase) ||
+                           !new[]{"audio","data","fonts","img","js","movies","css","icon"}.Contains(x.Path.Substring(4).Split('/')[0],StringComparer.OrdinalIgnoreCase)&&
+                           !(x.Path.Substring(4).IndexOf('/')<0&&x.Path.EndsWith(".txt",StringComparison.OrdinalIgnoreCase))))
+            throw new IOException("3.3.4 requires native changes outside the supported creator overlay directories.");
+        var overlayFiles=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+        var allOverlayPaths=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach(string file in Directory.GetFiles(web,"*",SearchOption.AllDirectories)){
+            string relative=file.Substring(web.TrimEnd('\\','/').Length+1).Replace('\\','/');
+            string top=relative.Split('/')[0];
+            bool asset=new[]{"audio","data","fonts","img","js","movies","css","icon"}.Contains(top,StringComparer.OrdinalIgnoreCase);
+            bool nativeNote=relative.IndexOf('/')<0&&relative.EndsWith(".txt",StringComparison.OrdinalIgnoreCase);
+            if((!asset&&!nativeNote) ||
+               relative.Split('/').Any(x=>x.Equals("save",StringComparison.OrdinalIgnoreCase))||
+               Store.IsSave(file)||(File.GetAttributes(file)&FileAttributes.ReparsePoint)!=0)
+                throw new IOException("Unexpected creator overlay file: "+relative);
+            MixedNativeFile expected;
+            if(!required.TryGetValue("www/"+relative,out expected) ||
+               new FileInfo(file).Length!=expected.Size || Store.Hash(file)!=expected.Hash)
+                throw new IOException("Creator hypnosis overlay differs from the trusted 3.3.4 target: "+relative);
+            if(!allOverlayPaths.Add(relative))
+                throw new IOException("Duplicate creator overlay path: "+relative);
+            // VerifyBundle covers the eight native content directories; the
+            // creator's seven root-level .txt files still receive exact target
+            // hashes here and again in the complete installed-tree audit.
+            if(asset)overlayFiles.Add(relative,expected.Hash);
+        }
+        var missing=changed.Where(x=>!allOverlayPaths.Contains(x.Path.Substring(4))).ToArray();
+        if(missing.Length>0)
+            throw new IOException("Hypnosis creator overlay is incomplete: "+missing.Length+" of "+
+                changed.Length+" required changed/new files missing (e.g. "+
+                string.Join(", ",missing.Take(5).Select(x=>x.Path).ToArray())+").");
+        return overlayFiles;
+    }
+    static void VerifyStrict334Target(string root,MixedNativeReference reference){
+        var result=MixedSourceRecovery.Probe(reference,new[]{root},CancellationToken.None);
+        if(!result.Complete||result.RequiredCount!=9474||result.FoundCount!=9474)
+            throw new IOException("Built 3.3.4 failed the exact 9,474-file native audit: "+
+                result.FoundCount+"/"+result.RequiredCount+" SHA-256 matches. Missing "+
+                result.Missing.Count+": "+string.Join(", ",result.Missing.Take(5).ToArray()));
+        if(UniversalSupport.Identify(root)!="three-in-one-3-3-4")
+            throw new IOException("Built 3.3.4 does not have the exact reference-version fingerprints.");
+        var paths=new HashSet<string>(reference.Files.Select(x=>x.Path),StringComparer.OrdinalIgnoreCase);
+        foreach(string file in Directory.GetFiles(root,"*",SearchOption.AllDirectories)){
+            string relative=file.Substring(root.TrimEnd('\\','/').Length+1).Replace('\\','/');
+            if(paths.Contains(relative)||relative.Equals("launcher-build.json",StringComparison.OrdinalIgnoreCase)||
+               relative.Equals("launcher-base.json",StringComparison.OrdinalIgnoreCase)||
+               relative.Equals("launcher-reconstruction.json",StringComparison.OrdinalIgnoreCase)||
+               relative.StartsWith("www/save/",StringComparison.OrdinalIgnoreCase)&&Store.IsSave(file))continue;
+            throw new IOException("Built hypnosis 3.3.4 contains an unrecognized extra file: "+relative);
+        }
+    }
+    static Profile InstallStrict334Overlay(string baseRoot,string overlaySource,string location,ModRecipe recipe){
+        if(recipe.Id!="three-in-one-3-3-4")throw new IOException("Incorrect creator-overlay target.");
+        var target=MixedSourceRecovery.LoadEmbeddedReference(recipe.Id);
+        var clean=MixedSourceRecovery.LoadEmbeddedReference("gorpg-1-23");
+        var verifiedBase=MixedSourceRecovery.Probe(clean,new[]{baseRoot},CancellationToken.None);
+        if(!verifiedBase.Complete)
+            throw new IOException("Clean GoRPG source is incomplete: "+verifiedBase.FoundCount+"/"+verifiedBase.RequiredCount+
+                " exact files. Add an intact original GoRPG archive or folder.");
+        Directory.CreateDirectory(location);
+        string token=Guid.NewGuid().ToString("N");
+        string extracted=Path.Combine(location,".cph-334-overlay-"+token);
+        string build=Path.Combine(location,".cph-334-build-"+token);
+        try{
+            string web=File.Exists(overlaySource)?Store.Extract(overlaySource,extracted,true):
+                RecipeSupport.ContentRoot(overlaySource);
+            var matching=RecipeSupport.Identify(web);
+            if(matching==null||matching.Id!=recipe.Id)
+                throw new IOException("Selected bundle is not the original 3.3.4 hypnosis creator overlay.");
+            var trustedFiles=Validate334Overlay(web,target,clean);
+            if(trustedFiles.Count==0)throw new IOException("Hypnosis creator overlay has no verified target files.");
+            Profile built;
+            // RecipeSupport's current 3.3.4 catalog has no complete Files ledger.
+            // Supply only the independently verified exact target hashes for this
+            // installation invocation; restore the shared recipe in all outcomes.
+            lock(recipe){
+                var previous=recipe.Files;
+                try{
+                    recipe.Files=trustedFiles;
+                    built=RecipeSupport.Install(baseRoot,build,recipe.Name,
+                        new List<LayerInput>{new LayerInput{Source=web}});
+                }finally{recipe.Files=previous;}
+            }
+            VerifyStrict334Target(built.Root,target);
+            string destination=Path.Combine(location,"Layers-334-"+Guid.NewGuid().ToString("N").Substring(0,8));
+            if(Directory.Exists(destination)||File.Exists(destination))
+                throw new IOException("The installation destination already exists.");
+            Directory.Move(built.Root,destination);
+            var game=Store.Detect(destination,recipe.Name);
+            game.Note="Verified hypnosis 3.3.4: 9,474 native SHA-256 files matched; independent installation and saves";
+            return game;
+        }finally{
+            // Remove only uniquely named scratch folders created by this invocation.
+            foreach(string path in new[]{extracted,build}){
+                if(Path.GetDirectoryName(Path.GetFullPath(path)).TrimEnd('\\')==
+                   Path.GetFullPath(location).TrimEnd('\\') &&
+                   Path.GetFileName(path).Contains(token) && Directory.Exists(path))
+                    Directory.Delete(path,true);
+            }
+        }
+    }
+    async Task Install334(ModRecipe recipe,string location){
+        var already=Installed(recipe.Id);
+        if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
+        string[] targetSources=NativeRecoveryInputs(recipe.Id);
+        string chosen=null;
+        if(targetSources.Length==0){
+            chosen=PickBundle(recipe);
+            if(chosen==null)return;
+            targetSources=NativeRecoveryInputs(recipe.Id,chosen);
+        }
+        MixedRecoveryReport exact=null;
+        if(targetSources.Length>0){
+            status.Text="Checking complete original 3.3.4 files against all 9,474 expected hashes…";
+            exact=await Task.Run(()=>MixedSourceRecovery.Probe(
+                MixedSourceRecovery.LoadEmbeddedReference(recipe.Id),targetSources,CancellationToken.None));
+            if(exact.Complete){
+                await RunInstall(()=>InstallRecoveredVersion(recipe.Id,exact,location));return;
+            }
+        }
+        var detected=Found(recipe.Id,"Extracted bundle")??Found(recipe.Id,"Original archive");
+        string overlay=chosen??(detected==null?PickBundle(recipe):detected.Path);
+        if(overlay==null)return;
+        var clean=Clean();
+        if(clean!=null){
+            bool complete=await Task.Run(()=>MixedSourceRecovery.Probe(
+                MixedSourceRecovery.LoadEmbeddedReference("gorpg-1-23"),
+                new[]{clean.Root},CancellationToken.None).Complete);
+            if(complete){
+                await RunInstall(()=>InstallStrict334Overlay(clean.Root,overlay,location,recipe));return;
+            }
+        }
+        string[] baseSources=NativeRecoveryInputs("gorpg-1-23");
+        if(baseSources.Length==0){
+            string baseArchive=PickArchive("Choose an original GoRPG 1.23 archive (.001 for split archives), or select folders through Combine original sources",
+                "Game archives|*.zip;*.rar;*.7z;*.001|All files|*.*",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads"),null);
+            if(baseArchive==null)return;
+            baseSources=NativeRecoveryInputs("gorpg-1-23",baseArchive);
+        }
+        string[] verifiedSources=baseSources;
+        await RunInstall(()=>{
+            var baseReport=VerifiedNativeSources("gorpg-1-23",verifiedSources);
+            Directory.CreateDirectory(location);
+            string tempBase=Path.Combine(location,".cph-334-base-"+Guid.NewGuid().ToString("N"));
+            try{
+                MixedSourceRecovery.Recover(baseReport,tempBase,CancellationToken.None);
+                return InstallStrict334Overlay(tempBase,overlay,location,recipe);
+            }finally{
+                if(Path.GetDirectoryName(Path.GetFullPath(tempBase)).TrimEnd('\\')==
+                    Path.GetFullPath(location).TrimEnd('\\') &&
+                   Path.GetFileName(tempBase).StartsWith(".cph-334-base-",StringComparison.Ordinal) &&
+                   Directory.Exists(tempBase))Directory.Delete(tempBase,true);
+            }
+        });
     }
     async void GuidedInstall(){
         if(busy||Target==null||!GameClosed())return;
@@ -492,40 +862,79 @@ public class PolishedLauncher : ReplacementAwareForm {
                 while(discovering&&!IsDisposed)await Task.Delay(25);
                 if(IsDisposed)return;
             }
+            if(route==1&&recipe.Id=="three-in-one-3-3-4"){
+                await Install334(recipe,location);return;
+            }
+            if(route==1&&HasNativeInventory(recipe.Id)){
+                var already=Installed(recipe.Id);
+                if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
+                string[] native=NativeRecoveryInputs(recipe.Id);
+                if(native.Length==0){
+                    string first=PickArchive("Choose original "+recipe.Name+" archive (.001 for split files), or use Combine original sources for folders",
+                        "Game archives|*.zip;*.rar;*.7z;*.001|All files|*.*",
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads"),null);
+                    if(first==null)return;
+                    native=NativeRecoveryInputs(recipe.Id,first);
+                }
+                await RunInstall(()=>InstallRecoveredVersion(recipe.Id,native,location));return;
+            }
             if(UpgradeSupport.IsUpgrade(recipe.Id)&&route!=2){
                 var already=Installed(recipe.Id);if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
-                var preferred=startingSource??UpgradeSupport.StartingProfile(settings,recipe.Id);
-                var source=preferred!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(preferred.Root),recipe.Id)
-                    ?preferred:UpgradeSupport.StartingProfile(settings,recipe.Id);
-                bool fresh=route==1||source==null;bool english=englishOnInstall.Checked;
+                bool english=englishOnInstall.Checked;
                 var full=Found(recipe.Id,"Full game archive");
+                var detected=Found(recipe.Id,"Extracted bundle")??Found(recipe.Id,"Original archive");
+                string update=detected==null?PickBundle(recipe):detected.Path;if(update==null)return;
+                var candidatePaths=originalInputs.Concat(discovered.Where(x=>x.Kind=="Game archive candidate"&&
+                    string.IsNullOrEmpty(x.Problem)&&UpgradeSupport.MayUpgrade(x.RecipeId,recipe.Id)).Select(x=>x.Path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                status.Text="Checking installed versions and original archives for a compatible upgrade source…";
+                var automatic=await Task.Run(()=>UpgradeSupport.BestCompatibleSource(settings,recipe.Id,candidatePaths,CancellationToken.None));
+                var explicitSource=startingSource;
+                bool explicitlyChosen=explicitSource!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(explicitSource.Root),recipe.Id);
+                var source=explicitlyChosen?explicitSource:automatic!=null&&automatic.Kind!="Full game archive"?automatic.Profile:null;
+                bool fresh=source==null&&(automatic==null||automatic.Kind!="Full game archive");
+                if(automatic!=null&&automatic.Kind=="Full game archive"&&!explicitlyChosen){
+                    string archive=automatic.Path;
+                    status.Text="Found compatible "+automatic.VersionId+" archive; complete source hashes will be checked before saves are copied.";
+                    await RunInstall(()=>{var game=UpgradeSupport.InstallFromGameArchive(archive,update,location,recipe.Id,true);
+                        SetInstalledEnglish(game,english);return game;});return;
+                }
                 if(fresh&&full!=null){
                     await RunInstall(()=>{var game=UniversalSupport.InstallOriginal(full.Path,location,recipe.Id);SetInstalledEnglish(game,english);return game;});return;
                 }
-                var detected=Found(recipe.Id,"Extracted bundle")??Found(recipe.Id,"Original archive");
-                string update=detected==null?PickBundle(recipe):detected.Path;if(update==null)return;
                 if(!fresh){
+                    status.Text="Using compatible "+UniversalSupport.Identify(source.Root)+" installation and backing up its saves before upgrading…";
                     await RunInstall(()=>{var game=UpgradeSupport.Install(source,update,location,recipe.Id,true);SetInstalledEnglish(game,english);return game;});return;
                 }
                 var baseGame=Clean();var originalBase=Original("gorpg-1-23");
                 var packedBase=AnyPack("gorpg-1-23");
                 var starting=startingSource??LibraryProfiles.FirstOrDefault(x=>UniversalSupport.Identify(x.Root)!=null&&UniversalSupport.Identify(x.Root)!="gorpg-1-23"&&UniversalSupport.Identify(x.Root)!=recipe.Id);
+                string[] nativeInputs=NativeRecoveryInputs("gorpg-1-23");
+                if(baseGame==null&&nativeInputs.Length>0){
+                    await RunInstall(()=>{var game=UpgradeSupport.InstallFromMixedGoRpg(nativeInputs,update,location,recipe.Id,CancellationToken.None);
+                        SetInstalledEnglish(game,english);return game;});return;
+                }
                 // If the only game on hand is v1.03/v1.04/v1.051, a
                 // direct forward upgrade is possible without GoRPG rebuilding.
-                var oldArchive=new[]{"three-in-one-3-3-5-v1-051","three-in-one-3-3-5-v1-04","three-in-one-3-3-5-v1-03"}
+                var oldArchive=new[]{"three-in-one-3-3-5-v1-051","three-in-one-3-3-5-v1-04","three-in-one-3-3-5-v1-03","three-in-one-3-3-5-v1-02","three-in-one-3-3-5-v1-01"}
                     .Select(id=>Found(id,"Full game archive")).FirstOrDefault(x=>x!=null);
                 if(baseGame==null&&originalBase==null&&oldArchive!=null&&route==0){
                     await RunInstall(()=>{var old=UniversalSupport.InstallOriginal(oldArchive.Path,location,oldArchive.RecipeId);
                         var game=UpgradeSupport.Install(old,update,location,recipe.Id,true);SetInstalledEnglish(game,english);return game;});return;
                 }
-                string archive=null;
+                string cleanArchive=null;
                 if(baseGame==null&&originalBase==null&&(packedBase==null||starting==null)){
-                    archive=PickArchive("Choose clean GoRPG game ZIP, RAR, split 7z, or extracted folder via Starting version...",
+                    cleanArchive=PickArchive("Choose clean GoRPG game ZIP, RAR, split 7z, or extracted folder via Starting version...",
                         "Game archives|*.zip;*.7z;*.001;*.rar|All files|*.*",
                         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads"),null);
-                    if(archive==null)return;
+                    if(cleanArchive==null)return;
                 }
-                string selectedArchive=archive;
+                string selectedArchive=cleanArchive;
+                if(baseGame==null&&originalBase==null&&selectedArchive!=null){
+                    string[] manualNative=NativeRecoveryInputs("gorpg-1-23",selectedArchive);
+                    await RunInstall(()=>{var game=UpgradeSupport.InstallFromMixedGoRpg(manualNative,update,location,recipe.Id,CancellationToken.None);
+                        SetInstalledEnglish(game,english);return game;});return;
+                }
                 await RunInstall(()=>{
                     Profile cleanBase=baseGame;
                     if(cleanBase==null){
@@ -560,7 +969,8 @@ public class PolishedLauncher : ReplacementAwareForm {
                 await RunInstall(()=>{ModRecipe found=Directory.Exists(source)?RecipeSupport.Identify(RecipeSupport.ContentRoot(source)):RecipeSupport.IdentifyArchive(source);if(found!=null&&found.Id!=recipe.Id)throw new IOException("The chosen files are "+found.Name+". Choose the matching version.");return RecipeSupport.Install(basis.Root,location,recipe.Name,new List<LayerInput>{new LayerInput{Source=source}});});
             }else if(route==1){var original=Original(recipe.Id);string file=original==null?PickBundle(recipe):original.Path;if(file==null)return;if(Directory.Exists(file))Register(UniversalSupport.FindGameRoot(file),recipe.Name);else await RunInstall(()=>UniversalSupport.InstallOriginal(file,location,recipe.Id));}
             else{string root=Folder("Choose any EXTRACTED complete game folder. Version files will identify it.",settings.InstallRoot);if(root!=null)Register(UniversalSupport.FindGameRoot(root),recipe.Name);}
-        }catch(Exception e){MessageBox.Show(this,e.Message,"Install version",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        }catch(Exception e){status.Text="Could not prepare "+recipe.Name+": "+e.Message;
+            MessageBox.Show(this,e.Message+"\r\n\r\n"+InstallErrorAdvice(e),"Install version",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally{busy=false;if(!IsDisposed){SetEnabled(true);UpdateActions();}}
     }
     static void SetInstalledEnglish(Profile game,bool enabled){
@@ -570,7 +980,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         else if(status.Enabled)EnglishSupport.Restore(game);
     }
     async Task RunInstall(Func<Profile> job){
-        busy=true;SetEnabled(false);progress.Visible=true;status.Text="Installing a complete private copy and verifying its files. Please keep this window open.";UseWaitCursor=true;
+        busy=true;SetEnabled(false);progress.Visible=true;status.Text="Checking original sources, preparing an independent game, and verifying file hashes. Large archives can take time.";UseWaitCursor=true;
         try{var p=await Task.Run(job);
             string record=Path.Combine(p.Root,"launcher-build.json");
             if(File.Exists(record)){
@@ -580,7 +990,9 @@ public class PolishedLauncher : ReplacementAwareForm {
                 }
             }
             Added(p);MessageBox.Show(this,"Installed "+p.Name+". It has its own save folder; all previous versions remain in your library.","Version ready");}
-        catch(Exception e){status.Text="Installation did not finish. Existing games and saves were preserved.";MessageBox.Show(this,e.Message,"Installation",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        catch(Exception e){status.Text="Installation stopped: "+e.Message;
+            MessageBox.Show(this,e.Message+"\r\n\r\n"+InstallErrorAdvice(e),
+                "Installation could not finish",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally{UseWaitCursor=false;progress.Visible=false;busy=false;SetEnabled(true);UpdateActions();}
     }
     void SetEnabled(bool enabled){foreach(Control control in Controls)if(control!=status)control.Enabled=enabled;}
@@ -601,41 +1013,178 @@ public class PolishedLauncher : ReplacementAwareForm {
         }
     }
     Profile ChooseProfile(string title,IEnumerable<Profile> options){using(var dialog=new Form{Text=title,ClientSize=new Size(595,145),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){var box=new ComboBox{Location=new Point(18,24),Size=new Size(559,31),DropDownStyle=ComboBoxStyle.DropDownList};box.Items.AddRange(options.ToArray());if(box.Items.Count>0)box.SelectedIndex=0;dialog.Controls.Add(box);var ok=new Button{Text="Select",Location=new Point(429,87),Size=new Size(148,35),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;return dialog.ShowDialog(this)==DialogResult.OK?box.SelectedItem as Profile:null;}}
-    void CopySaves(){if(Selected==null||!GameClosed())return;var source=ChooseProfile("Copy compatible saves from which version?",LibraryProfiles.Where(x=>x.Id!=Selected.Id&&UpgradeSupport.CanTransfer(UniversalSupport.Identify(x.Root),UniversalSupport.Identify(Selected.Root))));if(source==null)return;
-        if(MessageBox.Show(this,"Copy "+source.Name+" saves into "+Selected.Name+"?\r\n\r\n"+RecipeSupport.SaveWarning(source,Selected),"Review save transfer",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
-        Store.ReplaceSaves(source.SavePath,Selected);UpdateProfile();status.Text="Saves copied. Source saves and the destination's previous backup are preserved.";
+    void BackupNow(){
+        if(Selected==null||!GameClosed())return;
+        var game=Selected;
+        status.Text="Creating a timestamped backup of "+game.Name+" saves…";
+        string folder=Store.Backup(game);
+        status.Text="Backup created for "+game.Name+": "+folder;
+        UpdateProfile();
+        if(saveGuide!=null)saveGuide.Text+="\r\nLatest backup: "+folder;
     }
-    void Restore(){if(!GameClosed())return;string parent=Path.Combine(Store.Home,"Save Backups",Selected.Id);Directory.CreateDirectory(parent);string folder=Folder("Choose the timestamped backup folder containing manifest.json.",parent);if(folder==null)return;Store.VerifyBackup(folder);
-        if(MessageBox.Show(this,"Restore this save backup to "+Selected.Name+"? Your current save set will be backed up first.","Restore saves",MessageBoxButtons.YesNo)!=DialogResult.Yes)return;Store.ReplaceSaves(folder,Selected,true);UpdateProfile();status.Text="Backup restored; the previous save set was backed up first.";
+    void CopySaves(){
+        if(Selected==null||!GameClosed())return;
+        var destination=Selected;
+        var eligible=LibraryProfiles.Where(x=>x.Id!=destination.Id&&UpgradeSupport.CanTransfer(UniversalSupport.Identify(x.Root),UniversalSupport.Identify(destination.Root))).ToArray();
+        if(eligible.Length==0){MessageBox.Show(this,"No verified compatible version is registered. Add the source version first, then select Copy again.","No compatible save source");return;}
+        var source=ChooseProfile("Select the source of saves to copy",eligible);if(source==null)return;
+        if(MessageBox.Show(this,"COPY SAVES\r\nFrom: "+source.Name+"\r\nTo: "+destination.Name+
+            "\r\n\r\nThe destination is backed up before replacement; source saves stay in place.\r\n\r\n"+
+            RecipeSupport.SaveWarning(source,destination),"Confirm destination and source",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
+        status.Text="Backing up "+destination.Name+" and copying compatible saves from "+source.Name+"…";
+        Store.ReplaceSaves(source.SavePath,destination);UpdateProfile();status.Text="Copied saves to "+destination.Name+". Source and destination backup preserved.";
+    }
+    void Restore(){
+        if(Selected==null||!GameClosed())return;
+        var game=Selected;string parent=Path.Combine(Store.Home,"Save Backups",game.Id);
+        Directory.CreateDirectory(parent);
+        string folder=Folder("Choose a backup folder for "+game.Name+" containing manifest.json.",parent);
+        if(folder==null)return;
+        status.Text="Checking backup integrity for "+game.Name+"…";
+        Store.VerifyBackup(folder);
+        if(MessageBox.Show(this,"RESTORE SAVES\r\nDestination: "+game.Name+"\r\nBackup: "+folder+
+            "\r\n\r\nCurrent destination saves will first be backed up. Restore then replaces the destination saves.","Confirm save restore",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
+        status.Text="Backing up existing saves and restoring "+game.Name+"…";
+        Store.ReplaceSaves(folder,game,true);UpdateProfile();status.Text="Backup restored to "+game.Name+"; previous destination saves backed up.";
+    }
+    static string ReadableBytes(long bytes){
+        if(bytes>=1024L*1024*1024)return (bytes/(1024.0*1024*1024)).ToString("N2")+" GB";
+        if(bytes>=1024L*1024)return (bytes/(1024.0*1024)).ToString("N1")+" MB";
+        return bytes.ToString("N0")+" bytes";
+    }
+    async void RemoveVersion(Profile game){
+        if(busy||game==null)return;
+        RemovalMode mode;
+        using(var picker=new Form{Text="Remove a registered game · choose what stays",ClientSize=new Size(790,309),
+            Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,
+            MinimizeBox=false,MaximizeBox=false}){
+            LabelAt(picker,game.Name,18,15,755,31,14,true,Color.Black);
+            LabelAt(picker,"Choose an action. Each choice shows a review and requires confirmation before changes are made.",18,50,754,41,10,false,Color.DimGray);
+            LabelAt(picker,"Remove from launcher only\r\nForget the registration. The entire game folder, saves, backups and archives stay on disk.",18,98,753,58,10,false,Color.Black);
+            LabelAt(picker,"Uninstall verified managed game files\r\nRemove only exact SHA-256 verified launcher-managed game files; keep saves, archives and unknown files.",18,166,753,60,10,false,Color.Black);
+            var indexOnly=new Button{Text="Remove registration",Location=new Point(18,253),Size=new Size(223,39),DialogResult=DialogResult.Yes};
+            var managed=new Button{Text="Review file uninstall",Location=new Point(258,253),Size=new Size(250,39),DialogResult=DialogResult.No};
+            var cancel=new Button{Text="Cancel",Location=new Point(647,253),Size=new Size(125,39),DialogResult=DialogResult.Cancel};
+            picker.Controls.Add(indexOnly);picker.Controls.Add(managed);picker.Controls.Add(cancel);picker.CancelButton=cancel;
+            var decision=picker.ShowDialog(this);
+            if(decision!=DialogResult.Yes&&decision!=DialogResult.No)return;
+            mode=decision==DialogResult.Yes?RemovalMode.IndexOnly:RemovalMode.InstalledGame;
+        }
+        if(mode==RemovalMode.InstalledGame&&!GameClosed())return;
+        RemovalPlan plan;
+        busy=true;SetEnabled(false);progress.Visible=true;UseWaitCursor=true;
+        status.Text=mode==RemovalMode.IndexOnly?"Checking the saved launcher registration…":
+            "Auditing managed game files and their SHA-256 hashes. Archives and saves are excluded…";
+        try{plan=await Task.Run(()=>InstallationRemoval.Plan(game,settings,mode));}
+        catch(Exception e){
+            status.Text="Could not prepare removal for "+game.Name+": "+e.Message;
+            MessageBox.Show(this,e.Message,"Removal preview failed",MessageBoxButtons.OK,MessageBoxIcon.Error);return;
+        }
+        finally{busy=false;UseWaitCursor=false;progress.Visible=false;SetEnabled(true);UpdateActions();}
+        if(mode==RemovalMode.InstalledGame&&!plan.CanDeleteFiles){
+            status.Text="File uninstall unavailable for "+game.Name+". The registration may still be removed.";
+            MessageBox.Show(this,plan.Reason+"\r\n\r\nChoose Remove from launcher only to forget this entry while keeping its files.",
+                "No verified managed files to uninstall",MessageBoxButtons.OK,MessageBoxIcon.Information);return;
+        }
+        string summary=mode==RemovalMode.IndexOnly?
+            "REMOVE REGISTRATION ONLY\r\nNo game files, saves, backups or archives will be removed.":
+            "UNINSTALL VERIFIED FILES\r\n"+plan.FileCount.ToString("N0")+" verified game files ("+ReadableBytes(plan.FileBytes)+") will be removed."+
+            "\r\n"+plan.RetainedCount.ToString("N0")+" unrecognized/protected files ("+ReadableBytes(plan.RetainedBytes)+") stay, including "+
+            plan.PreservedSaves+" saves, "+plan.PreservedBackups+" backups and "+plan.PreservedArchives+" archives.";
+        string preview="Game: "+game.Name+"\r\nFolder: "+plan.Root+"\r\n\r\n"+summary+
+            "\r\n\r\n"+plan.Message+
+            (mode==RemovalMode.InstalledGame&&plan.RetainedSample.Count>0?
+                "\r\n\r\nExamples preserved: "+string.Join(", ",plan.RetainedSample.Take(3).ToArray()):"")+
+            "\r\n\r\nConfirm this exact action?";
+        if(MessageBox.Show(this,preview,"Review removal · confirmation required",MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)!=DialogResult.Yes){
+            status.Text="Removal canceled. "+game.Name+" is unchanged.";return;
+        }
+        busy=true;SetEnabled(false);progress.Visible=true;UseWaitCursor=true;
+        status.Text=mode==RemovalMode.IndexOnly?"Updating the launcher library; game files are staying in place…":
+            "Rechecking managed file hashes, then removing only verified game files…";
+        try{
+            var result=await Task.Run(()=>InstallationRemoval.Execute(plan));
+            if(startingSource!=null&&startingSource.Root.Equals(game.Root,StringComparison.OrdinalIgnoreCase))startingSource=null;
+            RefreshProfiles();UpdateAvailability();UpdateInstall();
+            status.Text=result.Message;
+            MessageBox.Show(this,result.Message+"\r\n\r\nFolder: "+result.Root+
+                (mode==RemovalMode.InstalledGame?"\r\nVerified files removed: "+result.DeletedFiles.ToString("N0")+
+                "\r\nUnmatched/protected files retained: "+result.RetainedFiles.ToString("N0"):""),
+                "Removal completed",MessageBoxButtons.OK,MessageBoxIcon.Information);
+        }catch(Exception e){
+            status.Text="Removal stopped for "+game.Name+": "+e.Message;
+            MessageBox.Show(this,e.Message+"\r\n\r\nRefresh the library and review this game's current folder before trying again.",
+                "Removal stopped",MessageBoxButtons.OK,MessageBoxIcon.Error);
+        }finally{busy=false;UseWaitCursor=false;progress.Visible=false;SetEnabled(true);UpdateActions();}
     }
     public void PreviewPage(string page){discovered=FileDiscovery.Scan(settings);discoveryStatus.Text="Found "+discovered.Count+" sources · launcher folders, Documents, Desktop, Downloads + browser folders";foreach(var p in LibraryProfiles)statusCache[p.Id]=EnglishSupport.Status(p);if(page=="English")profiles.SelectedItem=Installed(UpgradeSupport.Latest)??LibraryProfiles.FirstOrDefault(x=>x.Name.Contains("3.3.5"))??Selected;if(Selected!=null)englishCurrent=statusCache[Selected.Id];ShowPage(page);}
     public void OpenEnglishPage(){ShowPage("English");}
     public void TestPage(string page){ShowPage(page);}
     void BuildFiles(){
-        filesPage=Page();LabelAt(filesPage,"FILES & VERSIONS",0,0,760,24,10,true,muted);LabelAt(filesPage,"What you already have",0,32,800,46,24,true);
-        LabelAt(filesPage,"Green rows are ready to switch. Other rows show files that can prepare a missing version.",0,89,800,44,10,false,muted);
-        availability=new DataGridView{Location=new Point(0,149),Size=new Size(812,350),ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,BackgroundColor=card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,RowTemplate={Height=48},AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.None};
+        filesPage=Page();LabelAt(filesPage,"FILES · YOUR GAME LIBRARY",0,0,760,24,10,true,muted);LabelAt(filesPage,"Choose a version",0,32,800,46,24,true);
+        LabelAt(filesPage,"1 · Select a row. Installed games open directly; other versions open the Install guide.\r\nSource candidates still need full native-file verification.",0,85,800,57,10,false,muted);
+        availability=new DataGridView{Location=new Point(0,158),Size=new Size(812,344),ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,BackgroundColor=card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,RowTemplate={Height=48},AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.None};
         availability.ColumnHeadersDefaultCellStyle.BackColor=Color.FromArgb(41,47,64);availability.ColumnHeadersDefaultCellStyle.ForeColor=ForeColor;availability.ColumnHeadersHeight=43;
         availability.DefaultCellStyle.BackColor=card;availability.DefaultCellStyle.ForeColor=ForeColor;availability.DefaultCellStyle.SelectionBackColor=Color.FromArgb(68,58,103);availability.DefaultCellStyle.WrapMode=DataGridViewTriState.True;availability.GridColor=Color.FromArgb(48,56,73);
         availability.CellBorderStyle=DataGridViewCellBorderStyle.SingleHorizontal;availability.ColumnHeadersBorderStyle=DataGridViewHeaderBorderStyle.None;availability.DefaultCellStyle.Padding=new Padding(7,0,4,0);availability.DefaultCellStyle.SelectionForeColor=ForeColor;availability.AlternatingRowsDefaultCellStyle.BackColor=Color.FromArgb(28,34,47);
         availability.Columns.Add("Version","Version");availability.Columns[0].Width=183;availability.Columns.Add("Game","Game folder");availability.Columns[1].Width=110;availability.Columns.Add("Original","Original files");availability.Columns[2].Width=116;availability.Columns.Add("Pack","Patch pack");availability.Columns[3].Width=113;availability.Columns.Add("English","English text");availability.Columns[4].Width=143;availability.Columns.Add("Ready","Action");availability.Columns[5].Width=143;
-        availability.SelectionChanged+=delegate{Guard(()=>{if(availabilityNote==null||availability.SelectedRows.Count==0)return;string id=Convert.ToString(availability.SelectedRows[0].Tag);if(string.IsNullOrEmpty(id))return;var p=Installed(id);var original=Original(id);availabilityNote.Text=p!=null?"Installed: "+p.Root:original!=null?"Original files: "+original.Path:"Select this version to see exactly which files are needed.";});};
+        availability.SelectionChanged+=delegate{Guard(UpdateFilesSelection);};
         availability.CellDoubleClick+=delegate{UseAvailable();};filesPage.Controls.Add(availability);
         availability.CellMouseDown+=delegate(object sender,DataGridViewCellMouseEventArgs e){if(e.Button!=MouseButtons.Right||e.RowIndex<0)return;availability.ClearSelection();availability.Rows[e.RowIndex].Selected=true;string id=Convert.ToString(availability.Rows[e.RowIndex].Tag);var game=Installed(id);if(game!=null){profiles.SelectedItem=game;ShowFolders(availability,availability.PointToClient(Cursor.Position));}else{var source=Original(id)??AnyPack(id);if(source!=null)Guard(()=>LauncherFolders.Open(source.Path));}};
-        availabilityNote=LabelAt(filesPage,"",0,511,812,45,10,false,muted);
-        ButtonAt(filesPage,"Use selected version",0,572,277,45,()=>UseAvailable(),true);ButtonAt(filesPage,"View detected files",295,572,252,45,()=>ShowFoundFiles(),false);ButtonAt(filesPage,"Search another folder",565,572,247,45,()=>AddSearchFolder(),false);
+        availabilityNote=LabelAt(filesPage,"Select a version to see its source and next action.",0,514,812,81,10,false,muted);
+        ButtonAt(filesPage,"Open selected version",0,604,277,43,()=>UseAvailable(),true);
+        ButtonAt(filesPage,"Inspect found sources",295,604,252,43,()=>ShowFoundFiles(),false);
+        ButtonAt(filesPage,"Search another folder",565,604,247,43,()=>AddSearchFolder(),false);
+        filesGuide=LabelAt(filesPage,"2 · To combine original ZIP/RAR/7z downloads or extracted folders, select a target and open source selection.",0,662,812,42,10,false,muted);
+        ButtonAt(filesPage,"Combine sources for selected version...",0,709,334,41,()=>Guard(ChooseSourcesForSelectedVersion),false);
+        ButtonAt(filesPage,"Remove selected...",350,709,220,41,()=>Guard(()=>{if(availability.SelectedRows.Count==0)return;string id=Convert.ToString(availability.SelectedRows[0].Tag);var game=Installed(id);if(game==null){MessageBox.Show(this,"Only installed versions can be removed. Select a registered game first.","Choose installed game");return;}RemoveVersion(game);}),false);
+    }
+    void UpdateFilesSelection(){
+        if(availabilityNote==null||availability.SelectedRows.Count==0)return;
+        string id=Convert.ToString(availability.SelectedRows[0].Tag);
+        if(string.IsNullOrEmpty(id))return;
+        var installed=Installed(id);
+        var recipe=targets.Items.Cast<ModRecipe>().FirstOrDefault(x=>x.Id==id);
+        var original=LocatedOriginal(id);
+        var invalid=discovered.Where(x=>x.RecipeId==id&&!string.IsNullOrEmpty(x.Problem)).ToArray();
+        if(installed!=null){
+            availabilityNote.Text="READY · "+installed.Name+" is registered.\r\nGame: "+installed.Root+
+                "\r\nNext: Open selected version to play with its own saves.";
+        }else if(original!=null){
+            availabilityNote.Text=(original.Kind=="Game archive candidate"?"CANDIDATE · Version markers match; remaining files still need SHA verification.":
+                "SOURCE FOUND · "+original.Kind+". Installation will validate the files.")+
+                "\r\n"+original.Path+"\r\nNext: Open selected version to check the installation steps.";
+        }else if(invalid.Length>0){
+            availabilityNote.Text="INCOMPLETE · "+invalid[0].Problem+
+                "\r\nNext: Inspect found sources, provide the missing volume/files, then install.";
+        }else{
+            availabilityNote.Text="NOT FOUND · No local source has been identified for "+(recipe==null?id:recipe.Name)+
+                ".\r\nNext: Search another folder or combine original archives and extracted files.";
+        }
+        if(filesGuide!=null)filesGuide.Text=installed!=null?
+            "2 · This version is ready. Select Saves to back up or inspect its progress.":
+            "2 · You can add multiple Telegram downloads, ZIP/RAR/7z archives, or folders to fill missing original bytes.";
+    }
+    void ChooseSourcesForSelectedVersion(){
+        if(availability.SelectedRows.Count==0)return;
+        string id=Convert.ToString(availability.SelectedRows[0].Tag);
+        var target=targets.Items.Cast<ModRecipe>().FirstOrDefault(x=>x.Id==id);
+        if(target==null)return;
+        targets.SelectedItem=target;methods.SelectedIndex=1;ShowPage("Install");ChooseOriginalInputs();
     }
     void UpdateAvailability(){
         if(availability==null||targets==null)return;string prior=availability.SelectedRows.Count>0?Convert.ToString(availability.SelectedRows[0].Tag):null;availability.Rows.Clear();foreach(var recipe in targets.Items.Cast<ModRecipe>()){
-            var game=Installed(recipe.Id);var original=Original(recipe.Id);var pack=AnyPack(recipe.Id)??Found(recipe.Id,"Delta pack");
-            bool ready=game!=null,canInstall=UpgradeSupport.IsUpgrade(recipe.Id)?original!=null&&(UpgradeSupport.StartingProfile(settings,recipe.Id)!=null||Clean()!=null||Original("gorpg-1-23")!=null):pack!=null&&(pack.Kind=="Any-version pack"?SupportedSource(recipe.Id)!=null:CH()!=null)||original!=null&&(recipe.Standalone||original.Kind=="Full game archive"||Clean()!=null);
+            var game=Installed(recipe.Id);var original=LocatedOriginal(recipe.Id);var pack=AnyPack(recipe.Id)??Found(recipe.Id,"Delta pack");
+            bool ready=game!=null,canInstall=UpgradeSupport.IsUpgrade(recipe.Id)?original!=null&&(UpgradeSupport.StartingProfile(settings,recipe.Id)!=null||Clean()!=null||Original("gorpg-1-23")!=null):pack!=null&&(pack.Kind=="Any-version pack"?SupportedSource(recipe.Id)!=null:CH()!=null)||original!=null&&original.Kind!="Game archive candidate"&&(recipe.Standalone||original.Kind=="Full game archive"||Clean()!=null);
             EnglishStatus cached;string textStatus=game!=null?(statusCache.TryGetValue(game.Id,out cached)?cached.Short:"Select to check English"):recipe.Id=="ch-current"?"English reference":"Install game first";
-            int row=availability.Rows.Add(recipe.Name,ready?"Installed · "+CountSaves(game)+" saves":"Not installed",original==null?"Not found":original.Kind=="Full game archive"?"Version files match":original.Kind=="Extracted bundle"?"Folder found":"Archive found",UpgradeSupport.IsUpgrade(recipe.Id)?"Forward upgrade":pack==null?"Not found":pack.Kind=="Any-version pack"?"Any-version":"Legacy CH-only",textStatus,ready?"Ready to switch":canInstall?"Ready to install":"Needs files");availability.Rows[row].Tag=recipe.Id;
+            int row=availability.Rows.Add(recipe.Name,ready?"Installed · "+CountSaves(game)+" saves":"Not installed",original==null?"Not found":original.Kind=="Game archive candidate"?"Archive candidate":original.Kind=="Full game archive"?"Version files match":original.Kind=="Extracted bundle"?"Folder found":"Archive found",UpgradeSupport.IsUpgrade(recipe.Id)?"Forward upgrade":pack==null?"Not found":pack.Kind=="Any-version pack"?"Any-version":"Legacy CH-only",textStatus,ready?"Ready to switch":canInstall?"Ready to install":original!=null&&original.Kind=="Game archive candidate"?"Verify native files":"Needs files");availability.Rows[row].Tag=recipe.Id;
             availability.Rows[row].DefaultCellStyle.ForeColor=settings.LauncherTheme=="Daylight"?(ready?Color.FromArgb(21,112,76):canInstall?Color.FromArgb(105,62,154):Color.FromArgb(130,87,28)):ready?Color.FromArgb(141,220,188):canInstall?Color.FromArgb(208,194,249):Color.FromArgb(229,192,136);
         }
         var selectedRow=availability.Rows.Cast<DataGridViewRow>().FirstOrDefault(x=>Convert.ToString(x.Tag)==prior)??availability.Rows.Cast<DataGridViewRow>().FirstOrDefault();if(selectedRow!=null){availability.ClearSelection();selectedRow.Selected=true;}
+        UpdateFilesSelection();
     }
-    void UseAvailable(){Guard(()=>{if(availability.SelectedRows.Count==0)return;string id=Convert.ToString(availability.SelectedRows[0].Tag);var game=Installed(id);if(game!=null){settings.SelectedId=game.Id;RefreshProfiles();ShowPage("Play");return;}targets.SelectedItem=targets.Items.Cast<ModRecipe>().First(x=>x.Id==id);methods.SelectedIndex=AnyPack(id)!=null?0:Original(id)!=null?1:0;ShowPage("Install");});}
+    void UseAvailable(){Guard(()=>{if(availability.SelectedRows.Count==0)return;string id=Convert.ToString(availability.SelectedRows[0].Tag);var game=Installed(id);if(game!=null){settings.SelectedId=game.Id;RefreshProfiles();ShowPage("Play");return;}targets.SelectedItem=targets.Items.Cast<ModRecipe>().First(x=>x.Id==id);methods.SelectedIndex=1;ShowPage("Install");});}
     async void AddSearchFolder(){string folder=Folder("Choose another folder to search for games, archives, and patches.",settings.InstallRoot);if(folder==null)return;if(settings.SearchRoots==null)settings.SearchRoots=new List<string>();if(!settings.SearchRoots.Contains(folder))settings.SearchRoots.Add(folder);Store.Write(settings);await Discover();UpdateAvailability();}
     async void ChooseStartingVersion(){
         if(busy||!GameClosed())return;
@@ -645,24 +1194,60 @@ public class PolishedLauncher : ReplacementAwareForm {
             var use=new Button{Text="Use selected",Location=new Point(18,137),Size=new Size(188,40),DialogResult=DialogResult.OK};var folder=new Button{Text="Choose game folder",Location=new Point(223,137),Size=new Size(198,40),DialogResult=DialogResult.Yes};var archive=new Button{Text="Choose full archive",Location=new Point(438,137),Size=new Size(190,40),DialogResult=DialogResult.No};dialog.Controls.Add(use);dialog.Controls.Add(folder);dialog.Controls.Add(archive);
             var result=dialog.ShowDialog(this);if(result==DialogResult.OK){startingSource=list.SelectedItem as Profile;UpdateInstall();return;}
             if(result==DialogResult.Yes){string root=Folder("Choose an intact complete game folder or its wrapper folder.",settings.InstallRoot);if(root==null)return;root=UniversalSupport.FindGameRoot(root);if(UniversalSupport.Identify(root)==null)throw new IOException("This folder does not match a supported reference version.");startingSource=Store.Detect(root,UniversalSupport.DetectedName(root));if(!LibraryProfiles.Any(x=>x.Root.Equals(root,StringComparison.OrdinalIgnoreCase)))Added(startingSource);ShowPage("Install");UpdateInstall();}
-            else if(result==DialogResult.No){string file=PickArchive("Choose any supported FULL game archive","Game archives|*.zip;*.rar;*.7z;*.001;*.7删z|All files|*.*",settings.InstallRoot,null);if(file==null)return;busy=true;SetEnabled(false);progress.Visible=true;try{startingSource=await Task.Run(()=>UniversalSupport.InstallOriginal(file,settings.InstallRoot,null));Added(startingSource);ShowPage("Install");UpdateInstall();}finally{busy=false;progress.Visible=false;SetEnabled(true);UpdateActions();}}
+            else if(result==DialogResult.No){
+                string file=PickArchive("Choose an original full game archive (.001 for split files)","Game archives|*.zip;*.rar;*.7z;*.001;*.7删z|All files|*.*",settings.InstallRoot,null);if(file==null)return;
+                var discoveredVersions=FileDiscovery.ArchiveFormat(file)=="zip"?FileDiscovery.ProbeZip(file):FileDiscovery.ProbeRar(file,CancellationToken.None);
+                var versionIds=discoveredVersions.Where(x=>x.Kind=="Game archive candidate"&&HasNativeInventory(x.RecipeId))
+                    .Select(x=>x.RecipeId).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                if(versionIds.Length!=1)throw new IOException("This archive has no uniquely verified complete-game reference. Choose an extracted installed game folder, or add original sources using Combine original sources.");
+                string id=versionIds[0];string[] sources=NativeRecoveryInputs(id,file);
+                busy=true;SetEnabled(false);progress.Visible=true;
+                try{startingSource=await Task.Run(()=>InstallRecoveredVersion(id,sources,settings.InstallRoot));Added(startingSource);ShowPage("Install");UpdateInstall();}
+                finally{busy=false;progress.Visible=false;SetEnabled(true);UpdateActions();}
+            }
         }}catch(Exception e){MessageBox.Show(this,e.Message,"Starting version",MessageBoxButtons.OK,MessageBoxIcon.Error);}
     }
     void ShowFoundFiles(){
-        using(var dialog=new Form{Text="Files found nearby",ClientSize=new Size(970,528),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
-            LabelAt(dialog,"Launcher folders, Documents, Desktop, native Downloads, and configured browser download folders.",18,15,932,31,10,false,Color.DimGray);
-            var grid=new DataGridView{Location=new Point(18,56),Size=new Size(934,302),ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,AutoGenerateColumns=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,RowHeadersVisible=false,BackgroundColor=Color.White,ForeColor=Color.Black};
+        using(var dialog=new Form{Text="Detected sources · inspect before installing",ClientSize=new Size(970,573),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
+            LabelAt(dialog,"Sources from launcher folders, Downloads and search folders. A candidate needs complete-file verification; an incomplete archive needs its missing parts.",18,12,932,48,10,false,Color.DimGray);
+            var grid=new DataGridView{Location=new Point(18,66),Size=new Size(934,305),ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,AutoGenerateColumns=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,RowHeadersVisible=false,BackgroundColor=Color.White,ForeColor=Color.Black};
             grid.Columns.Add(new DataGridViewTextBoxColumn{Name="Version",HeaderText="Version / bundle",Width=280});grid.Columns.Add(new DataGridViewTextBoxColumn{Name="Kind",HeaderText="File type",Width=166});grid.Columns.Add(new DataGridViewTextBoxColumn{Name="Status",HeaderText="Detection / status",Width=345});
             grid.Columns.Add(new DataGridViewTextBoxColumn{Name="Size",HeaderText="Size",Width=110});
-            foreach(var source in discovered){int i=grid.Rows.Add(source.Name,source.Kind,string.IsNullOrEmpty(source.Problem)?source.Detection??"Native folder / content match":source.Problem,source.Bytes>0?(source.Bytes/1048576.0).ToString("N1")+" MB":"Folder");grid.Rows[i].Tag=source;}
-            dialog.Controls.Add(grid);var path=new TextBox{Location=new Point(18,378),Size=new Size(934,63),ReadOnly=true,Multiline=true};dialog.Controls.Add(path);
-            grid.SelectionChanged+=delegate{if(grid.SelectedRows.Count>0){var selected=(FoundSource)grid.SelectedRows[0].Tag;path.Text=selected.Path+(selected.Bytes>0?"\r\n"+selected.Bytes.ToString("N0")+" bytes":"");}};
-            var use=new Button{Text="Use selected source",Location=new Point(688,465),Size=new Size(264,40)};dialog.Controls.Add(use);
-            ButtonAt(dialog,"Open containing folder",18,465,230,40,()=>Guard(()=>{if(grid.SelectedRows.Count>0)LauncherFolders.Open(((FoundSource)grid.SelectedRows[0].Tag).Path);}),false);
+            foreach(var source in discovered.OrderBy(x=>string.IsNullOrEmpty(x.Problem)?0:1).ThenBy(x=>x.Name)){
+                bool invalid=!string.IsNullOrEmpty(source.Problem);
+                int i=grid.Rows.Add(source.Name,invalid?"Incomplete · "+source.Kind:source.Kind,
+                    invalid?source.Problem:source.Kind=="Game archive candidate"?"Version markers match · full file verification pending":source.Detection??"Detected files; rechecked during installation",
+                    source.Bytes>0?(source.Bytes/1048576.0).ToString("N1")+" MB":"Folder");
+                grid.Rows[i].Tag=source;
+                if(invalid)grid.Rows[i].DefaultCellStyle.ForeColor=Color.FromArgb(154,53,38);
+            }
+            dialog.Controls.Add(grid);
+            LabelAt(dialog,"Select a source to see its exact path and next step:",18,378,920,22,10,true,Color.Black);
+            var path=new TextBox{Location=new Point(18,407),Size=new Size(934,88),ReadOnly=true,Multiline=true,ScrollBars=ScrollBars.Vertical};dialog.Controls.Add(path);
+            var use=new Button{Text="Use selected source",Location=new Point(688,515),Size=new Size(264,40)};dialog.Controls.Add(use);
+            grid.SelectionChanged+=delegate{
+                if(grid.SelectedRows.Count==0)return;
+                var selected=(FoundSource)grid.SelectedRows[0].Tag;
+                bool invalid=!string.IsNullOrEmpty(selected.Problem);
+                path.Text=selected.Path+"\r\n"+(invalid?"INCOMPLETE · "+selected.Problem:
+                    selected.Kind=="Game archive candidate"?"CANDIDATE · Add it to Install; remaining native files will be checked by SHA-256.":"DETECTED · "+(selected.Detection??"Source verification continues during installation."));
+                use.Text=invalid?"Review missing files":selected.Kind=="Game archive candidate"?"Add candidate to Install":"Use selected source";
+            };
+            ButtonAt(dialog,"Open containing folder",18,515,230,40,()=>Guard(()=>{if(grid.SelectedRows.Count>0)LauncherFolders.Open(((FoundSource)grid.SelectedRows[0].Tag).Path);}),false);
             use.Click+=delegate{
-                if(grid.SelectedRows.Count==0)return;var source=(FoundSource)grid.SelectedRows[0].Tag;if(!string.IsNullOrEmpty(source.Problem)){MessageBox.Show(dialog,source.Problem+". Put all required volumes in the same folder first.");return;}
-                if(source.Kind=="Installed game"){var p=LibraryProfiles.FirstOrDefault(x=>x.Root.Equals(source.Path,StringComparison.OrdinalIgnoreCase));if(p==null){p=Store.Detect(source.Path,source.Name);Added(p);}else{settings.SelectedId=p.Id;RefreshProfiles();ShowPage("Play");}dialog.Close();return;}
+                if(grid.SelectedRows.Count==0)return;var source=(FoundSource)grid.SelectedRows[0].Tag;
+                if(!string.IsNullOrEmpty(source.Problem)){
+                    MessageBox.Show(dialog,source.Problem+"\r\n\r\nNext: supply the missing archive volumes in the same folder, or combine other complete originals using Install → Combine original sources.","Source incomplete",MessageBoxButtons.OK,MessageBoxIcon.Warning);return;
+                }
+                if(source.Kind=="Installed game"){var p=LibraryProfiles.FirstOrDefault(x=>x.Root.Equals(source.Path,StringComparison.OrdinalIgnoreCase));
+                    if(p==null){p=Store.Detect(source.Path,source.Name);Added(p);}
+                    if(UniversalSupport.Identify(p.Root)!=null)startingSource=p;
+                    methods.SelectedIndex=1;UpdateInstall();ShowPage("Install");dialog.Close();return;}
                 var recipe=targets.Items.Cast<ModRecipe>().FirstOrDefault(x=>x.Id==source.RecipeId);if(recipe==null){MessageBox.Show(dialog,"This source is not a cataloged bundle. Use Bundle + hotfixes with its author's installation instructions.");return;}
+                if(source.Kind=="Game archive candidate"){
+                    AddOriginalInput(source.Path);targets.SelectedItem=recipe;methods.SelectedIndex=1;
+                    UpdateInstall();ShowPage("Install");dialog.Close();return;
+                }
                 preferredSources[source.RecipeId+"/"+source.Kind]=source;targets.SelectedItem=recipe;methods.SelectedIndex=source.Kind=="Delta pack"||source.Kind=="Any-version pack"?0:1;UpdateInstall();ShowPage("Install");dialog.Close();
             };
             dialog.ShowDialog(this);
@@ -680,7 +1265,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             var snapshot=new Settings{Profiles=LibraryProfiles.ToList(),InstallRoot=settings.InstallRoot,SearchRoots=settings.SearchRoots==null?null:settings.SearchRoots.ToList()};
             var result=await Task.Run(()=>{var sources=FileDiscovery.Scan(snapshot,cancellation.Token,p=>((IProgress<DiscoveryProgress>)updates).Report(p));var additions=sources.Where(x=>x.Kind=="Installed game"&&!snapshot.Profiles.Any(p=>Path.GetFullPath(p.Root).Equals(x.Path,StringComparison.OrdinalIgnoreCase))).Select(x=>Store.Detect(x.Path,x.Name)).ToList();return Tuple.Create(sources,additions);});
             if(IsDisposed)return;cancellation.Token.ThrowIfCancellationRequested();discovered=result.Item1;int added=0;
-            foreach(var p in result.Item2){if(LibraryProfiles.Any(x=>Path.GetFullPath(x.Root).Equals(p.Root,StringComparison.OrdinalIgnoreCase)))continue;p.Note="Automatically found installation; existing files and saves";settings.Profiles.Add(p);added++;}
+            foreach(var p in result.Item2){if(Store.IsSuppressed(settings,p.Root)||LibraryProfiles.Any(x=>Path.GetFullPath(x.Root).Equals(p.Root,StringComparison.OrdinalIgnoreCase)))continue;p.Note="Automatically found installation; existing files and saves";settings.Profiles.Add(p);added++;}
             if(added>0){Store.Write(settings);RefreshProfiles();}
             int incomplete=discovered.Count(x=>!string.IsNullOrEmpty(x.Problem));
             discoveryStatus.Text="Found "+discovered.Count+" sources"+(added>0?" · "+added+" games added":"")+(incomplete>0?" · "+incomplete+" incomplete archives":"")+(limitReached?" · search limit reached; choose a specific folder":"")+" · content verified before installation";

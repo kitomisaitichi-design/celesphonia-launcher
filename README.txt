@@ -435,3 +435,76 @@ FLEXIBLE INSTALL SOURCES AND ENGLISH (OCT 2026)
   final file set matches a version's verified SHA-256 recipe. The launcher
   never guesses by names, applies a random old translation dictionary, or
   silently stacks Maple and Three-in-One into a mixed branch.
+
+
+LAUNCHER v1.0.13 — ORIGINAL-FILE INTEROPERABILITY (OCTOBER 17, 2026)
+-----------------------------------------------------------------
+The original game and creator's Telegram files are the installation inputs.
+A separate 7 GB Any-Version delta pack is NOT required when the original
+target bytes are present in your ZIP/RAR/7z files or extracted folders.
+
+Install > Use the original bundle / game > Combine original sources...
+allows multiple archives and directories in one verification set, even when
+they are renamed, have the wrong filename extension, are partially overwritten,
+or contain a previous reversible English overlay. Use the first .7z.001 file
+for a split archive and keep all following volumes alongside it.
+
+The launcher contains a hash-only inventory of the EXACT native files for
+GoRPG 1.23 (7,208), CH (13,654), Maple 1.7.2 (9,727), and hypnosis/3.3.4
+(9,474). No original game data or saves are distributed. The installer uses
+those hashes to select intact original files across your sources. Wrong-version
+files are ignored even when their filenames match. Missing files are listed;
+a game cannot be reconstructed unless all required native bytes are available.
+A version-marker hit is a CANDIDATE, not proof the whole archive is playable.
+
+To install Three-in-One v1.052 fresh: supply the complete original GoRPG
+ZIP, split 7z archive, or intact extracted game files, plus the original
+creator Telegram Ver1.052 RAR (or its complete extracted contents). Select
+v1.052, choose original bundle/game, and check English if wanted. No older
+creator release is required for a clean-base fresh install. The target game
+gets independent files and a new empty save set.
+
+Existing verified Three-in-One v1.01, v1.02, v1.03, v1.04 and v1.051 games
+can upgrade directly to a later registered full creator release (including
+v1.051 and v1.052), by providing that later release's complete Telegram
+archive or folder. The old game and its saves remain; the new game's saves
+are backed up/copied/hashed without reinterpreting in-game state. There is
+no registered standalone v1.05 release, so it is not silently identified.
+
+GoRPG, CH, Maple and hypnosis are different branches. Switching between
+separately installed versions preserves each version's original saves.
+Cross-branch or reverse-version save conversion is NOT claimed or silently
+performed. English display remains reversible and partial; previously
+English-enabled source files can be used when the original native entry
+can be reconstructed exactly. Unknown third-party game/script rewrites do
+not count as verified native content.
+
+New installs are independent and require disk space. Recovery uses an
+owned temporary working directory and removes it after a successful final
+build or failure; it does not litter the game library with QA game copies.
+
+VERSION LIBRARY / REMOVAL AND SEARCH
+----------------------------------
+The Play and Files areas show detected and installed versions separately.
+A remembered source download is not an installed or complete playable game.
+Use Install > Use original archives / folders to assemble a verified version
+directly from your own Telegram creator update and original game files.
+If several partial/translated/mixed folders exist, choose Combine original
+sources...; the scanner will report which native files are still missing.
+
+Remove this version... has two deliberately separate choices:
+ * Remove launcher entry only — keeps the game directory, its original saves,
+   original ZIP/RAR/7z archives and any external files. The launcher records
+   the ignored folder so an automatic index scan will not add it back.
+   You can explicitly add the folder again at any time.
+ * Uninstall verified managed game files — available only for a game that
+   belongs to a launcher-managed installation. It checks the reference
+   hashes, removes known game content, unregisters the version, and preserves
+   original source ZIP/RAR/7z/.001–.004 downloads, save slots, backups,
+   and unrecognized/custom files. If protected files remain in the folder,
+   that folder stays on disk. You can inspect retained files afterward.
+
+Running games cannot be uninstalled or have their active save sets migrated.
+Never remove an original downloaded archive to reclaim an installed game's
+space automatically. Compatibility-sensitive saves stay isolated by branch
+and version. A backup and verification record are not themselves game files.

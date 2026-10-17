@@ -57,6 +57,22 @@ jobs:
             # pictures are embedded inside the EXE, never separate ZIP files.
             assert len(allowed) == 35
             executable = bundle.read('Celesphonia Portable Switcher.exe')
+            # Each native reference is a hash-only inventory, never game bytes.
+            # Require exact release-catalog bytes inside the distributed EXE.
+            native_refs = {
+              'NativeReferenceFiles.json': ('gorpg-1-23', 7208),
+              'NativeReferenceFiles-ch-current.json': ('ch-current', 13654),
+              'NativeReferenceFiles-maple-1-7-2.json': ('maple-1-7-2', 9727),
+              'NativeReferenceFiles-three-in-one-3-3-4.json': ('three-in-one-3-3-4', 9474),
+            }
+            for name, (ident, expected_count) in native_refs.items():
+              content = pathlib.Path(name).read_bytes()
+              native = json.loads(content)
+              assert native['Format'] == 1 and native['VersionId'] == ident
+              assert len(native['Files']) == expected_count
+              assert len({f['Path'].casefold() for f in native['Files']}) == expected_count
+              assert all(len(f['Hash']) == 64 and f['Size'] >= 0 for f in native['Files'])
+              assert content in executable, 'EXE native inventory differs from source: ' + name
             runtime = bundle.read('EnglishRuntime.js')
             assert b'installGroperTicker' in runtime, 'Native Ticker groper rendering fix missing'
             assert b'installGlossaryPictureLayout' in runtime, 'Glossary illustration layout repair missing'

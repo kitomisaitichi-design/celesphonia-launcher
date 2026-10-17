@@ -27,6 +27,9 @@ public class Settings {
     public string InstallRoot { get; set; }
     public string LauncherTheme { get; set; }
     public List<string> SearchRoots {get;set;}
+    // User-removed entries must not be resurrected by shared-index discovery.
+    // An explicit Add installed game action can restore an ignored location.
+    public List<string> SuppressedRoots {get;set;}
 }
 public static class Store {
     public static readonly string Home = Path.GetDirectoryName(typeof(Store).Assembly.Location);
@@ -35,6 +38,7 @@ public static class Store {
     public static Settings Read() {
         var settings=Json.Deserialize<Settings>(File.ReadAllText(Config, Encoding.UTF8));
         if(settings.Profiles==null)settings.Profiles=new List<Profile>();
+        if(settings.SuppressedRoots==null)settings.SuppressedRoots=new List<string>();
         MapPaths(settings,false);
         if(string.IsNullOrWhiteSpace(settings.InstallRoot))settings.InstallRoot=Path.Combine(Home,"Game Profiles");
         SharedInstallationIndex.Sync(settings);
@@ -51,6 +55,24 @@ public static class Store {
         foreach(var p in s.Profiles){p.Root=PortablePath(p.Root,encode);p.SavePath=PortablePath(p.SavePath,encode);}
         s.InstallRoot=PortablePath(s.InstallRoot,encode);
         if(s.SearchRoots!=null)s.SearchRoots=s.SearchRoots.Select(x=>PortablePath(x,encode)).ToList();
+        if(s.SuppressedRoots!=null)s.SuppressedRoots=s.SuppressedRoots.Select(x=>PortablePath(x,encode)).ToList();
+    }
+    static string CanonicalRoot(string root){return Path.GetFullPath(root).TrimEnd('\\','/');}
+    public static bool IsSuppressed(Settings settings,string root){
+        if(settings==null||settings.SuppressedRoots==null||string.IsNullOrWhiteSpace(root))return false;
+        string exact=CanonicalRoot(root);
+        return settings.SuppressedRoots.Any(x=>!string.IsNullOrWhiteSpace(x)&&
+            string.Equals(CanonicalRoot(x),exact,StringComparison.OrdinalIgnoreCase));
+    }
+    public static void SuppressRoot(Settings settings,string root){
+        if(settings.SuppressedRoots==null)settings.SuppressedRoots=new List<string>();
+        if(!IsSuppressed(settings,root))settings.SuppressedRoots.Add(CanonicalRoot(root));
+    }
+    public static void UnsuppressRoot(Settings settings,string root){
+        if(settings.SuppressedRoots==null)return;
+        string exact=CanonicalRoot(root);
+        settings.SuppressedRoots.RemoveAll(x=>!string.IsNullOrWhiteSpace(x)&&
+            string.Equals(CanonicalRoot(x),exact,StringComparison.OrdinalIgnoreCase));
     }
     public static void Write(Settings settings) {
         string temp = Config + ".new";
