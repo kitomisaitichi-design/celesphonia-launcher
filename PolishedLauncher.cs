@@ -14,7 +14,7 @@ public class ChoicePicker : SleekButton {
     public int SelectedIndex{get{return selected;}set{int next=value>=0&&value<Items.Count?value:-1;if(next==selected)return;selected=next;Text=next>=0?Items[next].ToString()+"   ▾":"Choose...";if(SelectedIndexChanged!=null)SelectedIndexChanged(this,EventArgs.Empty);}}
     public object SelectedItem{get{return selected>=0&&selected<Items.Count?Items[selected]:null;}set{SelectedIndex=Items.IndexOf(value);}}
     public ChoicePicker(){FlatStyle=FlatStyle.Flat;FlatAppearance.BorderSize=1;FlatAppearance.BorderColor=Color.FromArgb(80,88,111);TextAlign=ContentAlignment.MiddleLeft;Padding=new Padding(8,0,8,0);Cursor=Cursors.Hand;
-        Click+=delegate{var menu=new ContextMenuStrip{BackColor=BackColor,ForeColor=ForeColor,Font=Font,Renderer=new LauncherMenuRenderer()};for(int i=0;i<Items.Count;i++){int choice=i;var item=new ToolStripMenuItem(Items[i].ToString()){Checked=i==SelectedIndex,ForeColor=ForeColor,BackColor=BackColor};item.Click+=delegate{SelectedIndex=choice;};menu.Items.Add(item);}LauncherMenuLifetime.RetireAfterClose(menu);menu.Show(this,new Point(0,Height));};
+        Click+=delegate{var menu=new ContextMenuStrip{BackColor=BackColor,ForeColor=ForeColor,Font=Font,Renderer=new LauncherMenuRenderer()};for(int i=0;i<Items.Count;i++){int choice=i;var item=new ToolStripMenuItem(Items[i].ToString()){Checked=i==SelectedIndex,ForeColor=ForeColor,BackColor=BackColor};item.Click+=delegate{SelectedIndex=choice;};menu.Items.Add(item);}LauncherMenuStyle.Apply(menu);LauncherMenuLifetime.RetireAfterClose(menu);menu.Show(this,new Point(0,Height));};
     }
 }
 public class PathDiagram : Control {
@@ -68,7 +68,8 @@ public class PolishedLauncher : ReplacementAwareForm {
     Settings settings;ListBox profiles=new ListBox();ContentScroller main=new ContentScroller();Panel sidebar,playPage,installPage,savePage,helpPage,filesPage,englishPage;
     Button addGame;Label sidebarNote;System.Threading.CancellationTokenSource scanCancellation;bool checkingRunning;
     Label playName,playInfo,saveCount,savePath,status,installNeed,installNote,installLocation,installNext,saveTitle,saveNote,saveFolder,saveGuide,filesGuide;
-    Button controlsButton,playButton,installButton,copyButton,restoreButton,backupButton,openSaveButton,gameFolderButton,saveFolderButton;ChoicePicker targets,methods;
+    Button controlsButton,playButton,installButton,copyButton,restoreButton,backupButton,openSaveButton,gameFolderButton,saveFolderButton,playManageButton,filesManageButton,installDetailsButton,installSourceButton,installFolderButton,installLayersButton,installStartingButton,installDetectedButton,installSearchButton;
+    ChoicePicker targets,methods;bool installDetailsExpanded;
     PathDiagram playDiagram=new PathDiagram(),installDiagram=new PathDiagram();
     readonly List<Button> navigation=new List<Button>();
     readonly System.Windows.Forms.Timer timer=new System.Windows.Forms.Timer();
@@ -94,19 +95,19 @@ public class PolishedLauncher : ReplacementAwareForm {
         var work=Screen.FromControl(this).WorkingArea;ClientSize=new Size(Math.Min(1180,Math.Max(944,work.Width-48)),Math.Min(820,Math.Max(601,work.Height-72)));
         DoubleBuffered=true;CanReplace=()=>!busy&&!discovering;
         ReplacementRequested+=delegate{if(scanCancellation!=null)scanCancellation.Cancel();status.Text="Opening a new launcher window · finishing active operations…";};
-        Label title=LabelAt(this,"Celesphonia",70,23,292,38,22,false);title.Font=new Font("Segoe UI",22,FontStyle.Bold);title.ForeColor=LauncherPaint.Paper;
-        LabelAt(this,"GAME LIBRARY",72,63,280,22,9,false,muted);
+        Label title=LabelAt(this,"Celesphonia",70,23,202,38,22,false);title.Font=new Font("Segoe UI",22,FontStyle.Bold);title.ForeColor=LauncherPaint.Paper;
+        LabelAt(this,"GAME LIBRARY",72,63,194,22,9,false,muted);
         var folders=ButtonAt(this,"Folders  ▾",380,30,144,42,()=>{},false);folders.Click+=delegate{ShowFolders(folders);};folders.AccessibleName="Open native folders for the selected version";
         int nx=548;foreach(string name in new[]{"Play","Files","English","Install","Saves","Help"}){string page=name;var b=ButtonAt(this,name,nx,30,96,42,()=>ShowPage(page),false);((SleekButton)b).Navigation=true;navigation.Add(b);nx+=102;}
         sidebar=new SleekCard{Location=new Point(24,111),Size=new Size(296,630),BackColor=card};Controls.Add(sidebar);
-        LabelAt(sidebar,"YOUR GAMES",20,20,256,25,9,true,muted);
+        LabelAt(sidebar,"YOUR LIBRARY",20,20,256,25,9,true,muted);
         profiles.Location=new Point(12,58);profiles.Size=new Size(272,470);profiles.BorderStyle=BorderStyle.None;profiles.BackColor=card;profiles.ForeColor=ForeColor;profiles.DrawMode=DrawMode.OwnerDrawFixed;profiles.ItemHeight=58;profiles.IntegralHeight=false;profiles.DrawItem+=DrawProfile;sidebar.Controls.Add(profiles);
         profiles.SelectedIndexChanged+=delegate{Guard(()=>{
             var update=profiles.SelectedItem as ModRecipe;
-            if(update!=null){UpdateProfile();targets.SelectedItem=update;methods.SelectedIndex=1;ShowPage("Install");status.Text=update.Name+" · update available · choose Upgrade & carry saves to prepare it";}
+            if(update!=null){UpdateProfile();targets.SelectedItem=update;methods.SelectedIndex=1;ShowPage("Install");status.Text=update.Name+" · available for installation";}
             else if(Selected!=null){settings.SelectedId=Selected.Id;UpdateProfile();}
         });};
-        profiles.MouseDown+=delegate(object sender,MouseEventArgs e){if(e.Button!=MouseButtons.Right)return;int index=profiles.IndexFromPoint(e.Location);if(index<0)return;profiles.SelectedIndex=index;ShowFolders(profiles,e.Location);};
+        profiles.MouseDown+=delegate(object sender,MouseEventArgs e){if(e.Button!=MouseButtons.Right)return;int index=profiles.IndexFromPoint(e.Location);if(index<0)return;profiles.SelectedIndex=index;var managed=profiles.Items[index] as Profile;if(managed!=null)ShowManageMenu(profiles,managed,e.Location);else ShowInstallMenu(profiles,profiles.Items[index] as ModRecipe,e.Location);};
         addGame=ButtonAt(sidebar,"+ Add an installed game",16,552,264,42,()=>Guard(AddProfile),false);sidebarNote=LabelAt(sidebar,"Each version keeps a separate save folder.",16,600,264,24,9,false,muted);
         main.Location=new Point(344,111);main.Size=new Size(832,630);main.BackColor=background;Controls.Add(main);
         BuildPlay();BuildInstall();BuildSaves();BuildHelp();BuildFiles();BuildEnglish();
@@ -158,12 +159,81 @@ public class PolishedLauncher : ReplacementAwareForm {
     }
     Label LabelAt(Control parent,string text,int x,int y,int w,int h,float size,bool bold,Color? color=null){var label=new Label{Text=text,Location=new Point(x,y),Size=new Size(w,h),AutoEllipsis=true,UseMnemonic=false,Font=new Font(size>=23?"Segoe UI":"Segoe UI",size,size>=23?FontStyle.Regular:bold?FontStyle.Bold:FontStyle.Regular),ForeColor=color??ForeColor,BackColor=Color.Transparent};parent.Controls.Add(label);return label;}
     Button ButtonAt(Control parent,string text,int x,int y,int w,int h,Action action,bool primary){var b=new SleekButton{Text=text,Location=new Point(x,y),Size=new Size(w,h),Primary=primary,BackColor=primary?accent:Color.FromArgb(24,38,48),ForeColor=ForeColor,Font=new Font("Segoe UI",10,primary?FontStyle.Bold:FontStyle.Regular),Cursor=Cursors.Hand};b.Click+=delegate{Guard(action);};parent.Controls.Add(b);return b;}
+    // Modals use the launcher's current theme, including native WinForms inputs.
+    // Call only after populating each dialog so nested lists and buttons inherit it.
+    void StyleDialog(Form dialog){
+        dialog.BackColor=background;dialog.ForeColor=ForeColor;dialog.Font=Font;
+        dialog.ShowIcon=false;dialog.ShowInTaskbar=false;
+        bool light=settings.LauncherTheme=="Daylight";
+        Color warning=light?Color.FromArgb(147,50,31):Color.FromArgb(255,180,137);
+        Action<Control> visit=null;visit=control=>{
+            var label=control as Label;
+            if(label!=null){
+                label.BackColor=Color.Transparent;
+                if(label.ForeColor==Color.Black||label.ForeColor==Color.DimGray||
+                   label.ForeColor==Color.DarkGray||label.ForeColor==SystemColors.ControlText)
+                    label.ForeColor=label.Font.Bold?ForeColor:muted;
+            }else if(control is SleekButton){
+                var sleek=(SleekButton)control;
+                sleek.BackColor=sleek.Primary?accent:card;sleek.ForeColor=ForeColor;
+            }else if(control is Button){
+                var button=(Button)control;
+                button.UseVisualStyleBackColor=false;button.FlatStyle=FlatStyle.Flat;
+                button.FlatAppearance.BorderColor=LauncherPaint.Line;
+                button.FlatAppearance.BorderSize=1;button.BackColor=card;
+                button.ForeColor=ForeColor;
+            }else if(control is ListBox){
+                var list=(ListBox)control;
+                list.BackColor=card;list.ForeColor=ForeColor;
+                list.BorderStyle=BorderStyle.FixedSingle;
+            }else if(control is ComboBox){
+                var combo=(ComboBox)control;
+                combo.BackColor=card;combo.ForeColor=ForeColor;
+                combo.FlatStyle=FlatStyle.Flat;
+            }else if(control is TextBox){
+                var input=(TextBox)control;
+                input.BackColor=card;input.ForeColor=ForeColor;
+                input.BorderStyle=BorderStyle.FixedSingle;
+            }else if(control is DataGridView){
+                var grid=(DataGridView)control;
+                grid.BackgroundColor=card;grid.ForeColor=ForeColor;
+                grid.BorderStyle=BorderStyle.None;grid.GridColor=LauncherPaint.Line;
+                grid.EnableHeadersVisualStyles=false;
+                grid.ColumnHeadersDefaultCellStyle.BackColor=card;
+                grid.ColumnHeadersDefaultCellStyle.ForeColor=ForeColor;
+                grid.DefaultCellStyle.BackColor=card;
+                grid.DefaultCellStyle.ForeColor=ForeColor;
+                grid.DefaultCellStyle.SelectionBackColor=accent;
+                grid.DefaultCellStyle.SelectionForeColor=ForeColor;
+                grid.AlternatingRowsDefaultCellStyle.BackColor=background;
+                grid.RowHeadersDefaultCellStyle.BackColor=card;
+                grid.RowHeadersDefaultCellStyle.ForeColor=ForeColor;
+                foreach(DataGridViewRow row in grid.Rows)
+                    if(row.DefaultCellStyle.ForeColor==Color.FromArgb(154,53,38))
+                        row.DefaultCellStyle.ForeColor=warning;
+            }
+            foreach(Control child in control.Controls)visit(child);
+        };
+        foreach(Control child in dialog.Controls)visit(child);
+    }
     void BindHint(Control control,Label label,string text){string normal=label.Text;control.MouseEnter+=delegate{label.Text=text;};control.MouseLeave+=delegate{label.Text=normal;};}
     void LayoutViewport(){
         if(status==null||sidebar==null)return;
         int height=Math.Max(330,ClientSize.Height-190);
         main.Height=height;sidebar.Height=height;profiles.Height=height-160;addGame.Top=height-78;sidebarNote.Top=height-30;
         status.Top=111+height+23;progress.Top=111+height+4;
+        status.Width=Math.Max(400,Math.Min(1130,ClientSize.Width-52));progress.Width=status.Width;
+        // Keep every navigation tab visible on 960–1100px displays. The
+        // content area retains its own scrolling, but navigation never moves
+        // beyond the right edge or requires horizontal page scrolling.
+        bool compact=ClientSize.Width<1170;
+        var folder=Controls.OfType<Button>().FirstOrDefault(b=>b.Text.StartsWith("Folders",StringComparison.Ordinal));
+        if(folder!=null){folder.Left=compact?288:380;folder.Width=compact?106:144;}
+        for(int i=0;i<navigation.Count;i++){
+            var button=navigation[i];
+            button.Left=compact?400+i*92:548+i*102;
+            button.Width=compact?87:96;
+        }
         FitPage();
     }
     Panel Page(){var p=new GrimoirePage{Dock=DockStyle.Fill,BackColor=background,Visible=false};main.Canvas.Controls.Add(p);return p;}
@@ -173,86 +243,113 @@ public class PolishedLauncher : ReplacementAwareForm {
         if(selected)LauncherPaint.Box(e.Graphics,new Rectangle(e.Bounds.X+3,e.Bounds.Y+3,e.Bounds.Width-6,e.Bounds.Height-6),ControlPaint.Light(card,.12f),Color.Empty,9);
         string name=(p==null?update.Name:p.Name).Replace(" - current installation","").Replace(" - base","");int slots=p==null?0:CountSaves(p);
         using(var font=new Font("Segoe UI",10,selected?FontStyle.Bold:FontStyle.Regular))TextRenderer.DrawText(e.Graphics,name,font,new Rectangle(e.Bounds.X+14,e.Bounds.Y+6,e.Bounds.Width-28,30),ForeColor,TextFormatFlags.WordBreak|TextFormatFlags.NoPadding);
-        using(var font=new Font("Segoe UI",8.5f))TextRenderer.DrawText(e.Graphics,p==null?"Update available · click to install":slots+" saves  ·  "+(p.Name.Contains("trial")?"Trial build":"Installed"),font,new Rectangle(e.Bounds.X+14,e.Bounds.Y+37,e.Bounds.Width-28,18),muted,TextFormatFlags.NoPadding);
+        using(var font=new Font("Segoe UI",8.5f))TextRenderer.DrawText(e.Graphics,p==null?"Available · click to install":slots+" saves  ·  "+(p.Name.Contains("trial")?"Trial build":"Installed · right-click to manage"),font,new Rectangle(e.Bounds.X+14,e.Bounds.Y+37,e.Bounds.Width-28,18),muted,TextFormatFlags.NoPadding);
     }
     int CountSaves(Profile p){return Store.SaveFiles(p.SavePath).Count(x=>System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileName(x),"^file[0-9]+\\.rpgsave$",System.Text.RegularExpressions.RegexOptions.IgnoreCase));}
     void BuildPlay(){
         playPage=Page();LabelAt(playPage,"READY TO PLAY",0,0,600,22,10,true,muted);playName=LabelAt(playPage,"",0,31,806,49,25,true);
         playInfo=LabelAt(playPage,"",0,83,802,42,10,false,muted);
-        var saves=new SleekCard{Location=new Point(0,354),Size=new Size(812,90),BackColor=card};playPage.Controls.Add(saves);
+        var saves=new SleekCard{Location=new Point(0,351),Size=new Size(812,90),BackColor=card};playPage.Controls.Add(saves);
         saveCount=LabelAt(saves,"",18,14,754,26,13,true);savePath=LabelAt(saves,"",18,49,774,30,9,false,muted);
         var runtimeCard=new SleekCard{Location=new Point(0,132),Size=new Size(812,90),BackColor=card};playPage.Controls.Add(runtimeCard);
         controlsToggle=new RuntimeControlsToggle{Text="Enable runtime controls for this game",Location=new Point(12,8),Size=new Size(788,46),BackColor=Color.Transparent,ForeColor=ForeColor,Font=new Font("Segoe UI",12,FontStyle.Bold),AccessibleName="Enable runtime controls before launching",AccessibleDescription="Click anywhere on this row or press Space to choose runtime controls for the next launch."};runtimeCard.Controls.Add(controlsToggle);
         controlsToggle.CheckedChanged+=delegate{if(settingControls||Selected==null)return;Selected.RuntimeControls=controlsToggle.Checked;if(!previewMode)Store.Write(settings);};
         var runtimeNote=LabelAt(runtimeCard,"F8 opens the menu · Separate session saves · Original game files remain unchanged",16,59,780,23,9,false,muted);
         BindHint(controlsToggle,runtimeNote,"Remembered per game. Click this row or press Space to choose controls for the next launch.");
-        playButton=ButtonAt(playPage,"Switch & Play",0,238,320,50,()=>Guard(Launch),true);gameFolderButton=ButtonAt(playPage,"Game folder",336,238,230,50,()=>Guard(()=>LauncherFolders.Open(Selected.Root)),false);saveFolderButton=ButtonAt(playPage,"Saves folder",582,238,230,50,()=>Guard(OpenSaves),false);
-        controlsButton=ButtonAt(playPage,"Control session folder",0,300,300,42,()=>Guard(()=>{if(Selected!=null){var folder=Store.Child(Path.Combine(Store.Home,"Control Sessions"),Selected.Id);Directory.CreateDirectory(folder);LauncherFolders.Open(folder);}}),false);
-        var actionNote=LabelAt(playPage,"Close the active game before switching versions. Themes are in Help.",316,300,496,42,10,false,muted);
+        playButton=ButtonAt(playPage,"Play selected game",0,238,354,50,()=>Guard(Launch),true);
+        playManageButton=ButtonAt(playPage,"Manage / Uninstall  ▾",371,238,241,50,()=>{if(Selected!=null)ShowManageMenu(playManageButton,Selected);},false);
+        gameFolderButton=ButtonAt(playPage,"Open game folder",627,238,185,50,()=>Guard(()=>LauncherFolders.Open(Selected.Root)),false);
+        saveFolderButton=ButtonAt(playPage,"Open saves",0,303,170,38,()=>Guard(OpenSaves),false);
+        controlsButton=ButtonAt(playPage,"Control sessions",185,303,197,38,()=>Guard(()=>{if(Selected!=null){var folder=Store.Child(Path.Combine(Store.Home,"Control Sessions"),Selected.Id);Directory.CreateDirectory(folder);LauncherFolders.Open(folder);}}),false);
+        var actionNote=LabelAt(playPage,"Manage includes backups, English, upgrades and safe removal.",395,303,417,40,10,false,muted);
         BindHint(playButton,actionNote,"Launch this version with its own saves and the control setting above.");
         BindHint(gameFolderButton,actionNote,"Open the original installation folder for this game.");
         BindHint(saveFolderButton,actionNote,"Open this version's original save folder.");
         BindHint(controlsButton,actionNote,"Open the separate control session and its edited saves.");
     }
     void BuildInstall(){
-        installPage=Page();LabelAt(installPage,"INSTALL · STEP BY STEP",0,0,760,24,10,true,muted);LabelAt(installPage,"Prepare a game version",0,31,480,43,24,true);
-        LabelAt(installPage,"Choose the target, let the launcher find sources, then review the route before installing.",0,82,812,23,10,false,muted);
-        LabelAt(installPage,"1 · TARGET VERSION",0,116,394,18,9,true,muted);
-        LabelAt(installPage,"2 · INSTALL FROM",410,116,392,18,9,true,muted);
-        targets=new ChoicePicker{Location=new Point(0,137),Size=new Size(394,36),Font=new Font("Segoe UI",10),BackColor=card,ForeColor=ForeColor,AccessibleName="Version to install"};
+        installPage=Page();
+        LabelAt(installPage,"INSTALL A VERSION",0,0,760,25,10,true,muted);
+        LabelAt(installPage,"Install or upgrade",0,35,812,43,24,true);
+        LabelAt(installPage,"Select your version and source. The launcher checks the original files before installing.",0,83,812,28,10,false,muted);
+        LabelAt(installPage,"VERSION",0,124,394,19,9,true,muted);
+        LabelAt(installPage,"SOURCE METHOD",410,124,392,19,9,true,muted);
+        targets=new ChoicePicker{Location=new Point(0,151),Size=new Size(394,44),Font=new Font("Segoe UI",10),BackColor=card,ForeColor=ForeColor,AccessibleName="Version to install"};
         var recipes=RecipeSupport.Catalog().Recipes.Where(x=>x.Id!="abu-51-01").ToList();recipes.Add(new ModRecipe{Id="gorpg-1-23",Name="Gorpg 1.23 - clean base",RequiredBase="standalone",Components=new[]{"Clean Chinese Gorpg 1.23"},Standalone=true});
         recipes.Add(new ModRecipe{Id="ch-current",Name="CH",RequiredBase="standalone",Components=new[]{"CH reference build"},Standalone=true});
         targets.Items.AddRange(recipes.ToArray());installPage.Controls.Add(targets);
-        methods=new ChoicePicker{Location=new Point(410,137),Size=new Size(402,36),Font=new Font("Segoe UI",10),BackColor=card,ForeColor=ForeColor,AccessibleName="Installation method"};
-        methods.Items.AddRange(new object[]{"Use a version-to-version pack","Use original archives / folders","Register an existing installation"});installPage.Controls.Add(methods);
-        targets.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};methods.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};targets.SelectedIndex=0;methods.SelectedIndex=1;
-        installDiagram.Location=new Point(0,190);installDiagram.Size=new Size(812,173);installPage.Controls.Add(installDiagram);
-        LabelAt(installPage,"3 · CHECK THE REQUIRED FILES",0,370,812,18,9,true,muted);
-        var checklist=new SleekCard{Location=new Point(0,389),Size=new Size(812,112),BackColor=card};installPage.Controls.Add(checklist);installNeed=LabelAt(checklist,"",17,12,778,94,10,false);
-        installNote=LabelAt(installPage,"",0,512,800,37,9,false,muted);
-        installNote.Width=560;ButtonAt(installPage,"Starting version...",580,512,232,35,()=>ChooseStartingVersion(),false);
-        installButton=ButtonAt(installPage,"Choose files & install",0,556,260,42,()=>GuidedInstall(),true);
-        ButtonAt(installPage,"Advanced layers...",274,556,225,42,()=>Guard(OrderedLayers),false);
-        ButtonAt(installPage,"Install location...",514,556,190,42,()=>Guard(ChangeLocation),false);
-        installLocation=LabelAt(installPage,"",0,609,810,22,9,false,muted);
-        englishOnInstall=new CheckBox{Location=new Point(3,639),Size=new Size(740,28),Text="Enable the matching English translation on the installed version",Checked=true,AutoSize=false,ForeColor=ForeColor,BackColor=background};installPage.Controls.Add(englishOnInstall);
+        methods=new ChoicePicker{Location=new Point(410,151),Size=new Size(402,44),Font=new Font("Segoe UI",10),BackColor=card,ForeColor=ForeColor,AccessibleName="Installation method"};
+        methods.Items.AddRange(new object[]{"Version conversion pack","Original files / creator bundle","Existing installed game"});installPage.Controls.Add(methods);
+        var checklist=new SleekCard{Location=new Point(0,223),Size=new Size(812,137),BackColor=card};installPage.Controls.Add(checklist);
+        LabelAt(checklist,"SOURCE STATUS",18,14,765,22,10,true,muted);
+        installNeed=LabelAt(checklist,"Select a target version.",18,43,776,82,10,false);
+        installButton=ButtonAt(installPage,"Install / Upgrade",0,382,392,51,()=>GuidedInstall(),true);
+        installSourceButton=ButtonAt(installPage,"Add source files...",409,382,206,51,()=>Guard(ChooseOriginalInputs),false);
+        installSearchButton=ButtonAt(installPage,"Find files",630,382,182,51,()=>ScanAgain(),false);discoveryButton=installSearchButton;
+        englishOnInstall=new CheckBox{Location=new Point(4,460),Size=new Size(780,29),Text="Apply matching English translation when available",Checked=true,AutoSize=false,ForeColor=ForeColor,BackColor=background};installPage.Controls.Add(englishOnInstall);
         englishOnInstall.CheckedChanged+=delegate{if(!busy)UpdateInstall();};
-        ButtonAt(installPage,"Combine original sources...",0,682,283,37,()=>Guard(ChooseOriginalInputs),false);
-        sourceInputNote=LabelAt(installPage,"Choose ZIP/RAR/7z files, extracted folders, or installed games together.",298,687,510,32,9,false,muted);
-        installNext=LabelAt(installPage,"Next: choose a game version and review its files.",0,738,812,100,10,false,muted);
-        discoveryButton=ButtonAt(installPage,"Find files",668,31,144,36,()=>ScanAgain(),false);
-        ButtonAt(installPage,"View found files",502,31,153,36,()=>ShowFoundFiles(),false);
-        discoveryStatus=LabelAt(installPage,"Automatic source search is available.",0,844,805,54,9,false,muted);
+        installLocation=LabelAt(installPage,"",0,513,812,42,9,false,muted);
+        installDetailsButton=ButtonAt(installPage,"More options  ▾",0,571,236,43,()=>ToggleInstallDetails(),false);
+        installDetectedButton=ButtonAt(installPage,"View detected files",251,571,244,43,()=>ShowFoundFiles(),false);
+        installFolderButton=ButtonAt(installPage,"Change install folder",510,571,302,43,()=>Guard(ChangeLocation),false);
+        installStartingButton=ButtonAt(installPage,"Choose starting game",0,633,257,40,()=>ChooseStartingVersion(),false);
+        installLayersButton=ButtonAt(installPage,"Advanced: ordered layers",275,633,289,40,()=>Guard(OrderedLayers),false);
+        var rescan=ButtonAt(installPage,"Search another folder",582,633,230,40,()=>AddSearchFolder(),false);
+        installNote=LabelAt(installPage,"",0,691,805,49,9,false,muted);
+        sourceInputNote=LabelAt(installPage,"",0,751,805,35,9,false,muted);
+        installNext=LabelAt(installPage,"",0,798,805,78,9,false,muted);
+        discoveryStatus=LabelAt(installPage,"Source discovery is available.",0,901,805,53,9,false,muted);
+        installDiagram.Visible=false;installDiagram.Connect=false;
+        installDetailsExpanded=false;
+        installStartingButton.Visible=false;installLayersButton.Visible=false;rescan.Visible=false;
+        installNote.Visible=false;sourceInputNote.Visible=false;installNext.Visible=false;discoveryStatus.Visible=false;
+        targets.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};methods.SelectedIndexChanged+=delegate{Guard(UpdateInstall);};
+        int latest=targets.Items.FindIndex(x=>x is ModRecipe&&((ModRecipe)x).Id==UpgradeSupport.Latest);
+        targets.SelectedIndex=latest>=0?latest:0;methods.SelectedIndex=1;
+    }
+    void ToggleInstallDetails(){
+        installDetailsExpanded=!installDetailsExpanded;
+        installDetailsButton.Text=installDetailsExpanded?"Fewer options  ▴":"More options  ▾";
+        foreach(Control control in new Control[]{installStartingButton,installLayersButton,installNote,sourceInputNote,installNext,discoveryStatus})
+            control.Visible=installDetailsExpanded;
+        // The third advanced button is a small independent search shortcut.
+        foreach(Control child in installPage.Controls)
+            if(child is Button&&child.Text=="Search another folder")child.Visible=installDetailsExpanded;
+        FitPage();
     }
     void BuildSaves(){
-        savePage=Page();LabelAt(savePage,"SAVES · PER GAME VERSION",0,0,760,24,10,true,muted);saveTitle=LabelAt(savePage,"",0,32,812,48,24,true);
-        LabelAt(savePage,"1 · Select a game on the left. Its own save folder and backups appear below.",0,91,790,34,11,false,muted);
-        var panel=new SleekCard{Location=new Point(0,150),Size=new Size(812,175),BackColor=card};savePage.Controls.Add(panel);saveNote=LabelAt(panel,"",18,16,776,31,15,true);saveFolder=LabelAt(panel,"",18,59,776,61,10,false,muted);
-        openSaveButton=ButtonAt(panel,"Open this save folder",18,126,238,36,()=>Guard(OpenSaves),false);
-        backupButton=ButtonAt(savePage,"Back up now",0,353,248,46,()=>Guard(BackupNow),true);
-        restoreButton=ButtonAt(savePage,"Restore a backup",264,353,252,46,()=>Guard(Restore),false);
-        copyButton=ButtonAt(savePage,"Copy from another version...",531,353,281,46,()=>Guard(CopySaves),false);
-        var caution=new SleekCard{Location=new Point(0,430),Size=new Size(812,173),BackColor=Color.FromArgb(40,33,36)};savePage.Controls.Add(caution);
-        LabelAt(caution,"3 · Check before restoring or copying",18,18,775,28,13,true,Color.FromArgb(238,203,164));
-        LabelAt(caution,"Back up before moving saves. Restore replaces the current save set after backing it up; Copy keeps the source and backs up the destination. Neither converts save data.\r\n\r\nThe 3.3.5 trial removed the hypnosis storyline. IDs and state can differ between releases.",18,61,775,99,10,false,muted);
-        saveGuide=LabelAt(savePage,"2 · Back up now creates a timestamped copy. Restore uses a previous backup; Copy chooses another compatible version.",0,621,812,66,10,false,muted);
-        ButtonAt(savePage,"Remove this version...",0,706,268,42,()=>RemoveVersion(Selected),false);
+        savePage=Page();LabelAt(savePage,"SAVE MANAGEMENT",0,0,760,24,10,true,muted);
+        saveTitle=LabelAt(savePage,"",0,32,812,48,24,true);
+        LabelAt(savePage,"Saves are separate for each game version. Choose the game from the left library.",0,91,790,34,10,false,muted);
+        var panel=new SleekCard{Location=new Point(0,145),Size=new Size(812,155),BackColor=card};savePage.Controls.Add(panel);
+        saveNote=LabelAt(panel,"",18,16,776,32,15,true);
+        saveFolder=LabelAt(panel,"",18,57,776,46,10,false,muted);
+        openSaveButton=ButtonAt(panel,"Open save folder",18,109,234,35,()=>Guard(OpenSaves),false);
+        backupButton=ButtonAt(savePage,"Back up now",0,333,248,47,()=>Guard(BackupNow),true);
+        restoreButton=ButtonAt(savePage,"Restore backup",263,333,252,47,()=>Guard(Restore),false);
+        copyButton=ButtonAt(savePage,"Copy from other version",531,333,281,47,()=>Guard(CopySaves),false);
+        saveGuide=LabelAt(savePage,"Backups are timestamped; restores and copy operations first preserve existing destination saves.",0,402,812,75,10,false,muted);
+        LabelAt(savePage,"CROSS-VERSION SAVES",0,481,812,22,10,true,muted);
+        LabelAt(savePage,"Some updates change event IDs and routes. Copy only between verified compatible releases.\r\nSaves are not converted. Your source game and its saves remain untouched.",0,509,812,56,10,false,muted);
+        ButtonAt(savePage,"Manage this game  ▾",0,566,290,40,()=>{if(Selected!=null)ShowManageMenu(savePage,Selected,new Point(0,606));},false);
     }
     void BuildEnglish(){
-        englishPage=Page();LabelAt(englishPage,"ENGLISH TEXT · REVERSIBLE",0,0,800,24,10,true,muted);
-        englishTitle=LabelAt(englishPage,"Choose a version",0,31,812,52,24,true);
-        englishState=LabelAt(englishPage,"",0,93,810,28,13,true);
-        englishCoverage=new SleekProgress{Location=new Point(0,140),Size=new Size(812,10),Minimum=0,Maximum=1000};englishPage.Controls.Add(englishCoverage);
-        englishCounts=LabelAt(englishPage,"",0,170,812,54,10,false,muted);
-        englishDiagram.Location=new Point(0,237);englishDiagram.Size=new Size(812,178);englishDiagram.Connect=false;englishPage.Controls.Add(englishDiagram);
-        englishDetail=LabelAt(englishPage,"",0,431,812,56,10,false,muted);
-        englishEnable=ButtonAt(englishPage,"Enable / update English",0,505,282,43,()=>EnglishAction(0),true);
-        englishRestore=ButtonAt(englishPage,"Use original text",299,505,238,43,()=>EnglishAction(1),false);
-        englishImport=ButtonAt(englishPage,"Import translated JSON",554,505,258,43,()=>EnglishAction(2),false);
-        englishExport=ButtonAt(englishPage,"Export untranslated",0,565,282,40,()=>EnglishAction(3),false);
-        ButtonAt(englishPage,"English pack folder",299,565,238,40,()=>Guard(()=>LauncherFolders.Open(englishCurrent!=null&&englishCurrent.Supported?Path.Combine(Store.Home,"English",englishCurrent.VersionId):Path.Combine(Store.Home,"English"))),false);
-        ButtonAt(englishPage,"Seen text log",554,565,258,40,()=>Guard(()=>{if(Selected==null)return;string path=Path.Combine(Store.WebRoot(Selected.Root),"celesphonia-english","seen-untranslated.json");if(!File.Exists(path)){MessageBox.Show(this,"This log appears after English is enabled and untranslated text is displayed in game.");return;}Process.Start(new ProcessStartInfo(path){UseShellExecute=true});}),false);
-        englishSeen=LabelAt(englishPage,"",0,611,812,19,9,false,muted);
+        englishPage=Page();LabelAt(englishPage,"TRANSLATION",0,0,800,24,10,true,muted);
+        englishTitle=LabelAt(englishPage,"Choose a version",0,32,812,50,24,true);
+        englishState=LabelAt(englishPage,"",0,91,810,33,13,true);
+        englishCoverage=new SleekProgress{Location=new Point(0,141),Size=new Size(812,12),Minimum=0,Maximum=1000};englishPage.Controls.Add(englishCoverage);
+        englishCounts=LabelAt(englishPage,"",0,173,812,62,10,false,muted);
+        englishEnable=ButtonAt(englishPage,"Enable / update English",0,266,390,49,()=>EnglishAction(0),true);
+        englishRestore=ButtonAt(englishPage,"Restore original text",408,266,404,49,()=>EnglishAction(1),false);
+        LabelAt(englishPage,"Translation is reversible. Unsupported lines remain in the original language; saved games are unchanged.",0,341,812,58,10,false,muted);
+        englishDetail=LabelAt(englishPage,"",0,416,812,65,10,false,muted);
+        LabelAt(englishPage,"TRANSLATION TOOLS",0,466,812,23,10,true,muted);
+        englishImport=ButtonAt(englishPage,"Import translated JSON",0,502,265,41,()=>EnglishAction(2),false);
+        englishExport=ButtonAt(englishPage,"Export untranslated",282,502,260,41,()=>EnglishAction(3),false);
+        ButtonAt(englishPage,"Open English files",560,502,252,41,()=>Guard(()=>LauncherFolders.Open(englishCurrent!=null&&englishCurrent.Supported?Path.Combine(Store.Home,"English",englishCurrent.VersionId):Path.Combine(Store.Home,"English"))),false);
+        ButtonAt(englishPage,"Open untranslated log",0,559,265,41,()=>Guard(()=>{if(Selected==null)return;string path=Path.Combine(Store.WebRoot(Selected.Root),"celesphonia-english","seen-untranslated.json");if(!File.Exists(path)){MessageBox.Show(this,"This log appears after English is enabled and untranslated text is displayed in game.");return;}Process.Start(new ProcessStartInfo(path){UseShellExecute=true});}),false);
+        englishSeen=LabelAt(englishPage,"",282,563,530,30,9,false,muted);
+        englishDiagram.Visible=false;englishDiagram.Connect=false;
     }
     void UpdateEnglish(){
         if(englishTitle==null)return;var s=englishCurrent??new EnglishStatus{Detail="Checking this version's English overlay…"};var pack=s.Pack;
@@ -278,19 +375,22 @@ public class PolishedLauncher : ReplacementAwareForm {
         finally{busy=false;progress.Visible=false;SetEnabled(true);UpdateActions();UpdateEnglish();}
     }
     void BuildHelp(){
-        helpPage=Page();LabelAt(helpPage,"HOW IT WORKS",0,0,760,24,10,true,muted);LabelAt(helpPage,"Choose the branch you want to play",0,32,812,54,23,true);
-        LabelAt(helpPage,"LATEST THREE-IN-ONE RELEASE: Ver1.052\r\nFRESH INSTALL: get a clean GoRPG 1.23 ZIP (or complete split 7z) and the creator's Ver1.052 RAR. Select Ver1.052 > Install > Use the original bundle / game > Install fresh mod + English. GoRPG is extracted if needed; the mod is verified and English enabled automatically. No CH or older Three-in-One installation required.\r\n\r\n01   Older versions remain supported\r\nCH, GoRPG 1.23, Maple 1.7.2, 3.3.4, and prior Three-in-One versions retain their own installations and saves.\r\n\r\n02   Forward upgrades can carry saves\r\nFrom an already installed 3.3.5 v1.04 or v1.051, use Upgrade & carry saves instead of fresh install. Original profiles are preserved.\r\n\r\n03   Original archives work\r\nThe built-in extractor handles ZIP, RAR5, and complete split 7z archives, including renamed creator filenames. The verified v1.052 update includes the boss-restraint fix.\r\n\r\n04   English is partial, reversible\r\n34,996 of 56,080 catalog entries are translated. Remaining text stays original. Disabling English restores the original entry; saved games are unchanged.",0,110,800,404,11,false,muted);
-        ButtonAt(helpPage,"Quick start guide",0,540,345,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"README.txt")){UseShellExecute=true})),true);
-        ButtonAt(helpPage,"Open delta packs",361,540,250,44,()=>Guard(()=>{Directory.CreateDirectory(Path.Combine(Store.Home,"Delta Packs"));Process.Start("explorer.exe",Store.Q(Path.Combine(Store.Home,"Delta Packs")));}),false);
-        ButtonAt(helpPage,"Game changelog",625,540,180,44,()=>Guard(OpenGameChangelog),false);
-        LabelAt(helpPage,"LAUNCHER APPEARANCE",0,615,400,25,10,true,muted);
-        themePicker=new ChoicePicker{Location=new Point(0,651),Size=new Size(310,40),Font=Font,BackColor=card,ForeColor=ForeColor,AccessibleName="Launcher theme"};themePicker.Items.AddRange(new object[]{"Midnight","Violet","Ocean","Daylight"});themePicker.SelectedItem=settings.LauncherTheme??"Midnight";helpPage.Controls.Add(themePicker);
+        helpPage=Page();LabelAt(helpPage,"HELP & SETTINGS",0,0,760,24,10,true,muted);
+        LabelAt(helpPage,"Everything in one place",0,32,812,47,24,true);
+        LabelAt(helpPage,"INSTALLING",0,109,790,24,10,true,muted);
+        LabelAt(helpPage,"Install → choose a version → choose original files.\r\nUse a complete creator update plus clean GoRPG for new installations. An existing compatible version can be upgraded with verified save carryover.",0,144,805,87,10,false,muted);
+        LabelAt(helpPage,"MANAGING GAMES",0,248,790,24,10,true,muted);
+        LabelAt(helpPage,"Right-click an installed game (or use Manage / Uninstall) to play, open folders, back up saves, upgrade, change English, or remove a version.\r\nUninstall only removes hash-verified managed files; archives, saves and unknown files stay.",0,284,805,87,10,false,muted);
+        ButtonAt(helpPage,"Quick start guide",0,390,281,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"README.txt")){UseShellExecute=true})),true);
+        ButtonAt(helpPage,"Game changelog",294,390,245,44,()=>Guard(OpenGameChangelog),false);
+        ButtonAt(helpPage,"Open delta packs",552,390,260,44,()=>Guard(()=>{Directory.CreateDirectory(Path.Combine(Store.Home,"Delta Packs"));Process.Start("explorer.exe",Store.Q(Path.Combine(Store.Home,"Delta Packs")));}),false);
+        LabelAt(helpPage,"APPEARANCE",0,471,400,23,10,true,muted);
+        themePicker=new ChoicePicker{Location=new Point(0,503),Size=new Size(310,42),Font=Font,BackColor=card,ForeColor=ForeColor,AccessibleName="Launcher theme"};themePicker.Items.AddRange(new object[]{"Midnight","Violet","Ocean","Daylight"});themePicker.SelectedItem=settings.LauncherTheme??"Midnight";helpPage.Controls.Add(themePicker);
         themePicker.SelectedIndexChanged+=delegate{ApplyTheme(themePicker.SelectedItem.ToString());if(!previewMode)Store.Write(settings);};
-        LabelAt(helpPage,"Themes are saved for the launcher. Set the game menu's theme and opacity in its top bar; drag the menu header to move it.",330,649,482,53,10,false,muted);
-        LabelAt(helpPage,"LAUNCHER UPDATES  ·  v"+LauncherUpdate.CurrentVersion,0,719,490,24,10,true,muted);
-        ButtonAt(helpPage,"Check launcher updates",0,750,286,43,()=>CheckLauncherUpdate(),true);
-        ButtonAt(helpPage,"GitHub source",306,750,230,43,()=>ConfigureLauncherUpdates(),false);
-        LabelAt(helpPage,"Uses GitHub Releases with a required SHA-256 checksum. Offers updates when a verified newer launcher is available; your installed games, saves, F8 sessions and profiles stay untouched.",0,801,805,62,10,false,muted);
+        LabelAt(helpPage,"Themes apply to all launcher pages and menus.",329,509,478,39,10,false,muted);
+        LabelAt(helpPage,"LAUNCHER UPDATES  ·  v"+LauncherUpdate.CurrentVersion,0,552,650,21,10,true,muted);
+        ButtonAt(helpPage,"Check launcher updates",0,581,310,37,()=>CheckLauncherUpdate(),true);
+        ButtonAt(helpPage,"GitHub source",330,581,236,37,()=>ConfigureLauncherUpdates(),false);
     }
     void OpenGameChangelog(){
         string file=Path.Combine(Store.Home,"GAME MOD CHANGELOG.md");
@@ -309,7 +409,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             var auto=new CheckBox{Location=new Point(20,119),Width=540,Text="Automatically check for launcher updates on startup",Checked=config.AutoCheck};
             var save=new Button{Location=new Point(440,163),Width=140,Text="Save",DialogResult=DialogResult.OK};
             dialog.Controls.Add(label);dialog.Controls.Add(input);dialog.Controls.Add(auto);dialog.Controls.Add(save);dialog.AcceptButton=save;
-            if(dialog.ShowDialog(this)!=DialogResult.OK)return false;
+            StyleDialog(dialog);if(dialog.ShowDialog(this)!=DialogResult.OK)return false;
             config.Repository=input.Text.Trim();config.AutoCheck=auto.Checked;config.LastNotifiedTag=null;
             LauncherUpdate.Save(config);status.Text=string.IsNullOrEmpty(config.Repository)?
                 "GitHub update source not configured. Launcher still works offline.":
@@ -352,7 +452,7 @@ public class PolishedLauncher : ReplacementAwareForm {
     }
     void FitPage(){
         var active=new[]{playPage,installPage,savePage,helpPage,filesPage,englishPage}.FirstOrDefault(p=>p!=null&&p.Visible);
-        if(active!=null)main.Canvas.Height=Math.Max(main.ClientSize.Height,active.Controls.Cast<Control>().Select(c=>c.Bottom+12).DefaultIfEmpty(0).Max());
+        if(active!=null)main.Canvas.Height=Math.Max(main.ClientSize.Height,active.Controls.Cast<Control>().Where(c=>c.Visible).Select(c=>c.Bottom+8).DefaultIfEmpty(0).Max());
         main.RefreshRange();
     }
     void ShowPage(string page){
@@ -458,7 +558,7 @@ public class PolishedLauncher : ReplacementAwareForm {
                 new[]{fresh?(baseGame!=null||baseArchive!=null||AnyPack("gorpg-1-23")!=null):source!=null,bundle!=null,installed!=null});
             installNeed.Text=(fresh?(baseGame!=null?"✓ Verified clean GoRPG base: "+baseGame.Name:baseArchive!=null?"• GoRPG source to check: "+Path.GetFileName(baseArchive.Path):"• Needed: complete GoRPG 1.23 originals. Combine ZIP/RAR/7z or folders below."):"✓ Earlier game: "+source.Name)+"\r\n"+(bundle==null?"• Needed: complete "+recipe.Name+" creator update":"• Source candidate: "+Path.GetFileName(bundle.Path)+" (verified during installation)")+"\r\n"+(fresh?"✓ New independent game with empty saves":"✓ Compatible saves carried forward after backup")+" · English "+(englishOnInstall.Checked?"requested":"not requested");
             installNote.Text=fresh?"Native GoRPG files can be recovered from selected original sources, then combined with a verified creator bundle.":"Direct verified forward upgrade; backups retained. English is optional.";
-            installButton.Text=installed!=null?"Use installed version":fresh?"Install fresh mod + English":"Upgrade & carry saves";installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();return;
+            installButton.Text=installed!=null?"Use installed version":fresh?"Install fresh mod + English":"Upgrade & carry saves";installLocation.Text="New installations: "+settings.InstallRoot;RefreshCompactInstall();UpdateActions();return;
         }
         if(route==1&&recipe.Id=="three-in-one-3-3-4"){
             var native=LocatedOriginal(recipe.Id);var cleanBase=Clean();
@@ -472,7 +572,7 @@ public class PolishedLauncher : ReplacementAwareForm {
                 "\r\n• Creator overlay must supply all 2,637 changed/new files with exact hashes";
             installNote.Text="3.3.4 is registered only after all 9,474 native files pass SHA-256 verification.";
             installButton.Text=Installed(recipe.Id)!=null?"Use installed version":"Verify sources & install";
-            installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();return;
+            installLocation.Text="New installations: "+settings.InstallRoot;RefreshCompactInstall();UpdateActions();return;
         }
         if(route==0){
             var source=any==null?ch:SupportedSource(recipe.Id);bool already=Installed(recipe.Id)!=null;
@@ -496,10 +596,48 @@ public class PolishedLauncher : ReplacementAwareForm {
         }
         installButton.Text=route==0&&Installed(recipe.Id)!=null?"Use installed version":route==0&&found?"Install from detected pack":route==0?"Choose pack & install":route==1&&bundle!=null?"Use detected original files":route==1?"Choose original files":"Choose installed game folder";
         var incomplete=discovered.FirstOrDefault(x=>x.RecipeId==recipe.Id&&!string.IsNullOrEmpty(x.Problem));if(route==1&&incomplete!=null)installNote.Text=incomplete.Problem+" · keep all parts together. View found files shows their folder.";
-        installLocation.Text="New installations: "+settings.InstallRoot;UpdateActions();installDiagram.Invalidate();
+        installLocation.Text="New installations: "+settings.InstallRoot;RefreshCompactInstall();UpdateActions();installDiagram.Invalidate();
+    }
+    void RefreshCompactInstall(){
+        if(Target==null||installNeed==null)return;
+        var recipe=Target;int route=methods.SelectedIndex;
+        var existing=Installed(recipe.Id);
+        var detected=LocatedOriginal(recipe.Id);
+        var creator=UpgradeSupport.IsUpgrade(recipe.Id)?detected:Original(recipe.Id);
+        var candidate=discovered.FirstOrDefault(x=>x.RecipeId==recipe.Id&&!string.IsNullOrEmpty(x.Problem));
+        var prior=startingSource!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(startingSource.Root),recipe.Id)
+            ?startingSource:UpgradeSupport.StartingProfile(settings,recipe.Id);
+        bool upgrade=UpgradeSupport.IsUpgrade(recipe.Id);
+        if(existing!=null){
+            installNeed.Text="Already installed: "+existing.Name+
+                "\r\nNo reinstall needed. Open the installed version from Play or Files.";
+            installButton.Text="Open installed version";
+        }else if(route==2){
+            installNeed.Text="Register an existing extracted game folder.\r\nThe game stays in its current location; no copy or patch is applied.";
+            installButton.Text="Choose installed folder";
+        }else if(route==0){
+            installNeed.Text="Conversion pack: "+(AnyPack(recipe.Id)!=null?"Detected; verified during installation.":"Choose a compatible version-conversion pack.")+
+                "\r\nSource: "+(SupportedSource(recipe.Id)!=null?"Installed game available.":"Select the starting game in More options.");
+            installButton.Text="Install using pack";
+        }else if(upgrade){
+            installNeed.Text=prior!=null?"Upgrade from "+prior.Name+" (saves backed up and carried).":
+                "Fresh installation: add original GoRPG files or a compatible complete game archive.";
+            installNeed.Text+="\r\nCreator update: "+(detected!=null?"Found candidate; verified during install.":"Choose the original creator bundle when prompted.");
+            installButton.Text=prior!=null?"Upgrade & carry saves":"Install new version";
+        }else{
+            installNeed.Text=detected==null?
+                "Choose original ZIP/RAR/7z archives or an extracted game folder.":
+                "Found "+detected.Kind.ToLowerInvariant()+": "+Path.GetFileName(detected.Path)+".";
+            installNeed.Text+="\r\nThe full native-file hashes are checked before registration.";
+            installButton.Text="Install this version";
+        }
+        if(candidate!=null&&!string.IsNullOrEmpty(candidate.Problem))
+            installNeed.Text+="\r\nIncomplete detected source — open View detected files.";
+        installLocation.Text="Destination: "+settings.InstallRoot;
+        if(originalInputs.Count>0)installLocation.Text+="  ·  "+originalInputs.Count+" original source"+(originalInputs.Count==1?"":"s")+" selected";
     }
     void UpdateActions(){
-        if(playButton==null)return;bool allowed=!busy&&!running&&!discovering;playButton.Enabled=!busy&&!running&&Selected!=null;
+        if(playButton==null||status==null)return;bool allowed=!busy&&!running&&!discovering;playButton.Enabled=!busy&&!running&&Selected!=null;
         gameFolderButton.Enabled=Selected!=null&&Directory.Exists(Selected.Root);saveFolderButton.Enabled=Selected!=null;
         if(copyButton!=null){copyButton.Enabled=allowed&&Selected!=null&&LibraryProfiles.Any(x=>x.Id!=Selected.Id&&UpgradeSupport.CanTransfer(UniversalSupport.Identify(x.Root),UniversalSupport.Identify(Selected.Root)));backupButton.Enabled=allowed&&Selected!=null;restoreButton.Enabled=allowed&&Selected!=null;}
         if(openSaveButton!=null)openSaveButton.Enabled=allowed&&Selected!=null;
@@ -553,7 +691,7 @@ public class PolishedLauncher : ReplacementAwareForm {
     }
     void OpenSaves(){Directory.CreateDirectory(Selected.SavePath);Process.Start("explorer.exe",Store.Q(Selected.SavePath));}
     string Folder(string title,string initial){using(var d=new FolderBrowserDialog{Description=title,SelectedPath=initial,ShowNewFolderButton=false})return d.ShowDialog(this)==DialogResult.OK?d.SelectedPath:null;}
-    string PromptName(string initial){using(var dialog=new Form{Text="Name this version",ClientSize=new Size(475,125),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){var text=new TextBox{Location=new Point(16,16),Size=new Size(443,30),Text=initial};dialog.Controls.Add(text);var ok=new Button{Text="Add version",Location=new Point(313,71),Size=new Size(146,34),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;return dialog.ShowDialog(this)==DialogResult.OK?text.Text.Trim():null;}}
+    string PromptName(string initial){using(var dialog=new Form{Text="Name this version",ClientSize=new Size(475,125),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){var text=new TextBox{Location=new Point(16,16),Size=new Size(443,30),Text=initial};dialog.Controls.Add(text);var ok=new Button{Text="Add version",Location=new Point(313,71),Size=new Size(146,34),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;StyleDialog(dialog);return dialog.ShowDialog(this)==DialogResult.OK?text.Text.Trim():null;}}
     void AddProfile(){string root=Folder("Select a game folder or the folder containing its extracted game.",settings.InstallRoot);if(root==null)return;root=UniversalSupport.FindGameRoot(root);Register(root,Path.GetFileName(root));}
     void Register(string root,string suggested){
         var existing=LibraryProfiles.FirstOrDefault(x=>Path.GetFullPath(x.Root).Equals(Path.GetFullPath(root),StringComparison.OrdinalIgnoreCase));if(existing!=null){settings.SelectedId=existing.Id;RefreshProfiles();ShowPage("Play");status.Text="Selected existing installation · "+existing.Name;return;}
@@ -598,7 +736,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             ButtonAt(dialog,"Clear",528,327,121,37,()=>items.Items.Clear(),false);
             LabelAt(dialog,"Installed versions can be selected from Found files or Starting version too. Nothing is extracted while choosing.",16,420,830,25,9,false,Color.DimGray);
             var ok=new Button{Text="Use these sources",Location=new Point(636,451),Size=new Size(223,36),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;
-            if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+            StyleDialog(dialog);if(dialog.ShowDialog(this)!=DialogResult.OK)return;
             originalInputs.Clear();foreach(string path in items.Items.Cast<string>())AddOriginalInput(path);
             methods.SelectedIndex=1;UpdateInstall();
         }
@@ -607,7 +745,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         using(var dialog=new Form{Text="Choose the complete mod bundle",ClientSize=new Size(595,182),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
             LabelAt(dialog,"Choose an archive, or a folder already extracted from it.",18,16,565,35,11,false,Color.Black);
             var archive=new Button{Text="Choose archive",Location=new Point(18,79),Size=new Size(265,43),DialogResult=DialogResult.Yes};var folder=new Button{Text="Choose extracted folder",Location=new Point(304,79),Size=new Size(272,43),DialogResult=DialogResult.No};dialog.Controls.Add(archive);dialog.Controls.Add(folder);
-            var choice=dialog.ShowDialog(this);if(choice==DialogResult.Yes)return PickArchive("Select ONE complete bundle; choose .001 for split archives","Mod archives|*.zip;*.rar;*r删ar;*.7z;*.001;*.7删z|All files|*.*",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Telegram Desktop"),recipe.ArchiveName);
+            StyleDialog(dialog);var choice=dialog.ShowDialog(this);if(choice==DialogResult.Yes)return PickArchive("Select ONE complete bundle; choose .001 for split archives","Mod archives|*.zip;*.rar;*r删ar;*.7z;*.001;*.7删z|All files|*.*",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Telegram Desktop"),recipe.ArchiveName);
             if(choice==DialogResult.No)return Folder("Select the bundle's extracted folder containing data, js, img, and audio.",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads"));return null;
         }
     }
@@ -1009,10 +1147,10 @@ public class PolishedLauncher : ReplacementAwareForm {
             ButtonAt(dialog,"Remove",623,295,147,37,()=>{if(list.SelectedIndex>=0)list.Items.RemoveAt(list.SelectedIndex);},false);
             LabelAt(dialog,"3.3.5 already includes Abu 56.6 + story 1.0 + skills 3.3.5.\r\nDo not stack Maple, 3.3.4, or a separate complete Abu bundle.",18,349,750,48,10,false,Color.DimGray);
             var ok=new Button{Text="Install reviewed order",Location=new Point(517,402),Size=new Size(253,34),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;
-            if(dialog.ShowDialog(this)!=DialogResult.OK || list.Items.Count==0)return;var layers=list.Items.Cast<LayerInput>().ToList();string location=settings.InstallRoot;await RunInstall(()=>RecipeSupport.Install(clean.Root,location,"Custom layered version",layers));
+            StyleDialog(dialog);if(dialog.ShowDialog(this)!=DialogResult.OK || list.Items.Count==0)return;var layers=list.Items.Cast<LayerInput>().ToList();string location=settings.InstallRoot;await RunInstall(()=>RecipeSupport.Install(clean.Root,location,"Custom layered version",layers));
         }
     }
-    Profile ChooseProfile(string title,IEnumerable<Profile> options){using(var dialog=new Form{Text=title,ClientSize=new Size(595,145),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){var box=new ComboBox{Location=new Point(18,24),Size=new Size(559,31),DropDownStyle=ComboBoxStyle.DropDownList};box.Items.AddRange(options.ToArray());if(box.Items.Count>0)box.SelectedIndex=0;dialog.Controls.Add(box);var ok=new Button{Text="Select",Location=new Point(429,87),Size=new Size(148,35),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;return dialog.ShowDialog(this)==DialogResult.OK?box.SelectedItem as Profile:null;}}
+    Profile ChooseProfile(string title,IEnumerable<Profile> options){using(var dialog=new Form{Text=title,ClientSize=new Size(595,145),Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){var box=new ComboBox{Location=new Point(18,24),Size=new Size(559,31),DropDownStyle=ComboBoxStyle.DropDownList};box.Items.AddRange(options.ToArray());if(box.Items.Count>0)box.SelectedIndex=0;dialog.Controls.Add(box);var ok=new Button{Text="Select",Location=new Point(429,87),Size=new Size(148,35),DialogResult=DialogResult.OK};dialog.Controls.Add(ok);dialog.AcceptButton=ok;StyleDialog(dialog);return dialog.ShowDialog(this)==DialogResult.OK?box.SelectedItem as Profile:null;}}
     void BackupNow(){
         if(Selected==null||!GameClosed())return;
         var game=Selected;
@@ -1052,10 +1190,11 @@ public class PolishedLauncher : ReplacementAwareForm {
         if(bytes>=1024L*1024)return (bytes/(1024.0*1024)).ToString("N1")+" MB";
         return bytes.ToString("N0")+" bytes";
     }
-    async void RemoveVersion(Profile game){
+    async void RemoveVersion(Profile game,RemovalMode? requested=null){
         if(busy||game==null)return;
         RemovalMode mode;
-        using(var picker=new Form{Text="Remove a registered game · choose what stays",ClientSize=new Size(790,309),
+        if(requested.HasValue)mode=requested.Value;
+        else using(var picker=new Form{Text="Remove a registered game · choose what stays",ClientSize=new Size(790,309),
             Font=Font,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,
             MinimizeBox=false,MaximizeBox=false}){
             LabelAt(picker,game.Name,18,15,755,31,14,true,Color.Black);
@@ -1066,7 +1205,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             var managed=new Button{Text="Review file uninstall",Location=new Point(258,253),Size=new Size(250,39),DialogResult=DialogResult.No};
             var cancel=new Button{Text="Cancel",Location=new Point(647,253),Size=new Size(125,39),DialogResult=DialogResult.Cancel};
             picker.Controls.Add(indexOnly);picker.Controls.Add(managed);picker.Controls.Add(cancel);picker.CancelButton=cancel;
-            var decision=picker.ShowDialog(this);
+            StyleDialog(picker);var decision=picker.ShowDialog(this);
             if(decision!=DialogResult.Yes&&decision!=DialogResult.No)return;
             mode=decision==DialogResult.Yes?RemovalMode.IndexOnly:RemovalMode.InstalledGame;
         }
@@ -1122,23 +1261,42 @@ public class PolishedLauncher : ReplacementAwareForm {
     public void OpenEnglishPage(){ShowPage("English");}
     public void TestPage(string page){ShowPage(page);}
     void BuildFiles(){
-        filesPage=Page();LabelAt(filesPage,"FILES · YOUR GAME LIBRARY",0,0,760,24,10,true,muted);LabelAt(filesPage,"Choose a version",0,32,800,46,24,true);
-        LabelAt(filesPage,"1 · Select a row. Installed games open directly; other versions open the Install guide.\r\nSource candidates still need full native-file verification.",0,85,800,57,10,false,muted);
-        availability=new DataGridView{Location=new Point(0,158),Size=new Size(812,344),ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,BackgroundColor=card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,RowTemplate={Height=48},AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.None};
+        filesPage=Page();LabelAt(filesPage,"VERSIONS",0,0,760,24,10,true,muted);
+        LabelAt(filesPage,"Your games and sources",0,32,800,46,24,true);
+        LabelAt(filesPage,"Choose an installed game to play or manage; choose an uninstalled version to prepare it.",0,88,800,32,10,false,muted);
+        availability=new DataGridView{Location=new Point(0,135),Size=new Size(812,257),ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,BackgroundColor=card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,RowTemplate={Height=48},AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.None};
         availability.ColumnHeadersDefaultCellStyle.BackColor=Color.FromArgb(41,47,64);availability.ColumnHeadersDefaultCellStyle.ForeColor=ForeColor;availability.ColumnHeadersHeight=43;
         availability.DefaultCellStyle.BackColor=card;availability.DefaultCellStyle.ForeColor=ForeColor;availability.DefaultCellStyle.SelectionBackColor=Color.FromArgb(68,58,103);availability.DefaultCellStyle.WrapMode=DataGridViewTriState.True;availability.GridColor=Color.FromArgb(48,56,73);
         availability.CellBorderStyle=DataGridViewCellBorderStyle.SingleHorizontal;availability.ColumnHeadersBorderStyle=DataGridViewHeaderBorderStyle.None;availability.DefaultCellStyle.Padding=new Padding(7,0,4,0);availability.DefaultCellStyle.SelectionForeColor=ForeColor;availability.AlternatingRowsDefaultCellStyle.BackColor=Color.FromArgb(28,34,47);
-        availability.Columns.Add("Version","Version");availability.Columns[0].Width=183;availability.Columns.Add("Game","Game folder");availability.Columns[1].Width=110;availability.Columns.Add("Original","Original files");availability.Columns[2].Width=116;availability.Columns.Add("Pack","Patch pack");availability.Columns[3].Width=113;availability.Columns.Add("English","English text");availability.Columns[4].Width=143;availability.Columns.Add("Ready","Action");availability.Columns[5].Width=143;
+        availability.Columns.Add("Version","Version");availability.Columns[0].Width=250;
+        availability.Columns.Add("Game","Installation");availability.Columns[1].Width=165;
+        availability.Columns.Add("Original","Local sources");availability.Columns[2].Width=180;
+        availability.Columns.Add("Ready","Next action");availability.Columns[3].Width=195;
         availability.SelectionChanged+=delegate{Guard(UpdateFilesSelection);};
         availability.CellDoubleClick+=delegate{UseAvailable();};filesPage.Controls.Add(availability);
-        availability.CellMouseDown+=delegate(object sender,DataGridViewCellMouseEventArgs e){if(e.Button!=MouseButtons.Right||e.RowIndex<0)return;availability.ClearSelection();availability.Rows[e.RowIndex].Selected=true;string id=Convert.ToString(availability.Rows[e.RowIndex].Tag);var game=Installed(id);if(game!=null){profiles.SelectedItem=game;ShowFolders(availability,availability.PointToClient(Cursor.Position));}else{var source=Original(id)??AnyPack(id);if(source!=null)Guard(()=>LauncherFolders.Open(source.Path));}};
-        availabilityNote=LabelAt(filesPage,"Select a version to see its source and next action.",0,514,812,81,10,false,muted);
-        ButtonAt(filesPage,"Open selected version",0,604,277,43,()=>UseAvailable(),true);
-        ButtonAt(filesPage,"Inspect found sources",295,604,252,43,()=>ShowFoundFiles(),false);
-        ButtonAt(filesPage,"Search another folder",565,604,247,43,()=>AddSearchFolder(),false);
-        filesGuide=LabelAt(filesPage,"2 · To combine original ZIP/RAR/7z downloads or extracted folders, select a target and open source selection.",0,662,812,42,10,false,muted);
-        ButtonAt(filesPage,"Combine sources for selected version...",0,709,334,41,()=>Guard(ChooseSourcesForSelectedVersion),false);
-        ButtonAt(filesPage,"Remove selected...",350,709,220,41,()=>Guard(()=>{if(availability.SelectedRows.Count==0)return;string id=Convert.ToString(availability.SelectedRows[0].Tag);var game=Installed(id);if(game==null){MessageBox.Show(this,"Only installed versions can be removed. Select a registered game first.","Choose installed game");return;}RemoveVersion(game);}),false);
+        availability.CellMouseDown+=delegate(object sender,DataGridViewCellMouseEventArgs e){
+            if(e.Button!=MouseButtons.Right||e.RowIndex<0)return;availability.ClearSelection();availability.Rows[e.RowIndex].Selected=true;
+            string id=Convert.ToString(availability.Rows[e.RowIndex].Tag);var game=Installed(id);
+            if(game!=null)ShowManageMenu(availability,game,availability.PointToClient(Cursor.Position));
+            else ShowInstallMenu(availability,targets.Items.Cast<ModRecipe>().FirstOrDefault(x=>x.Id==id),availability.PointToClient(Cursor.Position));
+        };
+        availabilityNote=LabelAt(filesPage,"Select a version to inspect.",0,407,812,77,10,false,muted);
+        ButtonAt(filesPage,"Open selected / Install",0,509,304,46,()=>UseAvailable(),true);
+        filesManageButton=ButtonAt(filesPage,"Manage / Uninstall  ▾",321,509,279,46,()=>ManageSelectedInFiles(),false);
+        ButtonAt(filesPage,"Find source files",616,509,196,46,()=>ShowFoundFiles(),false);
+        filesGuide=LabelAt(filesPage,"Original downloads and personal saves remain untouched by library removal.",0,565,812,20,9,false,muted);
+        filesGuide.Visible=false;
+        ButtonAt(filesPage,"Add source files...",0,571,290,39,()=>Guard(ChooseSourcesForSelectedVersion),false);
+        ButtonAt(filesPage,"Search another location",307,571,274,39,()=>AddSearchFolder(),false);
+    }
+    void ManageSelectedInFiles(){
+        if(availability.SelectedRows.Count==0)return;
+        string id=Convert.ToString(availability.SelectedRows[0].Tag);var game=Installed(id);
+        if(game==null){
+            MessageBox.Show(this,"This version is not installed. Choose Open selected / Install to prepare it.","Not installed");
+            return;
+        }
+        ShowManageMenu(filesManageButton,game);
     }
     void UpdateFilesSelection(){
         if(availabilityNote==null||availability.SelectedRows.Count==0)return;
@@ -1178,7 +1336,8 @@ public class PolishedLauncher : ReplacementAwareForm {
             var game=Installed(recipe.Id);var original=LocatedOriginal(recipe.Id);var pack=AnyPack(recipe.Id)??Found(recipe.Id,"Delta pack");
             bool ready=game!=null,canInstall=UpgradeSupport.IsUpgrade(recipe.Id)?original!=null&&(UpgradeSupport.StartingProfile(settings,recipe.Id)!=null||Clean()!=null||Original("gorpg-1-23")!=null):pack!=null&&(pack.Kind=="Any-version pack"?SupportedSource(recipe.Id)!=null:CH()!=null)||original!=null&&original.Kind!="Game archive candidate"&&(recipe.Standalone||original.Kind=="Full game archive"||Clean()!=null);
             EnglishStatus cached;string textStatus=game!=null?(statusCache.TryGetValue(game.Id,out cached)?cached.Short:"Select to check English"):recipe.Id=="ch-current"?"English reference":"Install game first";
-            int row=availability.Rows.Add(recipe.Name,ready?"Installed · "+CountSaves(game)+" saves":"Not installed",original==null?"Not found":original.Kind=="Game archive candidate"?"Archive candidate":original.Kind=="Full game archive"?"Version files match":original.Kind=="Extracted bundle"?"Folder found":"Archive found",UpgradeSupport.IsUpgrade(recipe.Id)?"Forward upgrade":pack==null?"Not found":pack.Kind=="Any-version pack"?"Any-version":"Legacy CH-only",textStatus,ready?"Ready to switch":canInstall?"Ready to install":original!=null&&original.Kind=="Game archive candidate"?"Verify native files":"Needs files");availability.Rows[row].Tag=recipe.Id;
+            string source=original==null?(pack==null?"Not found":"Conversion pack"):original.Kind=="Game archive candidate"?"Unverified archive":original.Kind=="Extracted bundle"?"Extracted folder":"Original files found";
+            int row=availability.Rows.Add(recipe.Name,ready?"Installed · "+CountSaves(game)+" saves":"Not installed",source,ready?"Play / Manage":canInstall?"Install now":original!=null&&original.Kind=="Game archive candidate"?"Verify sources":"Add original files");availability.Rows[row].Tag=recipe.Id;
             availability.Rows[row].DefaultCellStyle.ForeColor=settings.LauncherTheme=="Daylight"?(ready?Color.FromArgb(21,112,76):canInstall?Color.FromArgb(105,62,154):Color.FromArgb(130,87,28)):ready?Color.FromArgb(141,220,188):canInstall?Color.FromArgb(208,194,249):Color.FromArgb(229,192,136);
         }
         var selectedRow=availability.Rows.Cast<DataGridViewRow>().FirstOrDefault(x=>Convert.ToString(x.Tag)==prior)??availability.Rows.Cast<DataGridViewRow>().FirstOrDefault();if(selectedRow!=null){availability.ClearSelection();selectedRow.Selected=true;}
@@ -1192,7 +1351,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             LabelAt(dialog,"CH, Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 can be the starting game.",18,17,610,46,10,false,Color.Black);
             var list=new ComboBox{Location=new Point(18,72),Size=new Size(610,32),DropDownStyle=ComboBoxStyle.DropDownList,ForeColor=Color.Black};list.Items.AddRange(LibraryProfiles.Where(x=>UniversalSupport.Identify(x.Root)!=null).ToArray());if(list.Items.Count>0)list.SelectedIndex=0;dialog.Controls.Add(list);
             var use=new Button{Text="Use selected",Location=new Point(18,137),Size=new Size(188,40),DialogResult=DialogResult.OK};var folder=new Button{Text="Choose game folder",Location=new Point(223,137),Size=new Size(198,40),DialogResult=DialogResult.Yes};var archive=new Button{Text="Choose full archive",Location=new Point(438,137),Size=new Size(190,40),DialogResult=DialogResult.No};dialog.Controls.Add(use);dialog.Controls.Add(folder);dialog.Controls.Add(archive);
-            var result=dialog.ShowDialog(this);if(result==DialogResult.OK){startingSource=list.SelectedItem as Profile;UpdateInstall();return;}
+            StyleDialog(dialog);var result=dialog.ShowDialog(this);if(result==DialogResult.OK){startingSource=list.SelectedItem as Profile;UpdateInstall();return;}
             if(result==DialogResult.Yes){string root=Folder("Choose an intact complete game folder or its wrapper folder.",settings.InstallRoot);if(root==null)return;root=UniversalSupport.FindGameRoot(root);if(UniversalSupport.Identify(root)==null)throw new IOException("This folder does not match a supported reference version.");startingSource=Store.Detect(root,UniversalSupport.DetectedName(root));if(!LibraryProfiles.Any(x=>x.Root.Equals(root,StringComparison.OrdinalIgnoreCase)))Added(startingSource);ShowPage("Install");UpdateInstall();}
             else if(result==DialogResult.No){
                 string file=PickArchive("Choose an original full game archive (.001 for split files)","Game archives|*.zip;*.rar;*.7z;*.001;*.7删z|All files|*.*",settings.InstallRoot,null);if(file==null)return;
@@ -1250,7 +1409,7 @@ public class PolishedLauncher : ReplacementAwareForm {
                 }
                 preferredSources[source.RecipeId+"/"+source.Kind]=source;targets.SelectedItem=recipe;methods.SelectedIndex=source.Kind=="Delta pack"||source.Kind=="Any-version pack"?0:1;UpdateInstall();ShowPage("Install");dialog.Close();
             };
-            dialog.ShowDialog(this);
+            StyleDialog(dialog);dialog.ShowDialog(this);
         }
     }
     async void ScanAgain(){if(discovering){if(scanCancellation!=null)scanCancellation.Cancel();return;}await Discover();}
@@ -1285,6 +1444,58 @@ public class PolishedLauncher : ReplacementAwareForm {
             var item=new ToolStripMenuItem(folder.Label){Enabled=folder.Exists,ToolTipText=folder.Path+(folder.Exists?"":"\r\nNot created for this version yet"),ForeColor=ForeColor,BackColor=card};
             string path=folder.Path;item.Click+=delegate{Guard(()=>LauncherFolders.Open(path));};menu.Items.Add(item);
         }
-        LauncherMenuLifetime.RetireAfterClose(menu);menu.Show(anchor,location??new Point(0,anchor.Height));
+        LauncherMenuStyle.Apply(menu);LauncherMenuLifetime.RetireAfterClose(menu);menu.Show(anchor,location??new Point(0,anchor.Height));
+    }
+    ContextMenuStrip NewActionMenu(){
+        var menu=new ContextMenuStrip{BackColor=card,ForeColor=ForeColor,Font=Font,
+            Renderer=new LauncherMenuRenderer(),ShowImageMargin=false,ShowItemToolTips=true};
+        LauncherMenuStyle.Apply(menu);return menu;
+    }
+    ToolStripMenuItem MenuAction(ContextMenuStrip menu,string label,Action run,bool enabled=true){
+        var item=new ToolStripMenuItem(label){Enabled=enabled,BackColor=card,ForeColor=ForeColor};
+        item.Click+=delegate{Guard(run);};menu.Items.Add(item);return item;
+    }
+    void ShowInstallMenu(Control anchor,ModRecipe recipe,Point? location=null){
+        if(recipe==null)return;
+        var menu=NewActionMenu();
+        MenuAction(menu,"Install "+recipe.Name,()=>{
+            targets.SelectedItem=recipe;methods.SelectedIndex=1;ShowPage("Install");
+        });
+        MenuAction(menu,"Inspect available source files",ShowFoundFiles);
+        LauncherMenuStyle.Apply(menu);LauncherMenuLifetime.RetireAfterClose(menu);menu.Show(anchor,location??new Point(0,anchor.Height));
+    }
+    void SelectManagedGame(Profile profile,string page){
+        if(profile==null)return;
+        profiles.SelectedItem=LibraryProfiles.FirstOrDefault(x=>x.Id==profile.Id)??profile;
+        settings.SelectedId=profile.Id;UpdateProfile();ShowPage(page);
+    }
+    void PrepareUpgrade(Profile profile){
+        if(profile==null)return;
+        string id=UniversalSupport.Identify(profile.Root);
+        var recipes=targets.Items.Cast<ModRecipe>().Where(x=>UpgradeSupport.MayUpgrade(id,x.Id)).ToArray();
+        if(recipes.Length==0){
+            MessageBox.Show(this,"No registered forward upgrade is available for "+profile.Name+
+                ". You can still install another branch separately from Install.",
+                "No compatible upgrade",MessageBoxButtons.OK,MessageBoxIcon.Information);return;
+        }
+        var latest=recipes.OrderByDescending(x=>x.SaveGeneration).First();
+        startingSource=profile;targets.SelectedItem=latest;methods.SelectedIndex=1;ShowPage("Install");
+    }
+    void ShowManageMenu(Control anchor,Profile profile,Point? location=null){
+        if(profile==null)return;
+        var menu=NewActionMenu();
+        MenuAction(menu,"Play "+profile.Name,()=>{SelectManagedGame(profile,"Play");Launch();},!busy&&!running);
+        menu.Items.Add(new ToolStripSeparator());
+        MenuAction(menu,"Open game folder",()=>LauncherFolders.Open(profile.Root),Directory.Exists(profile.Root));
+        MenuAction(menu,"Open save folder",()=>{SelectManagedGame(profile,"Saves");OpenSaves();});
+        MenuAction(menu,"Back up saves",()=>{SelectManagedGame(profile,"Saves");BackupNow();},!busy&&!running);
+        menu.Items.Add(new ToolStripSeparator());
+        MenuAction(menu,"English translation",()=>SelectManagedGame(profile,"English"));
+        MenuAction(menu,"Upgrade this version",()=>PrepareUpgrade(profile),!busy&&!running);
+        menu.Items.Add(new ToolStripSeparator());
+        MenuAction(menu,"Remove from launcher only…",()=>RemoveVersion(profile,RemovalMode.IndexOnly),!busy&&!running);
+        var uninstall=MenuAction(menu,"Uninstall managed game files…",()=>RemoveVersion(profile,RemovalMode.InstalledGame),!busy&&!running);
+        uninstall.ToolTipText="Verify hashes first. Keeps saves, backups, ZIP/RAR/7z and unmatched files.";
+        LauncherMenuStyle.Apply(menu);LauncherMenuLifetime.RetireAfterClose(menu);menu.Show(anchor,location??new Point(0,anchor.Height));
     }
 }

@@ -23,17 +23,19 @@ public static class LauncherPaint {
         }
     }
     public static GraphicsPath Round(Rectangle r,int radius){
-        int d=Math.Min(radius*2,Math.Min(r.Width,r.Height));var p=new GraphicsPath();
+        if(r.Width<=0||r.Height<=0){var empty=new GraphicsPath();return empty;}
+        int d=Math.Max(1,Math.Min(radius*2,Math.Min(r.Width,r.Height)));var p=new GraphicsPath();
         p.AddArc(r.Left,r.Top,d,d,180,90);p.AddArc(r.Right-d,r.Top,d,d,270,90);
         p.AddArc(r.Right-d,r.Bottom-d,d,d,0,90);p.AddArc(r.Left,r.Bottom-d,d,d,90,90);p.CloseFigure();return p;
     }
     public static void Box(Graphics g,Rectangle r,Color fill,Color border,int radius){
+        if(r.Width<=1||r.Height<=1)return;
         g.SmoothingMode=SmoothingMode.AntiAlias;
         using(var shape=Round(r,radius)){using(var b=new SolidBrush(fill))g.FillPath(b,shape);if(border!=Color.Empty)using(var pen=new Pen(border))g.DrawPath(pen,shape);}
     }
     public static Color Blend(Color a,Color b,double amount){amount=Math.Max(0,Math.Min(1,amount));return Color.FromArgb((int)(a.R+(b.R-a.R)*amount),(int)(a.G+(b.G-a.G)*amount),(int)(a.B+(b.B-a.B)*amount));}
     public static void Glow(Graphics g,Rectangle r,int radius,double amount){
-        if(amount<.01)return;g.SmoothingMode=SmoothingMode.AntiAlias;
+        if(amount<.01||r.Width<=1||r.Height<=1)return;g.SmoothingMode=SmoothingMode.AntiAlias;
         using(var path=Round(r,radius))foreach(var layer in new[]{new[]{8,16},new[]{4,32},new[]{1,150}})using(var pen=new Pen(Color.FromArgb((int)(layer[1]*amount),Gold),layer[0]))g.DrawPath(pen,path);
     }
     public static void Text(Graphics g,string text,Font font,Rectangle r,Color color,double glow,bool left=false){
@@ -64,7 +66,11 @@ public class SleekButton : Button {
     readonly HoverMotion motion;
     public double HoverAmount{get{return motion.Amount;}}
     public bool Navigation,Primary,Selected;
-    public SleekButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw,true);FlatStyle=FlatStyle.Flat;FlatAppearance.BorderSize=0;UseMnemonic=false;motion=new HoverMotion(this);}
+    public SleekButton(){
+        SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable,true);
+        FlatStyle=FlatStyle.Flat;FlatAppearance.BorderSize=0;UseMnemonic=false;TabStop=true;
+        Cursor=Cursors.Hand;motion=new HoverMotion(this);
+    }
     protected override void OnMouseEnter(EventArgs e){Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){pressed=false;Invalidate();base.OnMouseLeave(e);}
     protected override void OnMouseDown(MouseEventArgs e){pressed=true;Invalidate();base.OnMouseDown(e);}
@@ -73,26 +79,42 @@ public class SleekButton : Button {
     protected override void OnKeyUp(KeyEventArgs e){pressed=false;Invalidate();base.OnKeyUp(e);}
     protected override void OnLostFocus(EventArgs e){pressed=false;Invalidate();base.OnLostFocus(e);}
     protected override void OnPaint(PaintEventArgs e){
-        e.Graphics.Clear(Parent==null?BackColor:Parent.BackColor);
+        e.Graphics.Clear(Parent==null?LauncherPaint.Ink:Parent.BackColor);
+        if(Width<9||Height<9)return;
         double animation=Enabled?motion.Amount:0;
-        Color c=Enabled?BackColor:LauncherPaint.Surface;
-        c=LauncherPaint.Blend(c,LauncherPaint.Gold,animation*.13);if(Enabled&&pressed)c=ControlPaint.Dark(c,.12f);
+        Color c=Enabled?BackColor:LauncherPaint.Blend(LauncherPaint.Surface,LauncherPaint.Ink,.43);
+        Color border=LauncherPaint.Blend(LauncherPaint.Line,LauncherPaint.Gold,animation*.63);
+        if(Enabled&&pressed)c=LauncherPaint.Blend(c,LauncherPaint.Ink,.19);
+        else c=LauncherPaint.Blend(c,LauncherPaint.Gold,animation*.075);
+        var rbox=new Rectangle(3,3,Width-7,Height-7);
         if(Navigation){
-            if(animation>0||Selected)LauncherPaint.Box(e.Graphics,new Rectangle(4,4,Width-9,Height-9),Selected?LauncherPaint.Surface:LauncherPaint.Blend(LauncherPaint.Ink,LauncherPaint.Surface,animation),Color.Empty,12);
+            if(animation>.01||Selected){
+                LauncherPaint.Box(e.Graphics,rbox,Selected?LauncherPaint.Blend(LauncherPaint.Surface,LauncherPaint.Gold,.105):LauncherPaint.Blend(LauncherPaint.Ink,LauncherPaint.Surface,animation),Selected?LauncherPaint.Blend(LauncherPaint.Gold,LauncherPaint.Line,.40):border,8);
+                if(Selected)using(var marker=new SolidBrush(LauncherPaint.Gold))
+                    e.Graphics.FillRectangle(marker,4,Math.Max(5,Height/2-9),3,18);
+            }
         }else{
-            var rbox=new Rectangle(4,4,Width-9,Height-9);LauncherPaint.Box(e.Graphics,rbox,c,Color.Empty,12);
+            LauncherPaint.Box(e.Graphics,rbox,c,Primary?LauncherPaint.Blend(LauncherPaint.Gold,c,.52):border,8);
         }
-        LauncherPaint.Glow(e.Graphics,new Rectangle(4,4,Width-9,Height-9),12,animation);
-        var r=new Rectangle(Padding.Left+9,1,Width-Padding.Horizontal-18,Height-3);
-        LauncherPaint.Text(e.Graphics,Text,Font,r,Enabled?LauncherPaint.Blend(ForeColor,LauncherPaint.Gold,animation*.32):LauncherPaint.Muted,animation,TextAlign==ContentAlignment.MiddleLeft);
-        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(7,7,Width-15,Height-15),ForeColor,c);
+        Rectangle label=new Rectangle(Math.Max(9,Padding.Left+10),4,Math.Max(1,Width-Padding.Horizontal-20),Math.Max(1,Height-8));
+        Color textColor=Enabled?(Selected?LauncherPaint.Paper:LauncherPaint.Blend(ForeColor,LauncherPaint.Paper,.15)):LauncherPaint.Blend(LauncherPaint.Muted,LauncherPaint.Surface,.25);
+        TextFormatFlags flags=TextFormatFlags.NoPrefix|TextFormatFlags.EndEllipsis|TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine;
+        if(TextAlign==ContentAlignment.MiddleLeft)flags|=TextFormatFlags.Left;
+        else if(TextAlign==ContentAlignment.MiddleRight)flags|=TextFormatFlags.Right;
+        else flags|=TextFormatFlags.HorizontalCenter;
+        Font fit=Font;
+        if(TextRenderer.MeasureText(e.Graphics,Text,Font,new Size(int.MaxValue,Height),TextFormatFlags.SingleLine|TextFormatFlags.NoPadding).Width>label.Width&&Font.Size>8.5f)
+            fit=new Font(Font.FontFamily,Math.Max(8.5f,Font.Size-1.2f),Font.Style);
+        try{TextRenderer.DrawText(e.Graphics,Text,fit,label,textColor,flags|TextFormatFlags.NoPadding);}
+        finally{if(!object.ReferenceEquals(fit,Font))fit.Dispose();}
+        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(6,6,Width-13,Height-13),LauncherPaint.Paper,c);
     }
 }
 public class SleekCard : Panel {
-    public SleekCard(){DoubleBuffered=true;}
+    public SleekCard(){DoubleBuffered=true;SetStyle(ControlStyles.ResizeRedraw|ControlStyles.AllPaintingInWmPaint,true);}
     protected override void OnPaintBackground(PaintEventArgs e){
         e.Graphics.Clear(Parent==null?BackColor:Parent.BackColor);
-        LauncherPaint.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),BackColor,Color.Empty,14);
+        LauncherPaint.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),BackColor,LauncherPaint.Blend(LauncherPaint.Line,BackColor,.33),10);
     }
 }
 public class SleekProgress : Control {
@@ -102,8 +124,10 @@ public class SleekProgress : Control {
     public int Value{get{return val;}set{val=Math.Max(Minimum,Math.Min(Maximum,value));Invalidate();}}
     public SleekProgress(){DoubleBuffered=true;BackColor=Color.FromArgb(29,42,50);ForeColor=Color.FromArgb(81,173,175);}
     protected override void OnPaint(PaintEventArgs e){
-        e.Graphics.Clear(Parent.BackColor);LauncherPaint.Box(e.Graphics,new Rectangle(0,0,Width-1,Height-1),BackColor,Color.Empty,5);
-        int w=(int)((Width-1)*(double)Value/Maximum);if(w>=3)LauncherPaint.Box(e.Graphics,new Rectangle(0,0,w,Height-1),ForeColor,Color.Empty,5);
+        e.Graphics.Clear(Parent==null?LauncherPaint.Ink:Parent.BackColor);
+        LauncherPaint.Box(e.Graphics,new Rectangle(0,0,Width-1,Height-1),BackColor,LauncherPaint.Line,5);
+        int w=(int)((Width-1)*(double)(Value-Minimum)/Math.Max(1,Maximum-Minimum));
+        if(w>=3)LauncherPaint.Box(e.Graphics,new Rectangle(0,0,w,Height-1),ForeColor,Color.Empty,5);
     }
 }
 public class GrimoireHeader : Control {
@@ -174,43 +198,271 @@ public static class ProfileLibrary {
             .ThenBy(x=>x.Tie,StringComparer.OrdinalIgnoreCase).Select(x=>x.Item).ToList();
     }
 }
+// The stock WinForms VScrollBar is painted by Windows and ignores launcher
+// colours. Use a compact owner-painted rail for the page; DataGridView keeps
+// its independent scrollbar for long file tables.
+public sealed class DarkPageScrollBar : Control {
+    int value,maximum,largeChange=1,smallChange=36;
+    bool dragging;
+    int dragStart,dragValue;
+    public event EventHandler ValueChanged;
+    public int Minimum {get{return 0;}}
+    public int Maximum {get{return maximum;}set{maximum=Math.Max(0,value);SetValue(this.value);Invalidate();}}
+    public int LargeChange {get{return largeChange;}set{largeChange=Math.Max(1,value);SetValue(this.value);Invalidate();}}
+    public int SmallChange {get{return smallChange;}set{smallChange=Math.Max(1,value);}}
+    public int ScrollLimit {get{return Math.Max(0,maximum-largeChange+1);}}
+    public int Value {get{return value;}set{SetValue(value);}}
+    public DarkPageScrollBar(){
+        SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|
+            ControlStyles.ResizeRedraw|ControlStyles.Selectable,true);
+        Width=12;TabStop=true;Cursor=Cursors.Hand;
+        BackColor=LauncherPaint.Ink;ForeColor=LauncherPaint.Muted;
+        AccessibleName="Scroll page content";
+        AccessibleDescription="Drag, use arrow keys, Page Up, Page Down, Home or End to scroll the launcher page";
+    }
+    public void SetRange(int contentHeight,int viewportHeight,int requestedValue){
+        maximum=Math.Max(0,contentHeight-1);
+        largeChange=Math.Max(1,viewportHeight);
+        SetValue(requestedValue);
+        Invalidate();
+    }
+    void SetValue(int next){
+        next=Math.Max(0,Math.Min(ScrollLimit,next));
+        if(next==value)return;
+        value=next;Invalidate();
+        if(ValueChanged!=null)ValueChanged(this,EventArgs.Empty);
+    }
+    Rectangle Track {get{return new Rectangle(2,3,Math.Max(1,Width-4),Math.Max(1,Height-6));}}
+    Rectangle Thumb {
+        get {
+            Rectangle track=Track;
+            int content=Math.Max(1,maximum+1);
+            int height=Math.Min(track.Height,Math.Max(28,(int)((long)track.Height*largeChange/content)));
+            int travel=Math.Max(0,track.Height-height);
+            int y=track.Y+(ScrollLimit>0?(int)((long)travel*value/ScrollLimit):0);
+            return new Rectangle(track.X,y,track.Width,height);
+        }
+    }
+    protected override void OnPaint(PaintEventArgs e){
+        e.Graphics.Clear(LauncherPaint.Ink);
+        if(!Enabled||ScrollLimit==0)return;
+        var track=Track;
+        LauncherPaint.Box(e.Graphics,track,LauncherPaint.Blend(LauncherPaint.Ink,LauncherPaint.Surface,.60),
+            LauncherPaint.Blend(LauncherPaint.Line,LauncherPaint.Ink,.60),5);
+        Color thumb=Focused||dragging?LauncherPaint.Blend(LauncherPaint.Gold,LauncherPaint.Muted,.45):
+            LauncherPaint.Blend(LauncherPaint.Muted,LauncherPaint.Surface,.23);
+        LauncherPaint.Box(e.Graphics,Thumb,thumb,LauncherPaint.Blend(LauncherPaint.Line,thumb,.22),5);
+        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(0,0,Width-1,Height-1));
+    }
+    protected override void OnMouseDown(MouseEventArgs e){
+        base.OnMouseDown(e);
+        if(e.Button!=MouseButtons.Left||ScrollLimit==0)return;
+        Focus();
+        if(Thumb.Contains(e.Location)){
+            dragging=true;dragStart=e.Y;dragValue=value;Capture=true;Invalidate();
+        }else {
+            Value+=e.Y<Thumb.Top?-largeChange:largeChange;
+        }
+    }
+    protected override void OnMouseMove(MouseEventArgs e){
+        base.OnMouseMove(e);
+        if(!dragging)return;
+        int travel=Math.Max(1,Track.Height-Thumb.Height);
+        Value=dragValue+(int)((long)(e.Y-dragStart)*ScrollLimit/travel);
+    }
+    void FinishDrag(){dragging=false;Capture=false;Invalidate();}
+    protected override void OnMouseUp(MouseEventArgs e){if(dragging)FinishDrag();base.OnMouseUp(e);}
+    protected override void OnMouseCaptureChanged(EventArgs e){if(dragging)FinishDrag();base.OnMouseCaptureChanged(e);}
+    protected override bool IsInputKey(Keys keyData){
+        Keys key=keyData&Keys.KeyCode;
+        if(key==Keys.Up||key==Keys.Down||key==Keys.PageUp||key==Keys.PageDown||
+           key==Keys.Home||key==Keys.End)return true;
+        return base.IsInputKey(keyData);
+    }
+    protected override void OnKeyDown(KeyEventArgs e){
+        switch(e.KeyCode){
+            case Keys.Up:Value-=smallChange;break;
+            case Keys.Down:Value+=smallChange;break;
+            case Keys.PageUp:Value-=largeChange;break;
+            case Keys.PageDown:Value+=largeChange;break;
+            case Keys.Home:Value=0;break;
+            case Keys.End:Value=ScrollLimit;break;
+            default:base.OnKeyDown(e);return;
+        }
+        e.Handled=true;e.SuppressKeyPress=true;
+    }
+    protected override void OnMouseWheel(MouseEventArgs e){
+        Value-=Math.Sign(e.Delta)*smallChange*Math.Max(1,SystemInformation.MouseWheelScrollLines);
+        base.OnMouseWheel(e);
+    }
+}
 public class ContentScroller : Panel {
-    public readonly VScrollBar Slider=new VScrollBar();
+    public readonly DarkPageScrollBar Slider=new DarkPageScrollBar();
     public readonly Panel Canvas=new Panel();
     readonly Panel viewport=new Panel();
     bool updatingRange;
+    int effectiveLimit;
     public int Position {get{return Slider.Value;}set{Slider.Value=Math.Max(0,Math.Min(Limit,value));Canvas.Top=-Slider.Value;}}
-    public int Limit {get{return Math.Max(0,Canvas.Height-viewport.ClientSize.Height);}}
+    public int Limit {get{return effectiveLimit;}}
     public ContentScroller(){
-        DoubleBuffered=true;Slider.Dock=DockStyle.Right;Slider.Width=18;Slider.SmallChange=36;
-        Slider.AccessibleName="Scroll page content";Slider.AccessibleDescription="Move through the active launcher page";
-        viewport.Dock=DockStyle.Fill;viewport.BackColor=LauncherPaint.Ink;Canvas.Size=new Size(812,630);Canvas.BackColor=LauncherPaint.Ink;
+        DoubleBuffered=true;Slider.Dock=DockStyle.Right;Slider.Width=12;Slider.SmallChange=36;
+        Slider.Visible=false;Slider.Enabled=false;
+        viewport.Dock=DockStyle.Fill;viewport.BackColor=LauncherPaint.Ink;
+        Canvas.Size=new Size(812,630);Canvas.BackColor=LauncherPaint.Ink;
         viewport.Controls.Add(Canvas);Controls.Add(viewport);Controls.Add(Slider);
         Slider.ValueChanged+=delegate{Canvas.Top=-Slider.Value;};
         viewport.Resize+=delegate{RefreshRange();};
         Canvas.SizeChanged+=delegate{RefreshRange();};
         HookWheel(viewport);
     }
+    int ActiveContentBottom(){
+        int bottom=-1;
+        foreach(Control page in Canvas.Controls){
+            if(!page.Visible)continue;
+            // Page panels dock to Canvas, so inspect their direct children,
+            // not the page itself (which always reaches Canvas.Bottom).
+            if(page is Panel){
+                foreach(Control item in page.Controls){
+                    if(item.Visible&&!item.IsDisposed)bottom=Math.Max(bottom,item.Bottom);
+                }
+            }else bottom=Math.Max(bottom,page.Bottom);
+        }
+        return bottom;
+    }
     public void RefreshRange(){
         if(updatingRange)return;updatingRange=true;
         try{
-            int value=Slider.Value;bool overflow=Limit>0;
-            Slider.LargeChange=Math.Max(1,viewport.Height);Slider.Maximum=Math.Max(0,Canvas.Height-1);
-            Slider.Visible=overflow;Slider.Enabled=overflow;Position=overflow?value:0;
+            int viewportHeight=Math.Max(0,viewport.ClientSize.Height);
+            // PolishedLauncher reserves 12px after the final page control.
+            // That trailing breathing space must not produce a white/empty
+            // scrollbar on otherwise fully visible compact pages.
+            int bottom=ActiveContentBottom();
+            int required=bottom>=0?
+                (bottom<=viewportHeight?viewportHeight:Math.Max(Canvas.Height,bottom+12)):
+                Math.Max(Canvas.Height,viewportHeight);
+            effectiveLimit=viewportHeight>0?Math.Max(0,required-viewportHeight):0;
+            bool overflow=effectiveLimit>0;
+            int previous=Slider.Value;
+            if(Slider.Visible!=overflow)Slider.Visible=overflow;
+            Slider.Enabled=overflow;
+            Slider.SetRange(overflow?required:viewportHeight,Math.Max(1,viewportHeight),overflow?previous:0);
+            if(Canvas.Top!=-Slider.Value)Canvas.Top=-Slider.Value;
         }finally{updatingRange=false;}
     }
     public void HookWheel(Control parent){
-        if(!(parent is ListBox)&&!(parent is DataGridView)&&!(parent is TextBoxBase)&&!(parent is ComboBox))parent.MouseWheel+=delegate(object sender,MouseEventArgs e){Position-=Math.Sign(e.Delta)*Math.Max(1,SystemInformation.MouseWheelScrollLines)*Slider.SmallChange;var handled=e as HandledMouseEventArgs;if(handled!=null)handled.Handled=true;};
+        if(!(parent is ListBox)&&!(parent is DataGridView)&&!(parent is TextBoxBase)&&!(parent is ComboBox))
+            parent.MouseWheel+=delegate(object sender,MouseEventArgs e){
+                if(Limit<=0)return;
+                Position-=Math.Sign(e.Delta)*Math.Max(1,SystemInformation.MouseWheelScrollLines)*Slider.SmallChange;
+                var handled=e as HandledMouseEventArgs;if(handled!=null)handled.Handled=true;
+            };
         parent.ControlAdded+=delegate(object sender,ControlEventArgs e){HookWheel(e.Control);};
         foreach(Control child in parent.Controls)HookWheel(child);
     }
 }
 public class LauncherMenuRenderer : ToolStripProfessionalRenderer {
     public LauncherMenuRenderer(){RoundedEdges=false;}
-    protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e){e.Graphics.Clear(LauncherPaint.Surface);}
-    protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e){using(var p=new Pen(Color.FromArgb(67,73,92)))e.Graphics.DrawRectangle(p,0,0,e.ToolStrip.Width-1,e.ToolStrip.Height-1);}
-    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e){if(e.Item.Selected&&e.Item.Enabled)LauncherPaint.Box(e.Graphics,new Rectangle(3,1,e.Item.Width-7,e.Item.Height-2),ControlPaint.Light(LauncherPaint.Surface),Color.Empty,5);}
-    protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e){e.TextColor=e.Item.Enabled?LauncherPaint.Paper:Color.FromArgb(125,138,160);base.OnRenderItemText(e);}
+    protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e){
+        e.Graphics.Clear(e.ToolStrip is ToolStripDropDown?LauncherPaint.Surface:LauncherPaint.Ink);
+    }
+    protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e){
+        if(!(e.ToolStrip is ToolStripDropDown)||e.ToolStrip.Width<2||e.ToolStrip.Height<2)return;
+        using(var pen=new Pen(LauncherPaint.Blend(LauncherPaint.Line,LauncherPaint.Gold,.18)))
+            e.Graphics.DrawRectangle(pen,0,0,e.ToolStrip.Width-1,e.ToolStrip.Height-1);
+    }
+    protected override void OnRenderImageMargin(ToolStripRenderEventArgs e){
+        var drop=e.ToolStrip as ToolStripDropDownMenu;
+        if(drop==null||!drop.ShowCheckMargin)return;
+        int width=Math.Min(30,drop.Width/5);
+        using(var brush=new SolidBrush(LauncherPaint.Blend(LauncherPaint.Ink,LauncherPaint.Surface,.52)))
+            e.Graphics.FillRectangle(brush,1,1,width,Math.Max(0,drop.Height-2));
+        using(var pen=new Pen(LauncherPaint.Blend(LauncherPaint.Line,LauncherPaint.Surface,.42)))
+            e.Graphics.DrawLine(pen,width+1,7,width+1,drop.Height-8);
+    }
+    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e){
+        if(e.Item.Width<8||e.Item.Height<7)return;
+        bool hot=e.Item.Enabled&&(e.Item.Selected||e.Item.Pressed);
+        if(!hot)return;
+        var rectangle=new Rectangle(3,1,e.Item.Width-7,e.Item.Height-3);
+        var fill=LauncherPaint.Blend(LauncherPaint.Surface,LauncherPaint.Gold,e.Item.Pressed?.14:.085);
+        LauncherPaint.Box(e.Graphics,rectangle,fill,LauncherPaint.Blend(LauncherPaint.Line,LauncherPaint.Gold,.38),6);
+        using(var accent=new SolidBrush(LauncherPaint.Gold))
+            e.Graphics.FillRectangle(accent,3,Math.Max(3,rectangle.Y+rectangle.Height/2-7),2,14);
+    }
+    protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e){
+        int left=e.Item.Owner is ToolStripDropDownMenu?36:12;
+        int y=e.Item.Height/2;
+        using(var pen=new Pen(LauncherPaint.Blend(LauncherPaint.Line,LauncherPaint.Surface,.25)))
+            e.Graphics.DrawLine(pen,left,y,Math.Max(left,e.Item.Width-11),y);
+    }
+    protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e){
+        e.ArrowColor=e.Item.Enabled?(e.Item.Selected?LauncherPaint.Gold:LauncherPaint.Muted):
+            LauncherPaint.Blend(LauncherPaint.Muted,LauncherPaint.Surface,.47);
+        base.OnRenderArrow(e);
+    }
+    protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e){
+        var r=e.ImageRectangle;
+        if(r.Width<4||r.Height<4)return;
+        int size=Math.Min(15,Math.Min(r.Width,r.Height));
+        var box=new Rectangle(r.Left+(r.Width-size)/2,r.Top+(r.Height-size)/2,size,size);
+        LauncherPaint.Box(e.Graphics,box,LauncherPaint.Blend(LauncherPaint.Surface,LauncherPaint.Gold,.24),LauncherPaint.Gold,4);
+        using(var check=new Pen(LauncherPaint.Gold,2f)){
+            check.StartCap=LineCap.Round;check.EndCap=LineCap.Round;check.LineJoin=LineJoin.Round;
+            e.Graphics.DrawLines(check,new[]{
+                new Point(box.Left+3,box.Top+size/2),
+                new Point(box.Left+size/2-1,box.Bottom-4),
+                new Point(box.Right-3,box.Top+3)
+            });
+        }
+    }
+    protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e){
+        e.TextColor=e.Item.Enabled?(e.Item.Selected?LauncherPaint.Paper:LauncherPaint.Paper):
+            LauncherPaint.Blend(LauncherPaint.Muted,LauncherPaint.Surface,.32);
+        base.OnRenderItemText(e);
+    }
+}
+// Call after populating a context menu and before showing it. Styles its
+// nested submenus, rather than only the outer border. No menu commands,
+// checked states or callbacks are changed.
+public static class LauncherMenuStyle {
+    public static ContextMenuStrip Create(){
+        var menu=new ContextMenuStrip();
+        Apply(menu);
+        return menu;
+    }
+    public static void Apply(ContextMenuStrip menu){
+        if(menu==null)throw new ArgumentNullException("menu");
+        ApplyDropDown(menu);
+        menu.DropShadowEnabled=true;
+        menu.ShowItemToolTips=true;
+        menu.ShowImageMargin=false;
+        menu.ShowCheckMargin=true;
+        menu.MinimumSize=new Size(186,0);
+    }
+    static void ApplyDropDown(ToolStripDropDown menu){
+        menu.Renderer=new LauncherMenuRenderer();
+        menu.BackColor=LauncherPaint.Surface;
+        menu.ForeColor=LauncherPaint.Paper;
+        menu.Font=new Font("Segoe UI",9.5f,FontStyle.Regular,GraphicsUnit.Point);
+        menu.Padding=new Padding(4,5,4,5);
+        foreach(ToolStripItem item in menu.Items)StyleItem(item);
+    }
+    static void StyleItem(ToolStripItem item){
+        if(item is ToolStripSeparator){
+            item.AutoSize=false;item.Height=11;item.Margin=new Padding(0,1,0,1);
+            return;
+        }
+        item.Margin=new Padding(1,0,1,0);
+        item.Padding=new Padding(8,5,8,5);
+        item.BackColor=LauncherPaint.Surface;
+        item.ForeColor=item.Enabled?LauncherPaint.Paper:LauncherPaint.Muted;
+        var sub=item as ToolStripMenuItem;
+        if(sub!=null&&sub.HasDropDownItems){
+            ApplyDropDown(sub.DropDown);
+            var nested=sub.DropDown as ToolStripDropDownMenu;
+            if(nested!=null){nested.ShowImageMargin=false;nested.ShowCheckMargin=true;}
+        }
+    }
 }
 public static class LauncherMenuLifetime {
     public static void RetireAfterClose(ContextMenuStrip menu){

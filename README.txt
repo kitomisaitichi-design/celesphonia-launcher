@@ -508,3 +508,33 @@ Running games cannot be uninstalled or have their active save sets migrated.
 Never remove an original downloaded archive to reclaim an installed game's
 space automatically. Compatibility-sensitive saves stay isolated by branch
 and version. A backup and verification record are not themselves game files.
+
+
+LAUNCHER v1.0.14 - LIBRARY NAVIGATION REFRESH
+-------------------------------------------
+The launcher opens to PLAY. Select one of YOUR GAMES on the left; the main
+area shows that specific installed game's status and Play control.
+
+RIGHT-CLICK any installed game to open its game-management menu:
+Play, Open game folder, Open save folder, Back up saves,
+English translation, Upgrade this version, Remove from launcher only,
+and Uninstall managed game files. You can also choose Manage / Uninstall
+from Play and Remove selected from Files.
+
+Remove from launcher only keeps every game file and save. Uninstall managed
+game files first previews a list of SHA-256 verified, launcher-managed files
+and asks for confirmation; it preserves original ZIP/RAR/7z/split volumes,
+saves, backups, and unknown/edited files. External/unmanaged installations
+are not eligible for file deletion.
+
+INSTALL has a compact default view: choose destination version and source,
+read the brief source status, and click Install / Upgrade. Use Add source files
+for ZIP/RAR/7z/extracted folders and More options for manual starting version,
+advanced ordered layers, extra source search or diagnostic information.
+The latest registered creator version is offered by default, not v1.01.
+
+FILES shows installed, installable and incomplete sources separately. ENGLISH
+is the optional reversible display layer. SAVES handles backup, restore and
+forward-compatible copy, not unrelated-branch save conversion. HELP provides
+launcher updates and preferences. Existing game and save locations remain
+unchanged by this launcher-only update.
