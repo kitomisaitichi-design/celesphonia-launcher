@@ -242,4 +242,196 @@ widths navigation becomes a scrolling horizontal strip. Launcher themes are
 under Help > Launcher appearance and are saved independently. Locks/toggles start OFF every launch and clear
 when loading or starting a new game, except explicitly remembered state rules.
 Maximum overrides are session-only; native levels, parameter bonuses, skills
-and 
+and variable/state edits persist when saved. English display labels use the
+matching offline dictionary, local label cache and bundled terminology. The
+launcher builds a separate index for variables, switches and maps, with original
+names and IDs retained for reference. It makes no online translation requests.
+Settings shows coverage and allows importing offline source-name/English-name
+JSON dictionaries. Unknown text remains native until a matching entry is supplied.
+String values may show a separate English preview; the editable value stays native.
+Aliases change only the panel. Equipment plugin metadata is shown as supplied. No complete translation or unknown-version compatibility is
+guaranteed. Add an extracted RPG Maker MV Celesphonia installation for new
+versions; encrypted/packed entry pages and unusual custom loaders may differ.
+
+PLAY
+Choose an installed version on the left, then use Play > Switch & Play.
+Use + Add an installed game to register an existing game folder.
+Folders opens that version's game, saves, plugins and other available folders.
+
+ENGLISH
+Select your version, open English, and choose Enable / update English.
+The translation is partial. Unmatched text stays in its original language.
+Use original text restores the backed-up entry page. Game data and saves retain
+their native IDs. You can import translated JSON or export remaining text.
+
+INSTALL AND SAVES
+Files shows installed versions and detected archives. Install explains which
+original bundle or patch pack is needed. Each version keeps its own saves.
+Save and close the game before switching, updating English or transferring
+saves. Cross-version saves are copied, not converted. Keep your originals.
+The 3.3.5 v1.03 upgrade accepts v1.02, v1.01 or trial and copies saves into a separate
+game folder after making a backup. Newer saves cannot be moved backward.
+
+UPDATING THIS LAUNCHER
+Close the launcher, then extract the updated ZIP into the same portable folder.
+Keep profiles.json, custom English translations, Runtime, Game Profiles and
+Save Backups and Control Sessions. The distributed ZIP contains no personal settings or save files.
+The launcher carries its matching English packs and display runtime internally,
+so missing or stale loose pack files cannot mix dictionary releases. Custom
+translations remain separate. After extracting, use Enable / update English
+to refresh an enabled game's overlay; the launcher refreshes its status when
+you return to the English page.
+On smaller screens, scroll the launcher to reach all controls.
+
+PORTABILITY AND LAUNCH
+The library opens immediately while discovery runs in the background. Play
+remains available for installed games during discovery. Search includes the
+current Windows user's download folders, Steam libraries and common local
+game folders, to eight nested levels within the bounded scan. Add a search
+folder for games elsewhere. No personal profiles are included in this ZIP.
+Games, saves, runtime and search folders inside this portable folder are
+stored relative to it when settings are saved, so they survive moving it.
+Games outside the portable folder remain local installations; rediscover or
+add them on another PC. Launch shows verification and backup progress, and
+records startup failures in launch-status.json. Full asset checks run during
+installation; Play verifies native code/data and runtime dependencies.
+
+NEARBY FILE DETECTION
+Direct files in the launcher and search folders are checked before deeper
+folders. Results appear as discovery runs, and remain available if stopped.
+ZIP/RAR/7z and split archives use signatures, normalized filename/version
+hints and known byte sizes. Large known archives are fully verified when
+installing, rather than hashed before appearing in the list. View found files
+shows the actual filename/path, size and matching evidence.
+
+CREATOR UPDATE 1.03
+Three-in-one 3.3.5 v1.03 is recognized by archive signature, creator filename,
+byte size and native version fingerprints. The author reports a fix for
+monster births. Upgrade installs an independent copy; the previous game and
+saves are retained. Existing exact English text and runtime controls carry
+forward. Choose v1.03 in Install and use the detected archive or extracted
+bundle. Saves migrate forward from trial, v1.01 or v1.02.
+
+The latest uninstalled update appears at the top of the left game list. Click
+its Update available row to open the matching detected-bundle upgrade route.
+After installation the row becomes a normal playable game with its own saves.
+
+CREATOR CHANGELOG — ENGLISH TRANSLATION
+See GAME MOD CHANGELOG.md beside this README for the complete English
+developer notes covering Three-in-one 3.3.5 v1.01 through Ver1.052,
+including full-release synchronized changes #200, #201 and #203-206.
+These game-mod releases are separate from launcher v1.0.7.
+
+======== ORIGINAL ENGLISH CREATOR CHANGELOG ========
+# Magical Girl Celesphonia — Three-in-One 3.3.5
+
+## Creator's English changelog (releases v1.01–v1.052)
+
+These are English translations of developer **Tian Ying (天影)**'s announcements
+dated October 3–16, 2026. They describe **game-mod versions**, not the Windows
+launcher versions. The October 3 announcement repeated the first v1.01 change
+in consecutive messages; it is listed once below.
+
+### v1.01 — October 3, 2026 (11:19–11:20 PM)
+
+1. Removed placeholder entries for outfits and hairstyles unavailable in the trial version.
+2. Fixed the equipped weapon reverting to the starting sword when interrupted during the fight against Tatar.
+3. Fixed defeating the Demon Womb not unlocking the complete Recollection Gallery.
+
+### v1.02 — October 5, 2026 (1:13–1:14 AM)
+
+**Synchronized with the full release — change #200**
+
+- Added a **Storage Chest** at home for depositing and withdrawing items.
+- When carrying the **Gathering Drone**, collected items exceeding the inventory limit are automatically transferred to the Storage Chest.
+
+### v1.03 — October 5, 2026 (10:59–11:02 PM)
+
+1. Fixed a bug that prevented the player from properly giving birth to Monstrums.
+
+### v1.04 — October 10, 2026 (11:23 AM)
+
+1. Fixed dialogue errors involving the pantyhose-buying pervert in the Downtown district.
+2. Clarified the item description for the **Offensive Magic Barrier**.
+3. Fixed the display of certain enemies when the **Invisibility Ring** is equipped.
+4. Corrected the battle-end EXP display to show the experience **Amane actually receives**.
+5. Made the **Maid Headband** obtainable.
+6. Fixed a character-position conflict involving Photography Club members during dialogue between Mashiro's storyline and the main storyline.
+7. Weakened the skills used by **Cursed Monster: Tatar** and **Regenerated Monster: Tatar**.
+
+**Synchronized with the full release — change #201**
+
+8. In the **Recollection Room**, automatic transformations during recollection scenes no longer incur the special transformation cost. Players can also choose the degree of outfit damage.
+
+### v1.051 — October 16, 2026
+
+1. Fixed **Succubus's Contract Kiss** sometimes having no effect, and substantially increased kissing priority.
+2. Greatly increased the speed at which **monster pregnancies** progress to giving birth.
+3. The **transparency effect** now works both while transformed and while inside dungeons.
+4. Fixed the first conditional event after sleeping sometimes incorrectly requiring **Heat 100**.
+5. Fixed the older client sometimes failing to show up when the **Prostitution App** had been unlocked through a special method.
+6. Fixed incorrectly displayed **nipple rings** when the battle outfit was damaged.
+7. **Permanent Slave Contract** and **Fixed Lewd Crest** are now displayed in the menu.
+8. Revised several descriptions in the controller button settings and added controller assignments for **Detailed Information**, **Transformation** and **Smartphone**. The creator does not have a controller to test these bindings and cannot guarantee that they work correctly.
+
+**Synchronized with the full release — changes #203–206**
+
+203. Crafting items at **Yarus** no longer costs money.
+204. Added **Tainted Orbs** and **Evil Orbs**, craftable at the **Inner Forge** in the Forbidden Library.
+205. All boss-type enemies gain an effect that prevents their restraint preparation from being interrupted.
+206. Added the **Shamelessness** concept. It increases only through erotic achievements. Above 80, the player can choose at home to go without a trench coat or stop suppressing the transparency lewd curse.
+
+### v1.052 — October 16, 2026
+
+1. Fixed an issue that prevented **restraint effects from taking effect on boss-type enemies**.
+
+---
+
+## Source and terminology
+
+Translated from the author's Telegram messages supplied October 10 and 16, 2026,
+and cross-checked against the original Chinese `三合一体验版修复日志.txt`
+included in the creator archives. The developer's original numbering
+**#200**, **#201** and **#203–206** denotes changes inherited from the full release; these
+are not extra game-mod versions.
+
+Game terms follow the existing English translation where available:
+**Amane** (天音), **Mashiro** (真白), **Demon Womb** (恶魔母胎),
+**Gathering Drone** (采集无人机), **Storage Chest** (储物箱),
+and **Maid Headband** (女仆发箍).
+
+The source's `繁华街连裤袜售卖变态` refers to the pervert who asks
+to **buy the player's pantyhose**; hence “pantyhose-buying pervert.”
+
+This is an unofficial English translation of the creator's game-mod notes.
+
+
+FLEXIBLE INSTALL SOURCES AND ENGLISH (OCT 2026)
+------------------------------------------------
+- On the Install page choose the target release and original bundle/game.
+  Found files can be full games, complete mod overlay archives, or extracted
+  folders. ZIP, RAR and 7z are recognized by their contents, even with
+  unusual file extensions. Choose the first .001 for split 7z volumes and
+  keep the remaining volumes together.
+- File discovery checks installed games, browser downloads, Downloads,
+  Desktop, Documents and user-added search roots. From every search root it
+  checks five parent folders and searches up to eight levels downward.
+  A 3,500-folder global budget bounds scanning. Add a search root if an
+  unrelated directory is not searched automatically.
+- Ver1.052 accepts direct independent upgrades with backed-up saves from
+  Ver1.03, Ver1.04, and Ver1.051. A full game archive for a supported older
+  version can be imported before the upgrade. For a fresh Ver1.052 install,
+  provide a clean GoRPG 1.23 game or archive plus the complete Ver1.052
+  creator bundle. If starting from CH or Maple, first rebuild clean GoRPG
+  with a verified any-version reconstruction pack (and the complete starting
+  game), or provide the clean GoRPG files separately. A creator mod-only
+  archive cannot supply missing game files by itself.
+- "Enable the matching English translation" is selectable at install time,
+  for both direct upgrades and fresh installs. It uses the target release's
+  own reversible English display pack. Existing English does not make the
+  source game ineligible. Untranslated lines remain in their native language.
+- Separate intact archives in the same folder are supported. Incompatible
+  files mixed inside an individual bundle are rejected unless the complete
+  final file set matches a version's verified SHA-256 recipe. The launcher
+  never guesses by names, applies a random old translation dictionary, or
+  silently stacks Maple and Three-in-One into a mixed branch.

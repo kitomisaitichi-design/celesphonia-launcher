@@ -75,11 +75,45 @@ public static class EnglishSupport {
         if(hash!=state.OriginalHash&&hash!=state.PatchedHash)throw new IOException("The game entry page was changed by another tool. Restore that change first; the launcher will preserve it.");
         if(assets&&hash==state.PatchedHash)foreach(var item in state.Assets){string file=Store.Child(Folder(root),item.Key);if(!File.Exists(file)||Store.Hash(file)!=item.Value)throw new IOException("English overlay file is missing or changed: "+item.Key);}
     }
+    // This markup is byte-for-byte reconstructible from the original entry.
+    // Stale pre-state English installs can be recovered only when that exact
+    // reversible injection and a matching original-entry.bin are both present.
+    internal const string Injection="<!-- Celesphonia reversible English display overlay -->\r\n        <script src=\"celesphonia-english/dictionary.js\"></script>\r\n        <script src=\"celesphonia-english/runtime.js\"></script>\r\n        ";
     public static string OriginalFile(string root,string file){
-        // Reconstruction and integrity checks see the original entry page, even while EN is on.
-        if(!Path.GetExtension(file).Equals(".html",StringComparison.OrdinalIgnoreCase)||!file.Equals(Entry(root),StringComparison.OrdinalIgnoreCase))return file;
-        var state=ReadState(root);if(state==null)return file;ValidateState(root,state,false);
-        return Path.Combine(Folder(root),"original-entry.bin");
+        if(!Path.GetExtension(file).Equals(".html",StringComparison.OrdinalIgnoreCase)||
+            !file.Equals(Entry(root),StringComparison.OrdinalIgnoreCase))return file;
+        var state=ReadState(root);
+        if(state!=null){
+            ValidateState(root,state,false);
+            return Path.Combine(Folder(root),"original-entry.bin");
+        }
+        // A missing state file must not make copied games inherit an injected
+        // index.html pointing at discarded old English runtime assets.
+        string modified=File.ReadAllText(file,Encoding.UTF8);
+        if(modified.IndexOf("celesphonia-english/",StringComparison.OrdinalIgnoreCase)<0)return file;
+        string original=Path.Combine(Folder(root),"original-entry.bin");
+        if(!File.Exists(original))throw new IOException(
+            "This game has an unmanaged English-modified index.html and no original-entry.bin. Choose its untouched original game archive or restore its entry page before installing; no files were deleted.");
+        byte[] source=File.ReadAllBytes(original);
+        string html=Encoding.UTF8.GetString(source);
+        Match script=Regex.Match(html,@"<script\b[^>]*\bsrc\s*=\s*['""]js/main\.js['""][^>]*>",RegexOptions.IgnoreCase);
+        if(!script.Success||html.IndexOf("celesphonia-english/",StringComparison.OrdinalIgnoreCase)>=0)
+            throw new IOException("The English index backup is not an intact original page.");
+        byte[] exact=new UTF8Encoding(false).GetBytes(html.Insert(script.Index,Injection));
+        if(!File.ReadAllBytes(file).SequenceEqual(exact))
+            throw new IOException("The English index.html differs from the known reversible injection. Keep its custom edits and supply an intact original game/entry page; automatic replacement is unsafe.");
+        return original;
+    }
+    // Source-copy validation intentionally disregards missing *English-only*
+    // runtime files, but never ignores a changed index page or game scripts.
+    public static void VerifyForCopy(string root){
+        var state=ReadState(root);
+        if(state!=null){
+            ValidateState(root,state,false);
+            if(UniversalSupport.Identify(root)!=state.VersionId)
+                throw new IOException("The English overlay record belongs to a different game version.");
+        }
+        OriginalFile(root,Entry(root));
     }
     public static void Verify(string root){var state=ReadState(root);if(state!=null){ValidateState(root,state,true);if(UniversalSupport.Identify(root)!=state.VersionId)throw new IOException("The English overlay belongs to a different game version. Restore Original text before changing this installation.");}}
     public static EnglishStatus Status(Profile profile){
@@ -141,7 +175,7 @@ public static class EnglishSupport {
         else{if(Directory.Exists(folder)&&Directory.EnumerateFileSystemEntries(folder).Any())throw new IOException("An unrecognized celesphonia-english folder already exists. Choose a clean game entry before applying this overlay.");original=File.ReadAllBytes(entry);}
         string html=Encoding.UTF8.GetString(original);var main=Regex.Match(html,@"<script\b[^>]*\bsrc\s*=\s*['""]js/main\.js['""][^>]*>",RegexOptions.IgnoreCase);
         if(!main.Success||html.Contains("celesphonia-english/"))throw new IOException("Unsupported or already modified game entry page.");
-        string markup="<!-- Celesphonia reversible English display overlay -->\r\n        <script src=\"celesphonia-english/dictionary.js\"></script>\r\n        <script src=\"celesphonia-english/runtime.js\"></script>\r\n        ";
+        string markup=Injection;
         byte[] patched=new UTF8Encoding(false).GetBytes(html.Insert(main.Index,markup));
         byte[] runtimeBytes=runtimeOverride==null?EnglishRelease.Runtime():File.ReadAllBytes(runtimeOverride);
         Directory.CreateDirectory(folder);if(old==null)Atomic(Path.Combine(folder,"original-entry.bin"),original);

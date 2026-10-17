@@ -240,4 +240,33 @@ still undergoes the exact destination fingerprints and file checks; no generic
 cross-branch save transfer has been enabled.
 
 For a fresh mod installation, the base may be an already registered clean GoRPG
-1.23 folder, an intact full-game ZIP/RAR/7z 
+1.23 folder, an intact full-game ZIP/RAR/7z archive, or a verified clean GoRPG
+reconstruction from an intact CH/Maple game with the separate any-version pack.
+CH and Maple are not silently treated as GoRPG. Without the clean base or the
+reconstruction pack, the launcher reports the missing ingredient rather than
+producing a mixed/partial installation. A recognized complete target game
+archive can be installed without a creator overlay.
+
+Archive detection uses ZIP/RAR/7z signatures, extracted native version markers,
+and final full file hash verification. Filename changes and compatible
+repacking are supported; **changed content is not**. It scans 8 child-directory
+levels and checks 5 parent-directory levels for each configured root, subject
+to its global 3,500-folder budget. Split .001 and following volumes must be
+co-located. English is a separate on/off selection at installation, using the
+verified target-version reversible display pack; it does not rewrite original
+game text or migrate an older version's dictionary blindly.
+
+### Existing and mixed English installations
+
+A new version is installed into an independent folder. Its original index.html
+is copied from the verified original-entry.bin, and the old English runtime
+and dictionary are omitted. State-less legacy English injections are recovered
+only when their current index.html reconstructs byte-for-byte from a valid
+original-entry.bin. Broken English-only assets can be skipped while preserving
+verified native files. Unknown index.html edits and mixed native scripts are
+not silently overwritten.
+
+The shared installation index records the verified current path/version. It
+compacts a stale metadata entry only if the former game folder is absent and
+its immediate parent remains available. No user saves, games or unknown files
+are renamed or deleted by index maintenance.

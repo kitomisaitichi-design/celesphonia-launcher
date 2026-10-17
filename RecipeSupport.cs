@@ -156,9 +156,11 @@ public static class RecipeSupport {
         string ext=Path.GetExtension(full).ToLowerInvariant();
         return new[]{".exe",".dll",".pak",".bin",".dat",".html",".json",".js"}.Contains(ext);
     }
-    public static void VerifyProfile(Profile p){VerifyProfile(p,false);}
-    public static void VerifyProfile(Profile p,bool launchOnly){
-        EnglishSupport.Verify(p.Root);
+    public static void VerifyProfile(Profile p){VerifyProfile(p,false,false);}
+    public static void VerifyProfile(Profile p,bool launchOnly){VerifyProfile(p,launchOnly,false);}
+    public static void VerifyProfile(Profile p,bool launchOnly,bool recoverEnglishForNewCopy){
+        if(recoverEnglishForNewCopy)EnglishSupport.VerifyForCopy(p.Root);
+        else EnglishSupport.Verify(p.Root);
         UniversalSupport.VerifyInstalled(p,launchOnly);
         string file=Path.Combine(p.Root,"launcher-build.json");bool independent=File.Exists(file);
         if(!independent)file=Path.Combine(p.Root,"launcher-base.json");if(!File.Exists(file))return;

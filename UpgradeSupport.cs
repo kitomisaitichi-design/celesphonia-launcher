@@ -76,7 +76,9 @@ public static class UpgradeSupport {
         string sourceId=UniversalSupport.Identify(source.Root);RequireRoute(sourceId,targetId);
         var recipe=RecipeSupport.Catalog().Recipes.First(x=>x.Id==targetId);if(sourceId==targetId)throw new IOException("Already installed; select this version in Files.");
         if(Store.Running(new Settings{Profiles=new List<Profile>{source}}))throw new IOException("Save and close the source game before upgrading.");
-        RecipeSupport.VerifyProfile(source);
+        // Recover intact native files from a partial/stale English sidecar,
+        // but never approve modified native scripts or an unverifiable index.
+        RecipeSupport.VerifyProfile(source,false,true);
         string staging=Store.ArchiveStaging("up");
         try{
         string web=File.Exists(bundle)?Store.Extract(bundle,staging,true):RecipeSupport.ContentRoot(bundle);VerifyBundle(web,recipe);
