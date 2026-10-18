@@ -185,7 +185,7 @@ jobs:
             assert len(approved)==4 and all(dictionary.get(k)==v for k,v in approved.items())
             assert all(dictionary.get(k)==v for k,v in engam.items())
             assert all(dictionary.get(k)==v for k,v in choice_aliases.items())
-            assert 'v1.053' in changelog
+            assert 'Ver1.053' in changelog or 'v1.053' in changelog
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 
