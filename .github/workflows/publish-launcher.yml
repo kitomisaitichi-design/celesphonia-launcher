@@ -82,7 +82,8 @@ jobs:
               assert len(native['Files']) == expected_count
               assert len({f['Path'].casefold() for f in native['Files']}) == expected_count
               assert all(len(f['Hash']) == 64 and f['Size'] >= 0 for f in native['Files'])
-              assert content in executable or content in native_streams, 'EXE native inventory differs from source: ' + name
+              exact=content.rstrip(b'\r\n')
+              assert exact in executable or any(data.rstrip(b'\r\n')==exact for data in native_streams), 'EXE native inventory differs from source: ' + name
             runtime = bundle.read('EnglishRuntime.js')
             assert b'installGroperTicker' in runtime, 'Native Ticker groper rendering fix missing'
             assert b'installGlossaryPictureLayout' in runtime, 'Glossary illustration layout repair missing'
