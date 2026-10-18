@@ -429,7 +429,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             if(info==null){
                 status.Text="Celesphonia launcher v"+LauncherUpdate.CurrentVersion+" is up to date.";
                 MessageBox.Show(this,"You're running the newest launcher version available from "+config.Repository+
-                    ".\r\nLatest supported game/mod release: Three-in-One 3.3.5 Ver1.052. Game releases are independent of launcher updates.","Launcher updates");
+                    ".\r\nLatest supported game/mod release: Three-in-One 3.3.5 Ver1.053. Game releases are independent of launcher updates.","Launcher updates");
                 return;
             }
             status.Text="Launcher v"+info.Version+" available from "+info.Repository;
@@ -750,13 +750,34 @@ public class PolishedLauncher : ReplacementAwareForm {
         }
     }
     static bool HasNativeInventory(string id){
-        return id=="gorpg-1-23"||id=="ch-current"||id=="maple-1-7-2"||id=="three-in-one-3-3-4";
+        return id=="gorpg-1-23" || !string.IsNullOrEmpty(id) &&
+            typeof(MixedSourceRecovery).Assembly.GetManifestResourceInfo("Celesphonia.NativeReferenceFiles."+id+".json")!=null;
     }
     string[] NativeRecoveryInputs(string versionId,string explicitSource=null){
-        var paths=new List<string>(originalInputs);
+        var paths=new List<string>();
+        bool pooledCreator=UpgradeSupport.IsUpgrade(versionId)&&HasNativeInventory(versionId);
+        if(pooledCreator){
+            // Intact installed games and exact target archives must be tried
+            // before a broad extracted/download folder found by discovery.
+            paths.AddRange(LibraryProfiles.Where(x=>Directory.Exists(x.Root)&&!FileDiscovery.IsNativeProbe(x.Root))
+                .Select(x=>new{Profile=x,Id=UniversalSupport.Identify(x.Root)})
+                .Where(x=>x.Id!=null)
+                .OrderBy(x=>UpgradeSupport.MayUpgrade(x.Id,versionId)?0:x.Id=="gorpg-1-23"?1:2)
+                .ThenByDescending(x=>RecipeSupport.Catalog().Recipes.Where(r=>r.Id==x.Id).Select(r=>r.SaveGeneration).FirstOrDefault())
+                .Select(x=>x.Profile.Root));
+            paths.AddRange(discovered.Where(x=>x.RecipeId==versionId&&string.IsNullOrEmpty(x.Problem)&&File.Exists(x.Path)&&
+                new[]{"Original archive","Game archive candidate"}.Contains(x.Kind)).Select(x=>x.Path));
+        }
+        paths.AddRange(originalInputs);
         var found=LocatedOriginal(versionId);
         if(found!=null&&string.IsNullOrEmpty(found.Problem))paths.Add(found.Path);
         if(!string.IsNullOrEmpty(explicitSource))paths.Add(explicitSource);
+        if(pooledCreator){
+            paths.AddRange(discovered.Where(x=>x.RecipeId!=null&&string.IsNullOrEmpty(x.Problem)&&
+                UniversalSupport.ReadIndex().Versions.Any(v=>v.Id==x.RecipeId)&&
+                new[]{"Original archive","Game archive candidate","Archive candidate","Extracted bundle","Installed game"}.Contains(x.Kind))
+                .OrderBy(x=>x.RecipeId==versionId?0:1).Select(x=>x.Path));
+        }
         return paths.Where(x=>!string.IsNullOrWhiteSpace(x)&&(File.Exists(x)||Directory.Exists(x)))
             .Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
@@ -1003,6 +1024,23 @@ public class PolishedLauncher : ReplacementAwareForm {
             if(route==1&&recipe.Id=="three-in-one-3-3-4"){
                 await Install334(recipe,location);return;
             }
+            if(UpgradeSupport.IsUpgrade(recipe.Id)&&HasNativeInventory(recipe.Id)&&route!=2&&(route==1||originalInputs.Count>0)){
+                var already=Installed(recipe.Id);
+                if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
+                status.Text="Checking source folders for "+recipe.Name+" before installing…";
+                var sourceSettings=new Settings{Profiles=LibraryProfiles.ToList(),InstallRoot=settings.InstallRoot,
+                    SearchRoots=settings.SearchRoots==null?null:settings.SearchRoots.ToList()};
+                var targetSources=await Task.Run(()=>FileDiscovery.FindTargetArchives(FileDiscovery.NativeRoots(sourceSettings),recipe.Id,CancellationToken.None));
+                discovered=targetSources.Concat(discovered).GroupBy(x=>x.Path+"|"+x.Kind+"|"+x.RecipeId,StringComparer.OrdinalIgnoreCase).Select(x=>x.First()).ToList();
+                string[] sources=NativeRecoveryInputs(recipe.Id);
+                if(sources.Length==0){var first=PickBundle(recipe);if(first==null)return;sources=NativeRecoveryInputs(recipe.Id,first);}
+                bool english=englishOnInstall.Checked;
+                Profile carry=startingSource!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(startingSource.Root),recipe.Id)
+                    ?startingSource:UpgradeSupport.StartingProfile(settings,recipe.Id);
+                var verifiedSource=carry;
+                await RunInstall(()=>{var game=UpgradeSupport.InstallFromOriginalFiles(sources,location,recipe.Id,verifiedSource,CancellationToken.None);
+                    SetInstalledEnglish(game,english);return game;});return;
+            }
             if(route==1&&HasNativeInventory(recipe.Id)){
                 var already=Installed(recipe.Id);
                 if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
@@ -1054,7 +1092,7 @@ public class PolishedLauncher : ReplacementAwareForm {
                 }
                 // If the only game on hand is v1.03/v1.04/v1.051, a
                 // direct forward upgrade is possible without GoRPG rebuilding.
-                var oldArchive=new[]{"three-in-one-3-3-5-v1-051","three-in-one-3-3-5-v1-04","three-in-one-3-3-5-v1-03","three-in-one-3-3-5-v1-02","three-in-one-3-3-5-v1-01"}
+                var oldArchive=new[]{"three-in-one-3-3-5-v1-052","three-in-one-3-3-5-v1-051","three-in-one-3-3-5-v1-04","three-in-one-3-3-5-v1-03","three-in-one-3-3-5-v1-02","three-in-one-3-3-5-v1-01"}
                     .Select(id=>Found(id,"Full game archive")).FirstOrDefault(x=>x!=null);
                 if(baseGame==null&&originalBase==null&&oldArchive!=null&&route==0){
                     await RunInstall(()=>{var old=UniversalSupport.InstallOriginal(oldArchive.Path,location,oldArchive.RecipeId);

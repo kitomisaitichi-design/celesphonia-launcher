@@ -64,6 +64,8 @@ def main():
    for p,name in files:archive.write(p,name)
  with zipfile.ZipFile(staging) as archive:
   assert archive.testzip() is None
+  assert all(e.file_size<=45*1024*1024 for e in archive.infolist()),'ZIP entry exceeds existing updater limit.'
+  assert sum(e.file_size for e in archive.infolist())<=180*1024*1024,'ZIP expanded payload exceeds existing updater limit.'
   names=archive.namelist()
   assert not any(x in names for x in ['profiles.json','profiles.json.previous','English-build-check.exe','delta-error.txt'])
   assert set(names)=={name for _,name in files}

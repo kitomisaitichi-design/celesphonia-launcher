@@ -240,6 +240,28 @@ public static class FileDiscovery {
     public static List<FoundSource> Scan(Settings settings){
         return Scan(settings,CancellationToken.None,null);
     }
+    // Install can interrupt the broad background scan. Recheck likely target
+    // archives in known source/download folders before constructing its pool.
+    public static List<FoundSource> FindTargetArchives(IEnumerable<string> folders,string targetId,CancellationToken cancellation){
+        var recipe=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==targetId);
+        var found=new List<FoundSource>();if(recipe==null)return found;
+        var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach(string root in folders){
+            cancellation.ThrowIfCancellationRequested();
+            if(!Directory.Exists(root)||IsNativeProbe(root)||(new DirectoryInfo(root).Attributes&FileAttributes.ReparsePoint)!=0)continue;
+            try{foreach(string file in Directory.EnumerateFiles(root)){
+                cancellation.ThrowIfCancellationRequested();
+                if(!seen.Add(file)||!ArchiveFilenameWorthReading(System.IO.Path.GetFileName(file)))continue;
+                var hint=NameHint(System.IO.Path.GetFileName(file),RecipeSupport.Catalog());
+                if((hint==null||hint.Id!=targetId)&&(recipe.ArchiveBytes<=0||new FileInfo(file).Length!=recipe.ArchiveBytes))continue;
+                string format=ArchiveFormat(file);
+                var matches=format=="zip"?ProbeZip(file,cancellation):
+                    format=="rar"||format=="7z"?ProbeRar(file,cancellation):new List<FoundSource>();
+                found.AddRange(matches.Where(x=>x.RecipeId==targetId&&string.IsNullOrEmpty(x.Problem)));
+            }}catch(IOException){}catch(UnauthorizedAccessException){}
+        }
+        return found;
+    }
     public static List<FoundSource> Scan(Settings settings,CancellationToken cancellation,Action<DiscoveryProgress> progress){
         cancellation.ThrowIfCancellationRequested();
         var roots=NativeRoots(settings);foreach(string root in roots.ToArray())AddRoot(roots,System.IO.Path.Combine(root,"Telegram Desktop"));
@@ -309,7 +331,8 @@ public static class FileDiscovery {
                 }
             }
             var psi=new ProcessStartInfo(exe,"l -slt -p- -sccUTF-8 "+Store.Q(archive)){
-                UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true
+                UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,
+                StandardOutputEncoding=new System.Text.UTF8Encoding(false),StandardErrorEncoding=new System.Text.UTF8Encoding(false)
             };
             using(var process=Process.Start(psi)){
                 if(process==null)return 0;
@@ -324,9 +347,11 @@ public static class FileDiscovery {
                     if(consumed>12*1024*1024){process.Kill();return 0;}
                     if(line.StartsWith("----------",StringComparison.Ordinal)){body=true;continue;}
                     if(!body)continue;
-                    if(line.StartsWith("Symbolic Link = ",StringComparison.Ordinal)||
-                       line.StartsWith("Hard Link = ",StringComparison.Ordinal)||
-                       line.StartsWith("Copy Link = ",StringComparison.Ordinal)){process.Kill();return 0;}
+                    // RAR5 lists empty link fields for ordinary files too.
+                    if(new[]{"Symbolic Link = ","Hard Link = ","Copy Link = "}.Any(key=>
+                        line.StartsWith(key,StringComparison.Ordinal)&&line.Substring(key.Length).Trim().Length>0)){
+                        process.Kill();return 0;
+                    }
                     if(!line.StartsWith("Path = ",StringComparison.Ordinal))continue;
                     string path=line.Substring(7).Replace('\\','/');
                     if(!SafeArchiveName(path)||!paths.Add(path)){process.Kill();return 0;}

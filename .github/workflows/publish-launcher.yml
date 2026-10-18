@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, pathlib, re, struct, zipfile
+          import hashlib, json, os, pathlib, re, struct, zipfile, zlib
           tag = os.environ['GITHUB_REF_NAME']
           match = re.fullmatch(r'launcher-v(\d+\.\d+\.\d+)', tag)
           assert match, 'Unexpected release tag'
@@ -47,16 +47,25 @@ jobs:
             'three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01',
             'three-in-one-3-3-5-v1-02','three-in-one-3-3-5-v1-03',
             'three-in-one-3-3-5-v1-04','three-in-one-3-3-5-v1-051',
-            'three-in-one-3-3-5-v1-052',
+            'three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053',
           )
           allowed.update('English/'+v+'/'+item for v in versions for item in ('manifest.json','dictionary.json','catalog.json'))
           with zipfile.ZipFile(archive) as bundle:
             assert bundle.testzip() is None, 'Corrupt ZIP entry'
+            assert all(e.file_size <= 45*1024*1024 for e in bundle.infolist()), 'Existing updater entry limit exceeded'
+            assert sum(e.file_size for e in bundle.infolist()) <= 180*1024*1024, 'Existing updater expanded limit exceeded'
             assert set(bundle.namelist()) == allowed, 'Unknown or missing ZIP entries'
-            # Older launchers permit only these 35 entries. The five English
+            # Existing updaters allow these five root files and versioned packs.
+            # The five English
             # pictures are embedded inside the EXE, never separate ZIP files.
-            assert len(allowed) == 35
+            assert len(allowed) == 38
             executable = bundle.read('Celesphonia Portable Switcher.exe')
+            native_streams=[]
+            for candidate in re.finditer(b'\x1f\x8b\x08', executable):
+              try:
+                decoded=zlib.decompressobj(31).decompress(executable[candidate.start():],16*1024*1024)
+                if decoded.startswith(b'{'): native_streams.append(decoded)
+              except zlib.error: pass
             # Each native reference is a hash-only inventory, never game bytes.
             # Require exact release-catalog bytes inside the distributed EXE.
             native_refs = {
@@ -64,6 +73,7 @@ jobs:
               'NativeReferenceFiles-ch-current.json': ('ch-current', 13536),
               'NativeReferenceFiles-maple-1-7-2.json': ('maple-1-7-2', 9727),
               'NativeReferenceFiles-three-in-one-3-3-4.json': ('three-in-one-3-3-4', 9474),
+              'NativeReferenceFiles-three-in-one-3-3-5-v1-053.json': ('three-in-one-3-3-5-v1-053', 11730),
             }
             for name, (ident, expected_count) in native_refs.items():
               content = pathlib.Path(name).read_bytes()
@@ -72,7 +82,7 @@ jobs:
               assert len(native['Files']) == expected_count
               assert len({f['Path'].casefold() for f in native['Files']}) == expected_count
               assert all(len(f['Hash']) == 64 and f['Size'] >= 0 for f in native['Files'])
-              assert content in executable, 'EXE native inventory differs from source: ' + name
+              assert content in executable or content in native_streams, 'EXE native inventory differs from source: ' + name
             runtime = bundle.read('EnglishRuntime.js')
             assert b'installGroperTicker' in runtime, 'Native Ticker groper rendering fix missing'
             assert b'installGlossaryPictureLayout' in runtime, 'Glossary illustration layout repair missing'
@@ -81,7 +91,7 @@ jobs:
             assert b'celesphonia-english/images/' in runtime, 'Help image redirection missing'
             assert b'English/ImageLocalization/manifest.json' in executable, 'Embedded localized artwork missing'
             artwork = json.loads(pathlib.Path('English/ImageLocalization/manifest.json').read_text('utf-8'))
-            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052'}
+            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053'}
             assert len(artwork['images']) == 5
             for name, info in artwork['images'].items():
               data = pathlib.Path('English/ImageLocalization',name).read_bytes()
@@ -150,6 +160,31 @@ jobs:
             assert all(latest_dictionary.get(k)==v for k,v in new_dictionary.items()), 'Ver1.052 lost an existing Ver1.051 translation'
             assert all(latest_dictionary.get(k)==v for k,v in engam.items()), 'Ver1.052 Engram regression'
             assert all(latest_dictionary.get(k)==v for k,v in choice_aliases.items()), 'Ver1.052 guard choice regression'
+            creator = next(x for x in recipes if x['Id']=='three-in-one-3-3-5-v1-053')
+            assert creator['SaveGeneration']==1053 and creator['CompleteOverlay']
+            assert creator['RequiredBase']=='gorpg-1-23' and len(creator['Files'])==5163
+            assert creator['ArchiveBytes']==547645375
+            assert creator['ArchiveHash']=='4ce5116615618785b1e5f897cfe185da4cbc7f5f28f0f2dbd00035b5da8ff140'
+            assert set(creator['UpgradeFrom'])=={'three-in-one-3-3-5-v1-'+v for v in ('01','02','03','04','051','052')}
+            assert set(creator['Files'])==set(latest['Files'])
+            assert {k for k in creator['Files'] if creator['Files'][k]!=latest['Files'][k]}=={
+              'data/Armors.json','data/CommonEvents.json','data/Skills.json','data/System.json','js/plugins/ParaChecker.js','js/rpg_core.js'}
+            assert next(x for x in fingerprints if x['Id']==creator['Id'])['Fingerprints']==creator['Fingerprints']
+            folder='English/'+creator['Id']+'/'
+            manifest=json.loads(bundle.read(folder+'manifest.json'))
+            dictionary=json.loads(bundle.read(folder+'dictionary.json'))
+            catalog=json.loads(bundle.read(folder+'catalog.json'))
+            assert manifest['Fingerprints']==creator['Fingerprints']
+            assert manifest['DictionaryHash']==hashlib.sha256(bundle.read(folder+'dictionary.json')).hexdigest()
+            assert manifest['CatalogHash']==hashlib.sha256(bundle.read(folder+'catalog.json')).hexdigest()
+            assert len(dictionary)==manifest['TranslatedTexts']==34998
+            assert len(catalog)==manifest['TotalTexts'] and len(catalog)>len(dictionary)
+            assert all(dictionary.get(k)==v for k,v in latest_dictionary.items() if k in catalog), 'Existing English regressed'
+            approved=json.loads(pathlib.Path('English/v1053-reviewed-overrides.json').read_text('utf-8'))
+            assert len(approved)==4 and all(dictionary.get(k)==v for k,v in approved.items())
+            assert all(dictionary.get(k)==v for k,v in engam.items())
+            assert all(dictionary.get(k)==v for k,v in choice_aliases.items())
+            assert 'v1.053' in changelog
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 

@@ -13,7 +13,7 @@ public static class UpgradeTests {
     // creator overlay shortcuts and prove the branch boundaries stay closed.
     public static int ForwardCreatorRoutes(){
         var catalog=RecipeSupport.Catalog();
-        string[] releases={"01","02","03","04","051","052"};
+        string[] releases={"01","02","03","04","051","052","053"};
         var ids=releases.Select(x=>"three-in-one-3-3-5-v1-"+x).ToArray();
         int checkedRoutes=0;
         for(int i=0;i<ids.Length;i++){
@@ -178,11 +178,16 @@ public static class UpgradeTests {
             Assert(sourceChecks==5,"Automated source checks were skipped");
             checks.Add("Compatible saved-profile priority, selected tie break, stale profile exclusion, unknown 1.05, archive fail-closed, native-mixed missing-byte rejection");
             int directRoutes=ForwardCreatorRoutes();
-            Assert(directRoutes==15,"Expected all 15 ordered creator version upgrades");
-            checks.Add("All 15 creator forward routes verified, including v1.01/v1.02/v1.03 directly to v1.051/v1.052; reverse, unknown v1.05 and cross-branch saves rejected");
-            Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-052","The latest developer release must be v1.052");
+            Assert(directRoutes==21,"Expected all 21 ordered creator version upgrades");
+            checks.Add("All 21 creator forward routes verified through v1.053; reverse, unknown and cross-branch saves rejected");
+            Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-053","The latest developer release must be v1.053");
             var catalog=RecipeSupport.Catalog();
-            var latest=catalog.Recipes.First(x=>x.Id==UpgradeSupport.Latest);
+            var newest=catalog.Recipes.First(x=>x.Id==UpgradeSupport.Latest);
+            Assert(newest.SaveGeneration==1053&&newest.Files.Count==5163&&newest.ArchiveBytes==547645375,
+                "v1.053 complete creator recipe missing");
+            Assert(MixedSourceRecovery.LoadEmbeddedReference(newest.Id).Files.Count==11730,
+                "v1.053 full original-file target inventory missing");
+            var latest=catalog.Recipes.First(x=>x.Id=="three-in-one-3-3-5-v1-052");
             var previous=catalog.Recipes.First(x=>x.Id=="three-in-one-3-3-5-v1-051");
             Assert(latest.Files.Count==5163 && latest.SaveGeneration==1052 &&
                    latest.ArchiveBytes==547645049,"v1.052 full verified overlay recipe missing");
@@ -196,7 +201,7 @@ public static class UpgradeTests {
                    latest.Fingerprints["data/Enemies.json"]!=previous.Fingerprints["data/Enemies.json"],
                    "v1.051 and v1.052 native signatures must differ on enemies");
             Assert(FileDiscovery.NameHint(latest.ArchiveName,catalog)==latest,"Renamed RAR filename detection failed");
-            Assert(FileDiscovery.NameHint("future_three_in_one_1_053_unverified.rar",catalog)==null,
+            Assert(FileDiscovery.NameHint("future_three_in_one_1_054_unverified.rar",catalog)==null,
                    "Unknown future release misclassified as an older bundle");
             checks.Add("Verified both creator RAR signatures; v1.052 only Enemies changed; unknown future refused");
             Assert(UpgradeSupport.CanTransfer("three-in-one-3-3-5-v1-04",UpgradeSupport.Latest),"Forward v1.04 migration rejected");

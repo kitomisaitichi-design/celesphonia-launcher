@@ -2,7 +2,15 @@
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 
-**Launcher version 1.0.11** supports **creator Ver1.051 and Ver1.052** with RAR5 source detection, verified forward upgrades, reversible English translations, and illustrated glossary/tutorial localization. Launcher and game-mod versions are independently versioned.
+**Launcher version 1.0.16** adds **creator Ver1.053**, including direct installation from Gorpg 1.23 plus the creator's 1.053 files. Launcher and game-mod versions are independently versioned.
+
+## v1.0.16 — Direct Ver1.053 installation from original files
+
+Download the portable launcher ZIP from [Releases](https://github.com/kitomisaitichi-design/celesphonia-launcher/releases/latest), then supply your own Gorpg base and creator Ver1.053 content in Install. Choose Ver1.053 as the target. ZIP, RAR, 7z, renamed archives, extracted folders and individual files can contribute matching original bytes. The launcher reconstructs the complete target from 11,730 verified file hashes; **Ver1.051 and Ver1.052 are not prerequisites**. Missing files are reported before installation output is created. The launcher download contains no game files.
+
+Creator Ver1.053 fixes transparency equipment checks, an incorrect Mashiro ending CG trigger, and Regeneration after Abyssphonia escapes restraints in star form. The separate partial English pack retains existing reviewed translations and adds four changed display strings. All five translated help images, glossary fitting, wardrobe indicators, runtime controls and the current launcher UI remain available.
+
+Forward upgrades from registered older 3.3.5 releases retain the existing backup and save safeguards. Gorpg, CH, Maple and 3.3.4 saves stay in their separate branches. Exact native files can contribute across sources when their hashes match; save compatibility is checked separately. Managed removal uses verified native ownership and preserves saves and unrelated files. RAR5 discovery now accepts ordinary entries with empty link fields while still rejecting actual links.
 
 ## v1.0.11 — Fit glossary illustrations around English text
 
@@ -33,10 +41,10 @@ The bedroom wardrobe uses the same native **single-column, three-tile (1×3)** g
 - Improves help and equipment-description wrapping for adjacent English effect tags (such as `[Effect A][Effect B]`) and native icon widths. The dedicated presentation sweep checked 2,826 cases, improving 328 without changing wording or regressing a previously fitting case.
 - The localized image payload is embedded in the launcher executable, rather than added as extra ZIP entries. The public ZIP retains the historical **35-file allowlist** required for older launchers' GitHub auto-update compatibility.
 
-The original game/mod archives are not redistributed. Artwork replacements only activate when their native source hashes match an approved Ver1.051 or Ver1.052 release.
+The original game/mod archives are not redistributed. Artwork replacements only activate when their native source hashes match an approved Ver1.051, Ver1.052 or Ver1.053 release.
 
 ## Current maintenance priorities
-Going forward, prioritize **the two most recent Three-in-One 3.3.5 releases (currently Ver1.051 and Ver1.052)** and **new Maple releases** for development, translation maintenance, newly added content, regression tests, and upgrade work. Advance this two-version window as new creator releases arrive. Treat **Gorpg 1.23 and the CH English reference** as stable source/reference installations unless their content actually changes.
+Going forward, prioritize **the two most recent Three-in-One 3.3.5 releases (currently Ver1.052 and Ver1.053)** and **new Maple releases** for development, translation maintenance, newly added content, regression tests, and upgrade work. Advance this two-version window as new creator releases arrive. Treat **Gorpg 1.23 and the CH English reference** as stable source/reference installations unless their content actually changes.
 
 Older Three-in-One 3.3.5 trial, v1.01 and v1.02 remain **supported for detection, English overlays, older saves and historical forward-upgrade routes**. This maintenance priority does not remove their code, recipes, dictionaries, developer verification fixtures, or backwards-compatibility tests. The old full game installations may be uninstalled locally to reclaim disk space, without affecting independent v1.03/v1.04 installations. Three-in-One 3.3.4 also remains a supported distinct branch.
 

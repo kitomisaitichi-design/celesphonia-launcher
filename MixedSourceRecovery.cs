@@ -61,7 +61,9 @@ public static class MixedSourceRecovery {
         if(stream==null&&versionId=="gorpg-1-23")stream=assembly.GetManifestResourceStream(ReferenceResource);
         using(Stream source=stream) {
             if(source==null)throw new IOException("The launcher has no embedded complete native file inventory.");
-            using(var reader=new StreamReader(source,Encoding.UTF8)) {
+            bool compressed=source.ReadByte()==0x1f&&source.ReadByte()==0x8b;source.Position=0;
+            using(Stream decoded=compressed?(Stream)new GZipStream(source,CompressionMode.Decompress):source)
+            using(var reader=new StreamReader(decoded,Encoding.UTF8)) {
                 var reference=Json.Deserialize<MixedNativeReference>(reader.ReadToEnd());
                 if(reference==null || reference.Format!=1 || reference.VersionId!=versionId)
                     throw new IOException("Embedded native inventory does not match the requested build.");
@@ -71,11 +73,17 @@ public static class MixedSourceRecovery {
         }
     }
     public static MixedRecoveryReport Probe(MixedNativeReference reference,IEnumerable<string> sources,CancellationToken cancellation) {
+        return Probe(reference,sources,cancellation,false);
+    }
+    public static MixedRecoveryReport Probe(MixedNativeReference reference,IEnumerable<string> sources,CancellationToken cancellation,bool preserveSourceOrder) {
         if(reference==null || reference.Format!=1 || string.IsNullOrEmpty(reference.VersionId))
             throw new IOException("An explicit trusted target version is required.");
-        return Probe(reference.VersionId,reference.Files,sources,cancellation);
+        return Probe(reference.VersionId,reference.Files,sources,cancellation,preserveSourceOrder);
     }
     public static MixedRecoveryReport Probe(string versionId,IEnumerable<MixedNativeFile> expected,IEnumerable<string> sources,CancellationToken cancellation) {
+        return Probe(versionId,expected,sources,cancellation,false);
+    }
+    public static MixedRecoveryReport Probe(string versionId,IEnumerable<MixedNativeFile> expected,IEnumerable<string> sources,CancellationToken cancellation,bool preserveSourceOrder) {
         var targets=ValidateTargets(expected);
         var inputs=sources==null?new string[0]:sources.Where(x=>!string.IsNullOrWhiteSpace(x)).Select(System.IO.Path.GetFullPath)
             .Distinct(PathComparer).ToArray();
@@ -86,9 +94,12 @@ public static class MixedSourceRecovery {
         var byName=targets.GroupBy(x=>System.IO.Path.GetFileName(x.Path),PathComparer)
             .ToDictionary(x=>x.Key,x=>x.ToList(),PathComparer);
         using(var sevenZip=new SevenZipSession()) {
-            // Cheap random-access folders/ZIPs first, regardless of ordering.
-            // A solid 7z/RAR should only be opened for files still missing.
-            foreach(string input in inputs.OrderBy(x=>File.Exists(x)&&ArchiveFormat(x)=="7z"?1:0)) {
+            // Generic recovery prefers random-access sources. A caller that
+            // already ranked intact games and exact creator archives can keep
+            // that priority, avoiding broad folders before a tiny RAR remainder.
+            IEnumerable<string> ordered=inputs;
+            if(!preserveSourceOrder)ordered=inputs.OrderBy(x=>File.Exists(x)&&ArchiveFormat(x)=="7z"?1:0);
+            foreach(string input in ordered) {
                 cancellation.ThrowIfCancellationRequested();
                 if(remaining.Count==0)break;
                 if(Directory.Exists(input))ProbeFolder(input,remaining,byName,report,cancellation);
@@ -96,12 +107,23 @@ public static class MixedSourceRecovery {
                     string format=ArchiveFormat(input);
                     if(format=="zip")ProbeZip(input,remaining,byName,report,cancellation);
                     else if(format=="7z")Probe7z(input,remaining,byName,report,sevenZip,cancellation);
-                    else throw new IOException("Unsupported original source archive: "+input);
+                    else ProbeLooseFile(input,remaining,report,cancellation);
                 } else throw new IOException("Original source is missing: "+input);
             }
         }
         report.Missing=remaining.Keys.OrderBy(x=>x,StringComparer.OrdinalIgnoreCase).ToList();
         return report;
+    }
+    static void ProbeLooseFile(string source,Dictionary<string,MixedNativeFile> remaining,
+                               MixedRecoveryReport report,CancellationToken cancellation) {
+        if(IsLink(source))throw new IOException("Original source is a linked file: "+source);
+        long size=new FileInfo(source).Length;
+        var candidates=remaining.Values.Where(x=>x.Size==size).ToArray();
+        if(candidates.Length==0)return;
+        string hash;
+        using(var stream=File.OpenRead(source))hash=HashStream(stream,cancellation,size);
+        foreach(var file in candidates.Where(x=>x.Hash==hash))
+            AddMatch(source,source,"file",file,remaining,report);
     }
     static List<MixedNativeFile> ValidateTargets(IEnumerable<MixedNativeFile> files) {
         if(files==null)throw new IOException("No complete native file inventory was supplied.");
@@ -159,7 +181,10 @@ public static class MixedSourceRecovery {
         List<MixedNativeFile> candidates;
         if(!byName.TryGetValue(System.IO.Path.GetFileName(relative),out candidates))yield break;
         foreach(var candidate in candidates)
-            if(remaining.ContainsKey(candidate.Path)&&MatchPath(relative,candidate.Path))yield return candidate;
+            // Extracted content may start at www, data, or a flat file folder.
+            // Filename is only a candidate filter; size AND authoritative SHA256
+            // must still match before assigning any trusted destination path.
+            if(remaining.ContainsKey(candidate.Path))yield return candidate;
     }
     static void AddMatch(string source,string entry,string kind,MixedNativeFile file,
                          Dictionary<string,MixedNativeFile> remaining,MixedRecoveryReport report) {
@@ -181,7 +206,7 @@ public static class MixedSourceRecovery {
             string current=pending.Pop();
             foreach(string entry in Directory.GetFileSystemEntries(current)) {
                 cancellation.ThrowIfCancellationRequested();
-                if(++count>MaxInventory)throw new IOException("Source folder inventory is unexpectedly large.");
+                if(++count>MaxInventory)throw new IOException("Source folder inventory is unexpectedly large: "+root+". Choose the specific game/content folder instead of its download library.");
                 if(IsLink(entry))throw new IOException("Linked file or directory in original source: "+entry);
                 if(Directory.Exists(entry)){pending.Push(entry);continue;}
                 string relative=entry.Substring(root.TrimEnd('\\','/').Length+1).Replace('\\','/');
@@ -464,9 +489,8 @@ public static class MixedSourceRecovery {
                         if(row.StartsWith("Path = ",StringComparison.Ordinal))path=row.Substring(7).Replace('\\','/');
                         else if(row.StartsWith("Size = ",StringComparison.Ordinal))size=row.Substring(7);
                         else if(row=="Folder = +")folder=true;
-                        else if(row.StartsWith("Symbolic Link = ",StringComparison.Ordinal)||
-                                row.StartsWith("Hard Link = ",StringComparison.Ordinal)||
-                                row.StartsWith("Copy Link = ",StringComparison.Ordinal))link=true;
+                        else if(new[]{"Symbolic Link = ","Hard Link = ","Copy Link = "}.Any(key=>
+                            row.StartsWith(key,StringComparison.Ordinal)&&row.Substring(key.Length).Trim().Length>0))link=true;
                     }
                     if(path==null)continue;
                     if(!SafeRelative(path) || !unique.Add(path) || link)

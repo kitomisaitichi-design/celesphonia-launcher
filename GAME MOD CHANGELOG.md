@@ -1,11 +1,21 @@
 # Magical Girl Celesphonia — Three-in-One 3.3.5
 
-## Creator's English changelog (releases v1.01–v1.052)
+## Creator's English changelog (releases v1.01–v1.053)
 
 These are English translations of developer **Tian Ying (天影)**'s announcements
-dated October 3–16, 2026. They describe **game-mod versions**, not the Windows
+dated October 3–18, 2026. They describe **game-mod versions**, not the Windows
 launcher versions. The October 3 announcement repeated the first v1.01 change
 in consecutive messages; it is listed once below.
+
+### Ver1.053 — October 18, 2026
+
+1. Fixed equipment checks for the Transparing and See-Through Uniform.
+2. Fixed Mashiro's ending CG playing while still inside her training room.
+3. Abyssphonia's star form now automatically uses Regeneration after escaping restraints.
+
+The launcher can install this complete creator overlay directly with GoRPG
+or reconstruct the final game from matching original files across archives,
+extracted folders and partial sources. Intermediate creator versions are not required.
 
 ### v1.01 — October 3, 2026 (11:19–11:20 PM)
 

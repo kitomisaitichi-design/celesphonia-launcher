@@ -80,6 +80,17 @@ public static class MixedSourceRecoveryTests {
             foreach(var file in files)Check(Hash(File.ReadAllBytes(Path.Combine(dest,file.Path.Replace('/',Path.DirectorySeparatorChar))))==file.Hash,"output "+file.Path);
             Check(!Directory.Exists(Path.Combine(dest,"save")),"save not copied into reconstructed native game");
             Check(File.ReadAllText(Path.Combine(folder,"js","plugins.js"))=="patched-plugin","source folder preserved");
+            string loose=Path.Combine(root,"individual-original.fragment");File.WriteAllBytes(loose,plugin);
+            var loosePlan=MixedSourceRecovery.Probe("loose-test",new[]{Target("www/js/plugins.js",plugin)},new[]{loose},CancellationToken.None);
+            Check(loosePlan.Complete,"individual original file matched by exact size and SHA256 regardless of extension");
+            string flat=Path.Combine(root,"flat-data");Put(flat,"System.json",system);
+            var flatPlan=MixedSourceRecovery.Probe("flat-test",new[]{Target("www/data/System.json",system)},new[]{flat},CancellationToken.None);
+            Check(flatPlan.Complete,"partial flat folder restores missing native path from its verified hash");
+            string looseOut=Path.Combine(root,"loose-output");MixedSourceRecovery.Recover(loosePlan,looseOut,CancellationToken.None);
+            Check(File.ReadAllBytes(Path.Combine(looseOut,"www/js/plugins.js")).SequenceEqual(plugin),"individual original file recovered into trusted target path");
+            File.WriteAllBytes(loose,Data("corrupt-source"));
+            Check(!MixedSourceRecovery.Probe("loose-test",new[]{Target("www/js/plugins.js",plugin)},new[]{loose},CancellationToken.None).Complete,
+                "incorrect individual bytes cannot satisfy native hash");
             Fail(()=>MixedSourceRecovery.Recover(report,dest,CancellationToken.None),"existing destination rejected");
             var missing=MixedSourceRecovery.Probe("gorpg-test",files,new[]{folder},CancellationToken.None);
             Check(!missing.Complete && missing.Missing.Count==2,"partial source reports precise missing original files");
@@ -124,8 +135,8 @@ public static class MixedSourceRecoveryTests {
             }
             if(args.Length>1&&args[1]=="resource") {
                 var expectedCounts=new Dictionary<string,int> {
-                    {"gorpg-1-23",7208},{"ch-current",13654},{"maple-1-7-2",9727},
-                    {"three-in-one-3-3-4",9474}
+                    {"gorpg-1-23",7208},{"ch-current",13536},{"maple-1-7-2",9727},
+                    {"three-in-one-3-3-4",9474},{"three-in-one-3-3-5-v1-053",11730}
                 };
                 foreach(var item in expectedCounts) {
                     var reference=MixedSourceRecovery.LoadEmbeddedReference(item.Key);

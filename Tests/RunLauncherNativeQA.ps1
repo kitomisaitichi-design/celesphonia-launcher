@@ -38,6 +38,7 @@ try {
         ('/resource:'+(Join-Path $root 'Vendor\SevenZip\7z.dll')+',Celesphonia.Rar7z.dll')
     )
     $english = Join-Path $root 'Tests\embedded-english-release.zip'
+    $resources += @(Get-ChildItem -LiteralPath $root -Filter 'NativeReferenceFiles-three-in-one-3-3-5-*.json' -File | ForEach-Object { '/resource:' + $_.FullName + ',Celesphonia.NativeReferenceFiles.' + $_.BaseName.Substring('NativeReferenceFiles-'.Length) + '.json' })
     if(Test-Path -LiteralPath $english){
         $resources += '/resource:'+$english+',Celesphonia.EnglishRelease.zip'
     }

@@ -55,13 +55,63 @@ public static class UpgradeSupport {
             ||a.RequiredBase!="gorpg-1-23"||b.RequiredBase!=a.RequiredBase
             ||!a.CompleteOverlay||!b.CompleteOverlay
             ||a.SaveGeneration<101||a.SaveGeneration>=b.SaveGeneration
-            ||(b.SaveGeneration!=1051&&b.SaveGeneration!=1052)
+            ||b.SaveGeneration<1051
             ||a.Files==null||b.Files==null||a.Files.Count==0||b.Files.Count==0)
             return false;
         return a.Files.Keys.All(path=>b.Files.ContainsKey(path));
     }
     public static bool IsDirect1052(string source,string target){
         return target=="three-in-one-3-3-5-v1-052"&&IsDirectCreatorOverlay(source,target);
+    }
+    // Reconstruct the FINAL registered target from exact original bytes. Files
+    // replaced by the creator overlay need not exist in the original GoRPG set.
+    // Compatible progress is backed up separately; cross-branch saves stay out.
+    public static Profile InstallFromOriginalFiles(IEnumerable<string> inputs,string installRoot,
+                                  string targetId,Profile carrySource,CancellationToken cancellation) {
+        var recipe=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==targetId);
+        if(recipe==null||recipe.Family!="combined-story"||!recipe.CompleteOverlay)
+            throw new IOException("Choose a registered complete creator target.");
+        var reference=MixedSourceRecovery.LoadEmbeddedReference(targetId);
+        var report=MixedSourceRecovery.Probe(reference,inputs,cancellation,true);
+        if(!report.Complete)throw new IOException("Found "+report.FoundCount+"/"+report.RequiredCount+
+            " exact files for "+recipe.Name+". Missing "+report.Missing.Count+": "+
+            string.Join(", ",report.Missing.Take(8).ToArray())+
+            ". Add original archives, folders or the missing individual files. Intermediate versions are not required.");
+        string sourceId=null,backup=null,full=Path.GetFullPath(installRoot);
+        if(carrySource!=null){
+            sourceId=UniversalSupport.Identify(carrySource.Root);RequireTransfer(sourceId,targetId);
+            if(Store.Running(new Settings{Profiles=new List<Profile>{carrySource}}))
+                throw new IOException("Save and close the source game before upgrading.");
+            VerifyKnownCreatorSource(carrySource,sourceId,cancellation);
+            string prefix=Path.GetFullPath(carrySource.Root).TrimEnd('\\')+"\\";
+            if((full.TrimEnd('\\')+"\\").StartsWith(prefix,StringComparison.OrdinalIgnoreCase))
+                throw new IOException("Install outside the source game folder.");
+            backup=Store.Backup(carrySource);Store.VerifyBackup(backup);
+        }
+        Directory.CreateDirectory(full);
+        string root=Store.Child(full,"Upgrade-335-"+recipe.SaveGeneration+"-"+Guid.NewGuid().ToString("N").Substring(0,8));
+        try{
+            MixedSourceRecovery.Recover(report,root,cancellation);
+            if(UniversalSupport.Identify(root)!=targetId)throw new IOException("Recovered target version does not match.");
+            var state=new ReconstructionState{format=2,files=reference.Files.Select(x=>
+                new ReconstructionFile{path=x.Path,hash=x.Hash,size=x.Size}).ToList()};
+            File.WriteAllText(Path.Combine(root,"launcher-reconstruction.json"),Store.Json.Serialize(state),new UTF8Encoding(false));
+            var game=Store.Detect(root,recipe.Name);Directory.CreateDirectory(game.SavePath);
+            if(backup!=null)foreach(string file in Store.SaveFiles(backup)){
+                string destination=Path.Combine(game.SavePath,Path.GetFileName(file));File.Copy(file,destination);
+                if(Store.Hash(destination)!=Store.Hash(file))throw new IOException("Migrated save verification failed.");
+            }
+            File.WriteAllText(Path.Combine(root,"launcher-upgrade.json"),Store.Json.Serialize(new{
+                sourceVersion=sourceId,targetVersion=targetId,sourceBackup=backup,carriedSaves=backup!=null,
+                reverseAllowed=false,verifiedOriginalFiles=report.RequiredCount,sourceKind="pooled original files"}),new UTF8Encoding(false));
+            game.Note="Independent "+recipe.Name+" from "+report.RequiredCount+" exact original file hashes; "+
+                (backup==null?"empty saves":"compatible saves backed up and verified")+"; sources retained";
+            return game;
+        }catch{
+            if(Directory.Exists(root)&&Path.GetDirectoryName(Path.GetFullPath(root)).Equals(full,StringComparison.OrdinalIgnoreCase))
+                ExtendedSafeCleanup.RemoveTreeSafely(root);
+            throw;
+        }
     }
     public static bool MayUpgrade(string source,string target){
         var recipe=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==target);

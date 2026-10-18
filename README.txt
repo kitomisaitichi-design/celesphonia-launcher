@@ -1,5 +1,15 @@
 CELESPHONIA MOD LIBRARY
 
+LAUNCHER 1.0.16 -- VER1.053 FROM ORIGINAL FILES
+Install creator Ver1.053 directly from GoRPG plus the 1.053 ZIP/RAR or
+extracted content. No intermediate Three-in-One version or delta pack is
+required. Add partial archives, folders or individual original files with
+Add source files; matching bytes from CH/Maple/GoRPG may fill gaps. Exact
+size/SHA-256 checks identify the final build and report any missing files.
+Forward 3.3.5 upgrades back up compatible saves; other branches stay separate.
+The version-specific partial English pack includes all four changed display
+strings, the existing illustrated help and the wardrobe/runtime repairs.
+
 FRESH THREE-IN-ONE 3.3.5 VER1.052 FROM GORPG ZIP + CREATOR RAR
 Download the clean GoRPG 1.23 game ZIP (or complete split 7z archive)
 and the creator's complete Three-in-One 3.3.5 Ver1.052 RAR.
