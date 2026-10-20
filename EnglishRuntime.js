@@ -431,18 +431,30 @@
         var native=TickerManager.show, template='\\i[\\v[119]]\\c[\\v[118]]\\v[\\v[2995]]';
         var wrapped=function(text){
             var variables=global.$gameVariables;
-            if (text!==template || !variables || typeof variables.value!=='function' ||
-                Number(variables.value(2995))!==2944) return native.apply(this,arguments);
-            var raw=variables.value(2944);
+            if (text!==template || !variables || typeof variables.value!=='function') return native.apply(this,arguments);
+            var messageId=Number(variables.value(2995));
+            if(messageId!==2944&&messageId!==2974)return native.apply(this,arguments);
+            var raw=variables.value(messageId);
             if (typeof raw!=='string' || raw.indexOf('\x1b')<0) return native.apply(this,arguments);
             var source=raw.replace(/\x1b/g,'\\');
             if (!own.call(dict,source)) return native.apply(this,arguments);
             var target=dict[source];
             if (target===source || typeof target!=='string') return native.apply(this,arguments);
             var rendered=target.replace(/\\/g,'\x1b');
+            if(messageId===2974){
+                // CE32 stores two escapes before actor 360. Ticker's nested
+                // variable expansion leaves one escape before its name; an
+                // English name then becomes a control code (e.g. AFTERNOON).
+                // Resolve the reviewed time field in this synchronous display
+                // argument, before insertion, keeping actor/save values native.
+                if(source!=='到了\\\\N[360]。'||!global.$gameActors)return native.apply(this,arguments);
+                var actor=$gameActors.actor(360),name=actor&&actor.name();
+                if(typeof name!=='string'||!name)return native.apply(this,arguments);
+                rendered=normalizeCodes(target).replace(/\\N\[360\]/gi,function(){return translate(name);});
+            }
             var originalReader=variables.value, wasOwn=own.call(variables,'value');
             variables.value=function(id){
-                return Number(id)===2944 ? rendered : originalReader.apply(this,arguments);
+                return Number(id)===messageId ? rendered : originalReader.apply(this,arguments);
             };
             try{return native.apply(this,arguments);}
             finally{

@@ -34,7 +34,7 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.16";
+    public const string CurrentVersion="1.0.17";
     public const string OfficialRepository="kitomisaitichi-design/celesphonia-launcher";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";
