@@ -48,7 +48,8 @@ public static class RuntimeSupport {
         html=html.Insert(head.Index+head.Length,"\n<base href=\""+baseUrl+"\">\n");
         var mainScript=Regex.Match(html,@"<script\b[^>]*\bsrc\s*=\s*['""]js/main\.js['""][^>]*>",RegexOptions.IgnoreCase);
         if(!mainScript.Success)throw new IOException("Runtime controls need a standard js/main.js entry.");
-        html=html.Insert(mainScript.Index,"<script src=\""+new Uri(Path.Combine(app,"controls.js")).AbsoluteUri+"\"></script>\n");
+        html=html.Insert(mainScript.Index,"<script src=\""+new Uri(Path.Combine(app,"controls.js")).AbsoluteUri+"\"></script>\n"+
+            "<script src=\""+new Uri(Path.Combine(app,"stream-repeat-rescue.js")).AbsoluteUri+"\"></script>\n");
         // Resolve relative data and plugin requests against the original web root.
         // No native data, scripts, entry pages or source saves are written here.
         File.WriteAllText(Path.Combine(app,"index.html"),html,new UTF8Encoding(false));
@@ -65,6 +66,9 @@ public static class RuntimeSupport {
         var config=new{panel=new Uri(panel).AbsoluteUri,root=p.Root,web=web,baseWeb=baseWeb,home=home,save=saves,profile=p.Name,version=id??"unrecognized",dictionary=dictionary};
         string prefix="window.CelesphoniaControlConfig="+Store.Json.Serialize(config).Replace("\u2028","\\u2028").Replace("\u2029","\\u2029")+";\n";
         File.WriteAllText(Path.Combine(app,"controls.js"),prefix+Encoding.UTF8.GetString(Resource("RuntimeOfflineLabels.js"))+"\n"+Encoding.UTF8.GetString(Resource("RuntimePanel.js")),new UTF8Encoding(false));
+        // The RPG Maker MPP_ChoiceEX PC menu can leave Window_Message paused
+        // after clearing a choice. Restore only the pending repeat-stream menu.
+        File.WriteAllBytes(Path.Combine(app,"stream-repeat-rescue.js"),Resource("StreamRepeatChoiceRescue.js"));
         manifest["name"]="celesphonia-controls-"+p.Id;manifest["main"]="index.html";
         manifest.Remove("node-main");manifest.Remove("inject_js_start");manifest.Remove("inject-js-start");manifest.Remove("inject-js-end");
         manifest.Remove("inject_js_end");

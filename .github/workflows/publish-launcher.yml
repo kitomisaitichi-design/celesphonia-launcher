@@ -60,6 +60,9 @@ jobs:
             # pictures are embedded inside the EXE, never separate ZIP files.
             assert len(allowed) == 38
             executable = bundle.read('Celesphonia Portable Switcher.exe')
+            rescue = pathlib.Path('StreamRepeatChoiceRescue.js').read_bytes()
+            assert rescue in executable, 'Missing verified repeat-stream choice rescue in EXE'
+            assert b'StreamRepeatChoiceRescue.js' in executable, 'Embedded rescue resource absent'
             native_streams=[]
             for candidate in re.finditer(b'\x1f\x8b\x08', executable):
               try:
