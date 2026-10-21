@@ -1,6 +1,11 @@
 CELESPHONIA MOD LIBRARY
 
-LAUNCHER 1.0.16 -- VER1.053 FROM ORIGINAL FILES
+LAUNCHER 1.0.19 -- REPEAT STREAMING WITH RUNTIME CONTROLS OFF
+The enabled partial-English overlay includes the repeat-streaming repair.
+The runtime-controls checkbox can stay off. Switch & Play automatically
+refreshes older enabled overlays. Native stream prerequisites are preserved.
+
+VER1.053 FROM ORIGINAL FILES
 Install creator Ver1.053 directly from GoRPG plus the 1.053 ZIP/RAR or
 extracted content. No intermediate Three-in-One version or delta pack is
 required. Add partial archives, folders or individual original files with

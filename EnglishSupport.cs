@@ -78,7 +78,14 @@ public static class EnglishSupport {
     // This markup is byte-for-byte reconstructible from the original entry.
     // Stale pre-state English installs can be recovered only when that exact
     // reversible injection and a matching original-entry.bin are both present.
-    internal const string Injection="<!-- Celesphonia reversible English display overlay -->\r\n        <script src=\"celesphonia-english/dictionary.js\"></script>\r\n        <script src=\"celesphonia-english/runtime.js\"></script>\r\n        ";
+    internal const string LegacyInjection="<!-- Celesphonia reversible English display overlay -->\r\n        <script src=\"celesphonia-english/dictionary.js\"></script>\r\n        <script src=\"celesphonia-english/runtime.js\"></script>\r\n        ";
+    internal const string Injection=LegacyInjection+"<script src=\"celesphonia-english/stream-repeat-rescue.js\"></script>\r\n        ";
+    static byte[] StreamRepair(){
+        using(var source=typeof(EnglishSupport).Assembly.GetManifestResourceStream("Celesphonia.StreamRepeatChoiceRescue.js")){
+            if(source==null)throw new IOException("The streaming compatibility repair is missing from this launcher.");
+            using(var output=new MemoryStream()){source.CopyTo(output);return output.ToArray();}
+        }
+    }
     public static string OriginalFile(string root,string file){
         if(!Path.GetExtension(file).Equals(".html",StringComparison.OrdinalIgnoreCase)||
             !file.Equals(Entry(root),StringComparison.OrdinalIgnoreCase))return file;
@@ -100,7 +107,7 @@ public static class EnglishSupport {
         if(!script.Success||html.IndexOf("celesphonia-english/",StringComparison.OrdinalIgnoreCase)>=0)
             throw new IOException("The English index backup is not an intact original page.");
         byte[] exact=new UTF8Encoding(false).GetBytes(html.Insert(script.Index,Injection));
-        if(!File.ReadAllBytes(file).SequenceEqual(exact))
+        if(!File.ReadAllBytes(file).SequenceEqual(exact)&&!File.ReadAllBytes(file).SequenceEqual(new UTF8Encoding(false).GetBytes(html.Insert(script.Index,LegacyInjection))))
             throw new IOException("The English index.html differs from the known reversible injection. Keep its custom edits and supply an intact original game/entry page; automatic replacement is unsafe.");
         return original;
     }
@@ -128,6 +135,8 @@ public static class EnglishSupport {
             result.UpdateAvailable=state.DictionaryHash!=result.Pack.DictionaryHash||
                 result.AppliedTexts!=result.AvailableTexts||
                 state.Assets["runtime.js"]!=EnglishRelease.Hash(EnglishRelease.Runtime());
+            string repairHash;
+            if(!state.Assets.TryGetValue("stream-repeat-rescue.js",out repairHash)||repairHash!=EnglishRelease.Hash(StreamRepair()))result.UpdateAvailable=true;
             var pictures=ImagesFor(result.VersionId);
             if(pictures!=null)foreach(var image in pictures.images){
                 var originalAsset=Store.Child(Store.WebRoot(profile.Root),
@@ -272,7 +281,8 @@ public static class EnglishSupport {
         // Restore entry before updating assets: a failed update leaves the original game launchable.
         if(old!=null)Atomic(entry,original);
         Atomic(Path.Combine(folder,"dictionary.js"),payload);Atomic(Path.Combine(folder,"runtime.js"),runtimeBytes);
-        foreach(string name in new[]{"dictionary.js","runtime.js"})state.Assets[name]=Store.Hash(Path.Combine(folder,name));
+        Atomic(Path.Combine(folder,"stream-repeat-rescue.js"),StreamRepair());
+        foreach(string name in new[]{"dictionary.js","runtime.js","stream-repeat-rescue.js"})state.Assets[name]=Store.Hash(Path.Combine(folder,name));
         if(artwork!=null&&artwork.images.Count>0){
             Directory.CreateDirectory(Path.Combine(folder,"images"));
             foreach(var image in artwork.images){

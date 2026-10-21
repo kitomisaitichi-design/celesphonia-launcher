@@ -7,6 +7,7 @@
  */
 (function(){
   'use strict';
+  if(window.CelesphoniaStreamChoiceRescue)return;
   var original=Window_Message.prototype.update;
   var repairs=0;
   Window_Message.prototype.update=function(){

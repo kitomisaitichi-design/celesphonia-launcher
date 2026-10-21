@@ -73,11 +73,22 @@ def main():
                         (folder/'dictionary.json').write_bytes(b'{}');m=dict(expected);m['DictionaryHash']=c.sha(b'{}');m['TranslatedTexts']=0;c.dump(folder/'manifest.json',m)
                     elif case=='missing-catalog-and-runtime':(folder/'catalog.json').unlink();(portable/'EnglishRuntime.js').unlink()
                     run(exe,'--english-apply',game)
+                    if case=='clean-extraction':
+                        # Upgrade the actual two-asset overlay layout from 1.0.18.
+                        old_entry=(web/'index.html').read_bytes().replace(b'<script src="celesphonia-english/stream-repeat-rescue.js"></script>\r\n        ',b'')
+                        legacy=c.load(web/'celesphonia-english/state.json');legacy['Assets'].pop('stream-repeat-rescue.js');legacy['PatchedHash']=c.sha(old_entry)
+                        (web/'index.html').write_bytes(old_entry);c.dump(web/'celesphonia-english/state.json',legacy)
+                        pending=fixture/'legacy-status.json';run(exe,'--english-status',game,pending);pending=c.load(pending)
+                        assert pending['Enabled'] and pending['UpdateAvailable'] and not pending['Modified'],pending
+                        run(exe,'--english-apply',game)
                     statusfile=fixture/'status.json';run(exe,'--english-status',game,statusfile);status=c.load(statusfile)
                     assert status['Enabled'] and not status['Modified'] and not status['UpdateAvailable'],(ident,case,status)
                     assert status['Pack']['DictionaryHash']==expected['DictionaryHash'] and status['Pack']['TranslatedTexts']==expected['TranslatedTexts']
                     state=c.load(web/'celesphonia-english/state.json');assert state['DictionaryHash']==expected['DictionaryHash']
                     assert c.sha((web/'celesphonia-english/runtime.js').read_bytes())==c.sha(z.read('EnglishRuntime.js'))
+                    repair=web/'celesphonia-english/stream-repeat-rescue.js'
+                    assert repair.is_file() and c.sha(repair.read_bytes())==state['Assets']['stream-repeat-rescue.js']
+                    assert b'celesphonia-english/stream-repeat-rescue.js' in (web/'index.html').read_bytes()
                     assert 'Private custom label' in (web/'celesphonia-english/dictionary.js').read_text('utf8')
                     assert (folder/'user-translations.json').read_bytes()==custom
                     assert (portable/'profiles.json').read_bytes()==original_config and (portable/'private-user-note.txt').read_bytes()==b'keep this unrelated file'

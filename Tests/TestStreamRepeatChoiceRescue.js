@@ -15,6 +15,9 @@ function Window_Message(){}
 Window_Message.prototype.update=function(){lastUpdate={paused:this.pause,wasCleared:this._textState===null};};
 context.Window_Message=Window_Message;
 vm.runInNewContext(source,context,{filename:'StreamRepeatChoiceRescue.js'});
+const installedUpdate=Window_Message.prototype.update;
+vm.runInNewContext(source,context,{filename:'StreamRepeatChoiceRescue.js'});
+assert.strictEqual(Window_Message.prototype.update,installedUpdate,'Overlay and F8 fallback must not wrap the repair twice');
 function run({pause=true,loaded=true,first=false,mapId=5,choice=true}={}){
   context.$gameMap={mapId:()=>mapId};
   context.$gameSwitches={value:()=>!first};
@@ -34,4 +37,4 @@ assert.strictEqual(run({mapId:6}).pause,true,'Other maps unaffected');
 assert.strictEqual(run({choice:false}).pause,true,'Unrelated choices unaffected');
 assert.strictEqual(run({pause:false}).pause,false,'Unpaused message unchanged');
 assert.strictEqual(context.CelesphoniaStreamChoiceRescue.count(),2,'Only the two explicitly repeated valid cases should trigger');
-console.log('STREAM_REPEAT_RESCUE: 7 scenarios PASS');
+console.log('STREAM_REPEAT_RESCUE: 7 scenarios and duplicate loading PASS');
