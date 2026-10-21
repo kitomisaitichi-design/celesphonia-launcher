@@ -174,6 +174,17 @@ public static class EnglishSupport {
         return data;
     }
     static void RequireClosed(Profile profile){var settings=Store.Read();if(!settings.Profiles.Any(x=>x.Root.Equals(profile.Root,StringComparison.OrdinalIgnoreCase)))settings.Profiles.Add(profile);if(Store.Running(settings))throw new IOException("Save and close the game before changing its English overlay.");}
+    public static bool RefreshEnabled(Profile profile,Action<string> progress){
+        var status=Status(profile);
+        if(status.Modified)throw new IOException("English overlay verification failed: "+status.Detail);
+        if(!status.Enabled||!status.UpdateAvailable)return false;
+        if(progress!=null)progress("Updating the enabled English patch and compatibility fixes…");
+        Apply(profile);
+        var updated=Status(profile);
+        if(!updated.Enabled||updated.Modified||updated.UpdateAvailable)
+            throw new IOException("The enabled English patch could not be updated: "+updated.Detail);
+        return true;
+    }
     public static void Apply(Profile profile){RequireClosed(profile);ApplyCore(profile,null);}
     internal static void ApplyCore(Profile profile,string runtimeOverride){
         string id=UniversalSupport.Identify(profile.Root);if(id==null||id=="ch-current")throw new IOException("Choose Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 trial. CH is an English reference only.");

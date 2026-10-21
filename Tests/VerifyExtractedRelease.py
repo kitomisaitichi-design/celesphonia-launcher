@@ -80,7 +80,10 @@ def main():
                         (web/'index.html').write_bytes(old_entry);c.dump(web/'celesphonia-english/state.json',legacy)
                         pending=fixture/'legacy-status.json';run(exe,'--english-status',game,pending);pending=c.load(pending)
                         assert pending['Enabled'] and pending['UpdateAvailable'] and not pending['Modified'],pending
-                        run(exe,'--english-apply',game)
+                        refresh=fixture/'refresh.json';run(exe,'--english-refresh',game,refresh);assert c.load(refresh)['updated']
+                        current_state=(web/'celesphonia-english/state.json').read_bytes()
+                        run(exe,'--english-refresh',game,refresh);assert not c.load(refresh)['updated']
+                        assert (web/'celesphonia-english/state.json').read_bytes()==current_state,'Current overlay was unnecessarily rewritten'
                     statusfile=fixture/'status.json';run(exe,'--english-status',game,statusfile);status=c.load(statusfile)
                     assert status['Enabled'] and not status['Modified'] and not status['UpdateAvailable'],(ident,case,status)
                     assert status['Pack']['DictionaryHash']==expected['DictionaryHash'] and status['Pack']['TranslatedTexts']==expected['TranslatedTexts']
@@ -95,6 +98,9 @@ def main():
                     assert (web/'save/file1.rpgsave').read_bytes()==b'isolated synthetic save sentinel'
                     assert all(c.sha((web/n).read_bytes())==h for n,h in marks.items())
                     run(exe,'--english-restore',game);assert (web/'index.html').read_bytes()==original
+                    if case=='clean-extraction':
+                        run(exe,'--english-refresh',game,refresh);assert not c.load(refresh)['updated']
+                        assert (web/'index.html').read_bytes()==original,'Automatic refresh enabled a disabled English overlay'
                     rows.append({'version':ident,'case':case,'status':'PASS'})
                 # All game files are synthetic/copied immutable fingerprints in this private root.
                 for p in sorted(game.rglob('*'),key=lambda p:len(p.parts),reverse=True):

@@ -205,6 +205,7 @@ public static class Store {
         if(!Path.GetFullPath(p.SavePath).Equals(Path.GetFullPath(detected.SavePath),StringComparison.OrdinalIgnoreCase))throw new IOException("This profile's save path no longer matches the installed game. Add the moved game folder again before launching.");
         using(var binary=File.OpenRead(Child(p.Root,p.Exe)))if(binary.ReadByte()!='M'||binary.ReadByte()!='Z')throw new IOException("The selected game executable is not a Windows program.");
         report("Checking translation and game scripts…");
+        EnglishSupport.RefreshEnabled(p,report);
         RecipeSupport.VerifyProfile(p,true);
         report("Backing up saves…");
         Backup(p);

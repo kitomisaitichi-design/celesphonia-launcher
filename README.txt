@@ -1,6 +1,12 @@
 CELESPHONIA MOD LIBRARY
 
-LAUNCHER 1.0.19 -- REPEAT STREAMING WITH RUNTIME CONTROLS OFF
+LAUNCHER 1.0.20 -- AUTOMATIC ENGLISH PATCH REFRESH ON PLAY
+After updating the launcher, click Play or Switch & Play once. Both normal
+and F8-control launches refresh outdated enabled English patches, including
+the repeated-streaming repair. No removal/reapplication is needed.
+English-off games stay off. Existing saves and custom labels are preserved.
+
+REPEAT STREAMING WITH RUNTIME CONTROLS OFF
 The enabled partial-English overlay includes the repeat-streaming repair.
 The runtime-controls checkbox can stay off. Switch & Play automatically
 refreshes older enabled overlays. Native stream prerequisites are preserved.

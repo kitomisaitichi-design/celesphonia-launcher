@@ -319,6 +319,7 @@ public static class PortableMain {
             }
             if(args.Length>0 && args[0]=="--test-english") {EnglishTests.Run();return 0;}
             if(args.Length>1 && args[0]=="--english-apply") {EnglishSupport.Apply(Store.Detect(args[1],"Selected game"));return 0;}
+            if(args.Length>1 && args[0]=="--english-refresh") {bool updated=EnglishSupport.RefreshEnabled(Store.Detect(args[1],"Selected game"),null);if(args.Length>2)File.WriteAllText(args[2],Store.Json.Serialize(new{updated=updated}),new UTF8Encoding(false));return 0;}
             if(args.Length>1 && args[0]=="--english-restore") {EnglishSupport.Restore(Store.Detect(args[1],"Selected game"));return 0;}
             if(args.Length>0 && args[0]=="--build") {DeltaSupport.Build(args[1],args[2]);return 0;}
             if(args.Length>0 && args[0]=="--build-any") {UniversalSupport.Build(args[1],args[2]);return 0;}

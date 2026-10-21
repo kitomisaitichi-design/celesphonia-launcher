@@ -1,6 +1,6 @@
 # Celesphonia Portable Launcher
 
-**1.0.19:** The partial-English overlay includes the repeat-streaming repair in ordinary game launches. The runtime-controls checkbox can stay off. Switch & Play refreshes older enabled overlays automatically; the first-stream unlock conditions and repeat-stream prerequisites remain native.
+**1.0.20:** After updating the launcher, click Play or Switch & Play once. Both normal and F8-control launches now refresh an outdated enabled English patch automatically, including the repeat-streaming repair. Removing/reapplying English is unnecessary. English-off games stay off; native stream prerequisites and existing saves remain intact.
 
 Portable Windows launcher for supported Celesphonia mod releases. It detects compatible installed game folders and renamed ZIP/RAR sources using version-specific internal fingerprints; supports verified mod upgrades and save preservation; provides version-specific reversible English overlays and optional F8 runtime controls.
 

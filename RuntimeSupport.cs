@@ -99,6 +99,7 @@ public static class RuntimeSupport {
         var detected=Store.Detect(p.Root,p.Name);
         if(!File.Exists(Store.Child(p.Root,p.Exe)))p.Exe=detected.Exe;
         if(progress!=null)progress("Preparing untouched-game runtime controls…");
+        EnglishSupport.RefreshEnabled(p,progress);
         RecipeSupport.VerifyProfile(p,true);
         string app=Prepare(p),home=Path.GetDirectoryName(app);
         var started=Process.Start(new ProcessStartInfo(Store.Child(app,detected.Exe),"--user-data-dir="+Store.Q(Path.Combine(home,"browser"))+" --nwapp="+Store.Q(app)){WorkingDirectory=app,UseShellExecute=false});
