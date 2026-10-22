@@ -5,17 +5,8 @@
 These are English translations of developer **Tian Ying (天影)**'s announcements
 dated October 3–18, 2026. They describe **game-mod versions**, not the Windows
 launcher versions. The October 3 announcement repeated the first v1.01 change
-in consecutive messages; it is listed once below.
-
-### Ver1.053 — October 18, 2026
-
-1. Fixed equipment checks for the Transparing and See-Through Uniform.
-2. Fixed Mashiro's ending CG playing while still inside her training room.
-3. Abyssphonia's star form now automatically uses Regeneration after escaping restraints.
-
-The launcher can install this complete creator overlay directly with GoRPG
-or reconstruct the final game from matching original files across archives,
-extracted folders and partial sources. Intermediate creator versions are not required.
+in consecutive messages; it is listed once below. Releases are ordered by date,
+oldest to newest; same-day releases follow their version order.
 
 ### v1.01 — October 3, 2026 (11:19–11:20 PM)
 
@@ -70,11 +61,17 @@ extracted folders and partial sources. Intermediate creator versions are not req
 
 1. Fixed an issue that prevented **restraint effects from taking effect on boss-type enemies**.
 
+### Ver1.053 — October 18, 2026
+
+1. Fixed equipment checks for the Transparing and See-Through Uniform.
+2. Fixed Mashiro's ending CG playing while still inside her training room.
+3. Abyssphonia's star form now automatically uses Regeneration after escaping restraints.
+
 ---
 
 ## Source and terminology
 
-Translated from the author's Telegram messages supplied October 10 and 16, 2026,
+Translated from the author's Telegram messages supplied October 10, 16 and 18, 2026,
 and cross-checked against the original Chinese `三合一体验版修复日志.txt`
 included in the creator archives. The developer's original numbering
 **#200**, **#201** and **#203–206** denotes changes inherited from the full release; these

@@ -381,8 +381,8 @@ public class PolishedLauncher : ReplacementAwareForm {
         LabelAt(helpPage,"Install → choose a version → choose original files.\r\nUse a complete creator update plus clean GoRPG for new installations. An existing compatible version can be upgraded with verified save carryover.",0,144,805,87,10,false,muted);
         LabelAt(helpPage,"MANAGING GAMES",0,248,790,24,10,true,muted);
         LabelAt(helpPage,"Right-click an installed game (or use Manage / Uninstall) to play, open folders, back up saves, upgrade, change English, or remove a version.\r\nUninstall only removes hash-verified managed files; archives, saves and unknown files stay.",0,284,805,87,10,false,muted);
-        ButtonAt(helpPage,"Quick start guide",0,390,281,44,()=>Guard(()=>Process.Start(new ProcessStartInfo(Path.Combine(Store.Home,"README.txt")){UseShellExecute=true})),true);
-        ButtonAt(helpPage,"Game changelog",294,390,245,44,()=>Guard(OpenGameChangelog),false);
+        ButtonAt(helpPage,"Quick start guide",0,390,281,44,()=>OpenNotes(0),true);
+        ButtonAt(helpPage,"Notes & changelogs",294,390,245,44,()=>OpenNotes(1),false);
         ButtonAt(helpPage,"Open delta packs",552,390,260,44,()=>Guard(()=>{Directory.CreateDirectory(Path.Combine(Store.Home,"Delta Packs"));Process.Start("explorer.exe",Store.Q(Path.Combine(Store.Home,"Delta Packs")));}),false);
         LabelAt(helpPage,"APPEARANCE",0,471,400,23,10,true,muted);
         themePicker=new ChoicePicker{Location=new Point(0,503),Size=new Size(310,42),Font=Font,BackColor=card,ForeColor=ForeColor,AccessibleName="Launcher theme"};themePicker.Items.AddRange(new object[]{"Midnight","Violet","Ocean","Daylight"});themePicker.SelectedItem=settings.LauncherTheme??"Midnight";helpPage.Controls.Add(themePicker);
@@ -392,10 +392,10 @@ public class PolishedLauncher : ReplacementAwareForm {
         ButtonAt(helpPage,"Check launcher updates",0,581,310,37,()=>CheckLauncherUpdate(),true);
         ButtonAt(helpPage,"GitHub source",330,581,236,37,()=>ConfigureLauncherUpdates(),false);
     }
-    void OpenGameChangelog(){
-        string file=Path.Combine(Store.Home,"GAME MOD CHANGELOG.md");
-        if(!File.Exists(file))LauncherUpdate.ExportChangelog(file);
-        Process.Start(new ProcessStartInfo(file){UseShellExecute=true});
+    NotesReader notesReader;
+    void OpenNotes(int source){
+        if(notesReader==null||notesReader.IsDisposed){notesReader=new NotesReader(source);notesReader.Show(this);}
+        else{notesReader.SelectSource(source);notesReader.Activate();}
     }
     bool ConfigureLauncherUpdates(){
         if(busy)return false;

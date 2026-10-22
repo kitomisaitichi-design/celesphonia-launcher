@@ -338,6 +338,53 @@
             }
         };
     }
+    function resistancePicture(sprite,info){
+        // CE806 owns two five-row D_TEXT pictures, spaced exactly 143px apart.
+        // Render their local bitmap as cells; never rewrite picture/variable text.
+        if(!info||info.size!==18||!global.SceneManager||typeof SceneManager.getHiddenWindow!=='function')return false;
+        var labels=sprite._pictureId===86?['瘴气耐性','拘束耐性','羞耻耐性','催眠耐性','(?:淫咒|诅咒)耐性']:
+            sprite._pictureId===87?['快感耐性','发情耐性','拘束回避','陷阱回避','服装耐久']:null;
+        if(!labels||typeof info.originalValue!=='string'||typeof info.value!=='string')return false;
+        var source=info.originalValue.replace(/\x1b/g,'\\').trim().split(/\r?\n/),lines=info.value.trim().split(/\r?\n/);
+        if(source.length!==5||lines.length!==5)return false;
+        var names=sprite._pictureId===86?['Miasma Res','Bind Res','Shame Res','Hypno Res','Curse Res']:
+            ['Pleasure Res','Arousal Res','Bind Evade','Trap Evade','Clothing HP'];
+        var rows=[];
+        for(var i=0;i<5;i++){
+            if(!new RegExp('^\\\\c\\[16\\]'+labels[i]+'(?:\\s|$)','i').test(source[i]))return false;
+            var chars=[],color=0,match,re=/\x1bC\[(\d+)\]|([^\x1b]+)/gi;
+            while((match=re.exec(lines[i]))) {
+                if(match[1]!==undefined)color=Number(match[1]);
+                else for(var j=0;j<match[2].length;j++)chars.push({text:match[2][j],color:color});
+            }
+            var plain=chars.map(function(c){return c.text;}).join(''),tail=/(-?\d+(?:\.\d+)?\s*%|\d+\s*\/\s*\d+|-\s*\/\s*-)\s*$/.exec(plain);
+            if(!tail)return false;
+            rows.push({label:names[i],value:tail[1],chars:chars.slice(tail.index,tail.index+tail[1].length)});
+        }
+        var hidden=SceneManager.getHiddenWindow(),nativeBitmap=sprite.bitmap;
+        if(!nativeBitmap)return false;
+        var bitmap=new Bitmap(143,nativeBitmap.height),rowHeight=nativeBitmap.height/5;
+        bitmap.fontFace=nativeBitmap.fontFace;sprite.bitmap=bitmap;sprite.applyTextDecoration();
+        rows.forEach(function(row,index){
+            var size=16,valueWidth,labelWidth;
+            do {
+                bitmap.fontSize=size;
+                valueWidth=bitmap.measureTextWidth(row.value);labelWidth=bitmap.measureTextWidth(row.label);
+                if(labelWidth+valueWidth+10<=135||size===12)break;
+                size--;
+            }while(size>=12);
+            valueWidth=Math.min(valueWidth,88);var valueLeft=139-valueWidth,labelSpace=valueLeft-8;
+            bitmap.textColor=hidden.textColor(16);
+            bitmap.drawText(row.label,2,index*rowHeight,labelSpace,rowHeight,'left');
+            // Preserve the native per-character colors, including red values.
+            var measured=bitmap.measureTextWidth(row.value),scale=measured?valueWidth/measured:1,x=valueLeft;
+            row.chars.forEach(function(c){var width=bitmap.measureTextWidth(c.text)*scale;bitmap.textColor=hidden.textColor(c.color);bitmap.drawText(c.text,x,index*rowHeight,width,rowHeight,'left');x+=width;});
+            row.fontSize=size;row.labelRight=2+Math.min(labelWidth,labelSpace);row.valueLeft=valueLeft;row.valueRight=139;
+            delete row.chars;
+        });
+        sprite._celesphoniaEnglishResistanceLayout={width:143,rows:rows};
+        return true;
+    }
     function fitSingleLine(win,text,width){
         var prior=win.contents.fontSize,chosen,size=win.standardFontSize(),rendered=win.convertEscapeCharacters(text);
         var icons=(rendered.match(/\x1bi\[\d+\]/gi)||[]).length,plain=rendered.replace(/\x1b[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g,'').replace(/\x1b[.$|!><^{}\\]/g,'');
@@ -971,6 +1018,12 @@
             var makePicture = Sprite_Picture.prototype.makeDynamicBitmap;
             Sprite_Picture.prototype.makeDynamicBitmap = function () {
                 var info = this.dTextInfo, raw = info && info.originalValue;
+                if((this._pictureId===86||this._pictureId===87)&&typeof raw==='string'&&
+                   /^(?:\\|\x1b)c\[16\](?:瘴气耐性|快感耐性)\s/i.test(raw)){
+                    var nativeResult=makePicture.apply(this,arguments);
+                    resistancePicture(this,info);
+                    return nativeResult;
+                }
                 // Common Events 463/468 draw the single/group groper HUD with
                 // D_TEXT. Translate only the three verified caption lines.
                 // The native turn and excitement/crowd variable values,
