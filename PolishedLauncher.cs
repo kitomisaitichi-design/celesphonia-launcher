@@ -254,7 +254,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         var runtimeCard=new SleekCard{Location=new Point(0,132),Size=new Size(812,90),BackColor=card};playPage.Controls.Add(runtimeCard);
         controlsToggle=new RuntimeControlsToggle{Text="Enable runtime controls for this game",Location=new Point(12,8),Size=new Size(788,46),BackColor=Color.Transparent,ForeColor=ForeColor,Font=new Font("Segoe UI",12,FontStyle.Bold),AccessibleName="Enable runtime controls before launching",AccessibleDescription="Click anywhere on this row or press Space to choose runtime controls for the next launch."};runtimeCard.Controls.Add(controlsToggle);
         controlsToggle.CheckedChanged+=delegate{if(settingControls||Selected==null)return;Selected.RuntimeControls=controlsToggle.Checked;if(!previewMode)Store.Write(settings);};
-        var runtimeNote=LabelAt(runtimeCard,"F8 opens the menu · Separate session saves · Original game files remain unchanged",16,59,780,23,9,false,muted);
+        var runtimeNote=LabelAt(runtimeCard,"Ctrl+Shift+G opens the menu · Change shortcut in panel · Separate session saves",16,59,780,23,9,false,muted);
         BindHint(controlsToggle,runtimeNote,"Remembered per game. Click this row or press Space to choose controls for the next launch.");
         playButton=ButtonAt(playPage,"Play selected game",0,238,354,50,()=>Guard(Launch),true);
         playManageButton=ButtonAt(playPage,"Manage / Uninstall  ▾",371,238,241,50,()=>{if(Selected!=null)ShowManageMenu(playManageButton,Selected);},false);
@@ -435,7 +435,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             status.Text="Launcher v"+info.Version+" available from "+info.Repository;
             if(MessageBox.Show(this,"Install Celesphonia launcher "+info.Version+" from "+info.Repository+
                 "?\r\n\r\nThe ZIP and GitHub checksum will be verified. The launcher will close, update, and restart. "+
-                "Game directories, saves, profiles and F8 sessions are excluded. A rollback copy will be retained.",
+                "Game directories, saves, profiles and control sessions are excluded. A rollback copy will be retained.",
                 "Update launcher",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
             SetEnabled(false);progress.Visible=true;status.Text="Downloading and verifying launcher update…";
             string manifest=await Task.Run(()=>LauncherUpdate.Stage(info));
@@ -680,7 +680,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         var clock=Stopwatch.StartNew();
         try{
             var process=await Task.Run(()=>controls?RuntimeSupport.Launch(profile,message=>((IProgress<string>)updates).Report(message)):Store.Launch(profile,message=>((IProgress<string>)updates).Report(message)));
-            running=true;status.Text=(controls?"Runtime controls started · F8 · ":"Game started · ")+profile.Name;
+            running=true;status.Text=(controls?"Runtime controls started · Use Controls or your shortcut · ":"Game started · ")+profile.Name;
             File.WriteAllText(Path.Combine(Store.Home,"launch-status.json"),Store.Json.Serialize(new{status="STARTED",profile=profile.Name,root=profile.Root,exe=profile.Exe,pid=process.Id,seconds=clock.Elapsed.TotalSeconds}),new System.Text.UTF8Encoding(false));
             Store.Write(settings);
         }catch(Exception e){

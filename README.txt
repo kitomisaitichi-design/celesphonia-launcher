@@ -1,10 +1,27 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.22
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.23
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Live HP/MP bars show current/maximum values across runtime-control tabs.
+Navigation and controls have clearer spacing, rounded edges and hover highlights.
+Ctrl+Shift+G opens/closes the panel by default; click the shortcut button in its
+header to choose another combination. Your choice also works detached and is
+saved per control session. The on-screen Controls button is always available.
+
+HDR MONITORS / LOCAL LAUNCH OPTIONS
+Close the game and add this top-level property to its root package.json:
+  "chromium-args": "--force-color-profile=srgb"
+Use valid JSON, with a comma after the preceding property. If chromium-args
+already exists, append the option to that string. Keep the original main entry.
+Normal and control-session launches accept local package.json preferences while
+still verifying the native entry and game code/data. Original-source matching,
+installation and reconstruction retain exact hash checks; keep original archives
+for those operations. The launcher does not force sRGB on anyone else.
+
+RETAINED UPDATER SAFEGUARDS
 Updater: identical installed files are skipped; rollback copies cover only
 changes. The verified staged EXE handles the update without an extra random
 helper EXE. ZIP/payload verification is retained; rollback errors are reported.
@@ -52,7 +69,8 @@ ENGLISH AND OPTIONAL CONTROLS
 English is partial and version-specific. Untranslated text remains visible.
 Enable or restore English from the English page. Custom labels are retained.
 The status layout and repeated-streaming repairs do not require cheats.
-The Play-page checkbox enables runtime controls; F8 shows/hides the panel.
+The Play-page checkbox enables runtime controls; Ctrl+Shift+G shows/hides the
+panel by default. Change that shortcut using the button in the panel header.
 Control Sessions use separate saves, copied from the game only on first use.
 Later control-session and normal-game progress can differ. Use the matching
 saves-folder button before manually transferring any save files.

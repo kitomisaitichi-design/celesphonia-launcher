@@ -141,6 +141,7 @@ public static class UniversalSupport {
     public static void VerifyInstalled(Profile profile,bool launchOnly){
         string record=Path.Combine(profile.Root,"launcher-reconstruction.json");if(!File.Exists(record))return;var state=Store.Json.Deserialize<ReconstructionState>(File.ReadAllText(record,Encoding.UTF8));if(state.format!=2||state.files==null)throw new IOException("Invalid reconstructed profile record.");
         string web=Store.WebRoot(profile.Root);
+        if(launchOnly)RecipeSupport.RequireRecordedEntry(RecipeSupport.ReadLaunchEntry(profile.Root),state.files.Select(file=>Store.Child(profile.Root,file.path.Replace('/','\\'))));
         foreach(var file in state.files){string recorded=Store.Child(profile.Root,file.path.Replace('/','\\'));if(RecipeSupport.IsMutableAuxiliary(profile.Root,web,recorded)||(launchOnly&&!RecipeSupport.IsLaunchDependency(profile.Root,web,recorded)))continue;string path=EnglishSupport.OriginalFile(profile.Root,recorded);if(!File.Exists(path)||new FileInfo(path).Length!=file.size||Store.Hash(path)!=file.hash)throw new IOException("Reconstructed profile file changed or is missing: "+file.path);}
     }
     public static string FindGameRoot(string folder){

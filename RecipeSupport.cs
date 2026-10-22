@@ -151,10 +151,28 @@ public static class RecipeSupport {
     // Deep installation checks retain every asset hash. Launch checks focus on
     // native code/data and the runtime; media archives are not rehashed on every click.
     public static bool IsLaunchDependency(string root,string web,string file){
+        // NW.js launch preferences belong to the user. Exact-source/build
+        // verification still hashes this file; launch separately verifies main.
+        if(Path.GetFullPath(file).Equals(Path.Combine(Path.GetFullPath(root),"package.json"),StringComparison.OrdinalIgnoreCase))return false;
         string full=Path.GetFullPath(file),relative=full.StartsWith(Path.GetFullPath(web).TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase)?full.Substring(Path.GetFullPath(web).TrimEnd('\\').Length).TrimStart('\\','/').Replace('\\','/'):"";
         if(full.StartsWith(Path.GetFullPath(web).TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase)&&new[]{"data/","js/"}.Any(x=>relative.StartsWith(x,StringComparison.OrdinalIgnoreCase)))return true;
         string ext=Path.GetExtension(full).ToLowerInvariant();
         return new[]{".exe",".dll",".pak",".bin",".dat",".html",".json",".js"}.Contains(ext);
+    }
+    public static string ReadLaunchEntry(string root){
+        Dictionary<string,object> manifest;
+        try{manifest=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,"package.json"),Encoding.UTF8));}
+        catch(ArgumentException e){throw new IOException("package.json must contain valid JSON: "+e.Message,e);}
+        object main,args;
+        if(manifest==null||!manifest.TryGetValue("main",out main)||!(main is string)||string.IsNullOrWhiteSpace((string)main))throw new IOException("package.json needs a nonempty local main entry.");
+        if(manifest.TryGetValue("chromium-args",out args)&&!(args is string))throw new IOException("package.json chromium-args must be a string, for example --force-color-profile=srgb.");
+        string entry=Store.Child(root,(string)main);
+        if(!File.Exists(entry))throw new IOException("The game entry page is missing: "+entry);
+        return entry;
+    }
+    public static bool HasRecordedEntry(string entry,IEnumerable<string> files){return files.Any(file=>Path.GetFullPath(file).Equals(entry,StringComparison.OrdinalIgnoreCase));}
+    public static void RequireRecordedEntry(string entry,IEnumerable<string> files){
+        if(!HasRecordedEntry(entry,files))throw new IOException("package.json main must select a verified game entry page. Restore the original main value.");
     }
     public static void VerifyProfile(Profile p){VerifyProfile(p,false,false);}
     public static void VerifyProfile(Profile p,bool launchOnly){VerifyProfile(p,launchOnly,false);}
@@ -169,6 +187,17 @@ public static class RecipeSupport {
         if(independent && state.BaseFiles!=null)foreach(var item in state.BaseFiles)finalHashes[item.Key]=item.Value;
         string web=Store.WebRoot(p.Root),webRelative=web.Substring(p.Root.TrimEnd('\\').Length).Trim('\\').Replace('\\','/');
         foreach(var layer in state.Layers)foreach(var item in layer.Files)finalHashes[independent?(webRelative.Length==0?item.Key:webRelative+"/"+item.Key):item.Key]=item.Value;
+        if(launchOnly){
+            string entry=ReadLaunchEntry(p.Root);
+            var recordedEntries=finalHashes.Keys.Select(key=>Store.Child(independent?p.Root:web,key.Replace('/','\\')));
+            if(independent)RequireRecordedEntry(entry,recordedEntries);
+            else if(!HasRecordedEntry(entry,recordedEntries)){
+                // Old layered profiles record only overlay files. Their entry
+                // may instead come from the already verified clean base.
+                string baseEntry=ReadLaunchEntry(state.BaseRoot),relative=baseEntry.Substring(Path.GetFullPath(state.BaseRoot).TrimEnd('\\','/').Length).TrimStart('\\','/');
+                if(!entry.Equals(Store.Child(p.Root,relative),StringComparison.OrdinalIgnoreCase)||Store.Hash(EnglishSupport.OriginalFile(p.Root,entry))!=Store.Hash(EnglishSupport.OriginalFile(state.BaseRoot,baseEntry)))throw new IOException("The layered profile's native game entry changed. Restore the original main value and entry page.");
+            }
+        }
         foreach(var item in finalHashes){
             string recorded=Store.Child(independent?p.Root:web,item.Key.Replace('/','\\'));
             // MTool's editable export and NW.js's generated log are not game

@@ -1,7 +1,20 @@
 """Real extracted EXE tests, all versions; private synthetic games, no user saves."""
 import pathlib,sys,json,zipfile,subprocess,tempfile,shutil,hashlib,re,argparse
 HOME=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(HOME));import EnglishCatalog as c
-def run(exe,*args):subprocess.run([str(exe),*map(str,args)],cwd=str(HOME.parent),check=True,timeout=90)
+def run(exe,*args):
+    try:subprocess.run([str(exe),*map(str,args)],cwd=str(HOME.parent),check=True,timeout=90)
+    except Exception:
+        # Retain the CLI's cause before the private fixture is removed.
+        errors=list(exe.parent.glob('*error*.txt'))+list(exe.parent.glob('*error*.json'))
+        for error in errors:
+            text=error.read_text('utf-8-sig');print(error.name+': '+text[:4000],flush=True)
+            (HOME/'Tests/extracted-release-error.txt').write_text(text,encoding='utf8')
+        pending=[]
+        for temp in exe.parent.parent.rglob('*.new'):
+            destination=temp.with_suffix('');pending.append({'file':str(temp.relative_to(exe.parent.parent)),'size':temp.stat().st_size,'destinationExists':destination.exists(),'identical':destination.exists() and temp.read_bytes()==destination.read_bytes(),'attributes':destination.stat().st_file_attributes if destination.exists() else None})
+        print('Replacement context: '+json.dumps(pending),flush=True)
+        (HOME/'Tests/extracted-replace-context.json').write_text(json.dumps(pending,indent=2),encoding='utf8')
+        raise
 def remove_private_tree(root):
     assert root.resolve().parent== (HOME/'Tests').resolve() and root.name.startswith('extraction-fixture-')
     assert not root.is_symlink() and not root.is_junction()
@@ -60,6 +73,7 @@ def main():
                 key=next(k for k in dictionary if c.CJK.search(k) and len(k)<15 and not c.CONTROL.search(k) and '\n' not in k)
                 custom=json.dumps({key:'Private custom label'},ensure_ascii=False).encode('utf8');(folder/'user-translations.json').write_bytes(custom)
                 for case in ('clean-extraction','existing-folder-overwrite','missing-dictionary','truncated-mixed-pack','coherent-stale-pack','missing-catalog-and-runtime'):
+                    print(ident+' '+case,flush=True)
                     for name in ('manifest.json','dictionary.json','catalog.json'):(folder/name).write_bytes(z.read('English/'+ident+'/'+name))
                     (portable/'EnglishRuntime.js').write_bytes(z.read('EnglishRuntime.js'))
                     if case=='existing-folder-overwrite':

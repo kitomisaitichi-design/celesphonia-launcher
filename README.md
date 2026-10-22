@@ -1,6 +1,18 @@
 # Celesphonia Mod Library
 
-Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional F8 runtime controls.
+Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
+
+## Launcher 1.0.23 — HDR launch options and live resource bars
+
+The controls panel has live **HP/MP bars and current/maximum values**, clearer navigation, rounded controls and smooth hover highlights. Click the shortcut button in its header to record your preferred combination. The default is **Ctrl+Shift+G**, and the on-screen **Controls** button also opens it. Shortcuts work in docked and detached panels and are saved per control session.
+
+For HDR displays, close the game and add this top-level property to its root **package.json**, using valid JSON and a comma after the preceding property:
+
+```json
+"chromium-args": "--force-color-profile=srgb"
+```
+
+If chromium-args already exists, append the option to its existing string. Keep the original **main** entry. Normal and runtime-control launches accept these local launch preferences; the selected native entry and game code/data still undergo verification. Installation, reconstruction and original-source matching continue to require exact original files, so retain an original source/archive for those operations. This does not force sRGB on other users or change saves. HDR appearance requires testing on an HDR display.
 
 ## Launcher 1.0.22 — Fewer update writes
 
@@ -55,7 +67,7 @@ No commercial game data, creator archives, user saves or local profiles are incl
 
 English is partial and version-specific. Unmatched text stays in its original language. Enable or restore the reversible display layer from **English**; user translations are retained. The stat-panel and repeated-streaming repairs work with runtime controls off.
 
-The Play page checkbox enables optional runtime controls. **F8** shows or hides that panel. Control Sessions have their own saves, seeded from the game once; later normal and control-session progress can differ. Open the appropriate saves folder from the launcher before moving saves manually.
+The Play page checkbox enables optional runtime controls. **Ctrl+Shift+G** shows or hides that panel by default; click the shortcut button in the panel header to change it. Control Sessions have their own saves, seeded from the game once; later normal and control-session progress can differ. Open the appropriate saves folder from the launcher before moving saves manually.
 
 ## Backups and recovery
 

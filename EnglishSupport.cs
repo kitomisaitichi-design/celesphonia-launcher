@@ -62,7 +62,24 @@ public static class EnglishSupport {
     }
     static EnglishManifest ReadPack(string id){return Store.Json.Deserialize<EnglishManifest>(Encoding.UTF8.GetString(EnglishRelease.Read(id,"manifest.json")));}
     static string Entry(string root){var package=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,"package.json"),Encoding.UTF8));return Store.Child(root,Convert.ToString(package["main"]));}
-    static void Atomic(string file,byte[] bytes){string temp=file+".new";File.WriteAllBytes(temp,bytes);if(File.Exists(file))File.Replace(temp,file,null);else File.Move(temp,file);}
+    static void Atomic(string file,byte[] bytes){
+        string temp=file+".new";File.WriteAllBytes(temp,bytes);
+        if(!File.Exists(file)){File.Move(temp,file);return;}
+        string originalHash=Store.Hash(file),replacementHash=Store.Hash(temp);
+        for(int attempt=0;;attempt++){
+            if(attempt>0&&(!File.Exists(temp)||!File.Exists(file)||Store.Hash(file)!=originalHash||Store.Hash(temp)!=replacementHash))throw new IOException("Files changed while waiting to replace "+file+". Replacement stopped.");
+            try{File.Replace(temp,file,null);return;}
+            catch(IOException e){
+            int code=e.HResult&0xffff;
+            // Windows can temporarily deny replacement while a reader has the
+            // entry open. Retry only known lock/remove errors with both files
+            // still intact. Never fall back to deleting or copying over it.
+            if(attempt>=3||(code!=32&&code!=33&&code!=1175)||!File.Exists(temp)||!File.Exists(file)||Store.Hash(file)!=originalHash||Store.Hash(temp)!=replacementHash)
+                throw new IOException("Could not atomically replace "+file+" (Windows error "+code+"). Close programs holding this file and retry; details are in the launcher error log.",e);
+            System.Threading.Thread.Sleep(150*(1<<attempt));
+            }
+        }
+    }
     static void JsonWrite(string file,object value){Atomic(file,new UTF8Encoding(false).GetBytes(Store.Json.Serialize(value)));}
     public static bool Compatible(string source,string target){return source.Count(c=>c=='\n')==target.Count(c=>c=='\n')&&Controls.Matches(source).Cast<Match>().Select(x=>x.Value).SequenceEqual(Controls.Matches(target).Cast<Match>().Select(x=>x.Value));}
     static void ValidateState(string root,EnglishState state,bool assets){

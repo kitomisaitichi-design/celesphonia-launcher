@@ -2,6 +2,15 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.23 — HDR compatibility and clearer runtime controls
+
+- Root package.json launch preferences such as chromium-args are accepted in normal and control-session launches. The selected native entry remains verified; deep installation/source hash checks stay exact.
+- Live HP/MP bars show the active party leader's current/maximum values across tabs, with clear empty/no-character states.
+- Rounded controls, smooth hover highlights and a more compact navigation strip retain themes, opacity, resizing and header-only dragging.
+- Click the shortcut in the header to change it. Ctrl+Shift+G replaces F8 as the default to avoid laptop airplane-mode keys; the Controls button remains available. The saved shortcut also works detached.
+- Game data, translations, save paths and 1.0.22 updater safeguards are retained.
+- English application retries brief Windows file-lock/remove errors during atomic replacement, with hash guards. Persistent locks or externally changed files still stop with an explicit path; there is no delete/copy fallback.
+
 ## 1.0.22 — Changed-file updates and explicit rollback results
 
 - Identical installed assets are no longer replaced or copied to rollback. A two-file update no longer rewrites all 38 packaged files.
