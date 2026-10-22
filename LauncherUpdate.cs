@@ -34,7 +34,7 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.21";
+    public const string CurrentVersion="1.0.22";
     public const string OfficialRepository="kitomisaitichi-design/celesphonia-launcher";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";
@@ -221,22 +221,24 @@ public static class LauncherUpdate {
         }catch{ /* Keep staged contents for diagnosis; do not modify installed app. */ throw; }
     }
     public static void StartApply(string manifest){
-        string home=Store.Home;
-        string agent=Child(StageHome,"agent-"+Guid.NewGuid().ToString("N")+".exe");
-        Directory.CreateDirectory(StageHome);
-        File.Copy(typeof(LauncherUpdate).Assembly.Location,agent);
-        var start=new ProcessStartInfo(agent,"--apply-launcher-update "+Store.Q(home)+" "+Store.Q(manifest)+" "+Process.GetCurrentProcess().Id){
-            WorkingDirectory=StageHome,UseShellExecute=false,CreateNoWindow=true
+        var start=ApplyStartInfo(Store.Home,manifest,Process.GetCurrentProcess().Id);
+        if(Process.Start(start)==null)throw new IOException("Could not start the verified staged launcher update.");
+    }
+    static ProcessStartInfo ApplyStartInfo(string home,string manifest,int parent){
+        string directory;ReadVerifiedStage(home,manifest,out directory);
+        // The downloaded launcher already supports this helper command. Use
+        // that verified executable instead of copying ourselves to agent-GUID.exe.
+        string executable=Child(Path.Combine(directory,"payload"),"Celesphonia Portable Switcher.exe");
+        return new ProcessStartInfo(executable,"--apply-launcher-update "+Store.Q(home)+" "+Store.Q(manifest)+" "+parent){
+            WorkingDirectory=directory,UseShellExecute=false,CreateNoWindow=true
         };
-        if(Process.Start(start)==null)throw new IOException("Could not start isolated launcher update helper.");
     }
     public static void Apply(string home,string manifest,int parent){
         ApplyInternal(home,manifest,parent,true);
     }
-    static void ApplyInternal(string home,string manifest,int parent,bool restart){
-        // Helper executes from its own copy, after the original EXE exits.
+    static LauncherUpdateStage ReadVerifiedStage(string home,string manifest,out string directory){
         string baseDir=Path.GetFullPath(Path.Combine(home,"Staging","LauncherUpdates")).TrimEnd('\\')+Path.DirectorySeparatorChar;
-        string path=Path.GetFullPath(manifest),directory=Path.GetDirectoryName(path);
+        string path=Path.GetFullPath(manifest);directory=Path.GetDirectoryName(path);
         if(!path.StartsWith(baseDir,StringComparison.OrdinalIgnoreCase)||Path.GetFileName(path)!="manifest.json")
             throw new IOException("Update manifest must be staged inside the launcher update directory.");
         string zip=Path.Combine(directory,Asset),payload=Path.Combine(directory,"payload");
@@ -249,34 +251,53 @@ public static class LauncherUpdate {
             throw new IOException("Staged launcher update contents differ from the verified ZIP.");
         foreach(var item in marker.Files)if(!File.Exists(Child(payload,item.Key))||Hash(Child(payload,item.Key))!=item.Value)
             throw new IOException("Staged launcher update file modified: "+item.Key);
+        return marker;
+    }
+    static void ApplyInternal(string home,string manifest,int parent,bool restart){
+        string directory;var marker=ReadVerifiedStage(home,manifest,out directory);
+        string payload=Path.Combine(directory,"payload");
         if(parent>0)try{
             using(var process=Process.GetProcessById(parent))
                 if(!process.WaitForExit(60000))throw new IOException("Original launcher did not exit; update not applied.");
         }catch(ArgumentException){/* Parent already exited. */}
         string rollback=Child(directory,"rollback"),log=Path.Combine(directory,"update-result.txt");
         Directory.CreateDirectory(rollback);
-        var modified=new List<string>();var newFiles=new List<string>();
+        var modified=new List<string>();var newFiles=new List<string>();int unchanged=0;
         try{
             foreach(var item in marker.Files.OrderBy(x=>x.Key=="Celesphonia Portable Switcher.exe"?1:0)){
                 string source=Child(payload,item.Key),target=Child(home,item.Key),saved=Child(rollback,item.Key);
+                // Translation catalogs are large and normally unchanged. Do
+                // not back up or replace an already-identical installed file.
+                if(File.Exists(target)&&Hash(target)==item.Value){unchanged++;continue;}
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
-                if(File.Exists(target)){
+                bool existed=File.Exists(target);
+                if(existed){
                     Directory.CreateDirectory(Path.GetDirectoryName(saved));File.Copy(target,saved);
-                    modified.Add(item.Key);
-                }else newFiles.Add(item.Key);
+                }
                 string temp=target+".launcher-upgrade-new";
                 File.Copy(source,temp,true);
-                if(File.Exists(target))File.Replace(temp,target,null);else File.Move(temp,target);
+                if(existed){File.Replace(temp,target,null);modified.Add(item.Key);}
+                else{File.Move(temp,target);newFiles.Add(item.Key);}
                 if(Hash(target)!=item.Value)throw new IOException("Installed asset digest mismatched: "+item.Key);
             }
-            File.WriteAllText(log,"INSTALLED "+marker.Tag+"; rollback retained in "+rollback,Encoding.UTF8);
+            File.WriteAllText(log,"INSTALLED "+marker.Tag+"; changed="+(modified.Count+newFiles.Count)+"; unchanged="+unchanged+"; rollback retained in "+rollback,Encoding.UTF8);
         }catch(Exception problem){
+            var rollbackErrors=new List<string>();
             foreach(string name in modified.AsEnumerable().Reverse())try{
                 string to=Child(home,name),previous=Child(rollback,name),temp=to+".launcher-rollback";
-                if(File.Exists(previous)){File.Copy(previous,temp,true);if(File.Exists(to))File.Replace(temp,to,null);else File.Move(temp,to);}
-            }catch{}
-            foreach(string name in newFiles)try{File.Delete(Child(home,name));}catch{}
-            File.WriteAllText(log,"FAILED "+problem+"; rollback attempted from "+rollback,Encoding.UTF8);
+                if(!File.Exists(previous))throw new IOException("Rollback original is missing.");
+                File.Copy(previous,temp,true);if(File.Exists(to))File.Replace(temp,to,null);else File.Move(temp,to);
+                if(Hash(to)!=Hash(previous))throw new IOException("Restored asset digest mismatched.");
+            }catch(Exception restoreProblem){rollbackErrors.Add(name+": "+restoreProblem.Message);}
+            foreach(string name in newFiles)try{
+                string target=Child(home,name);
+                if(File.Exists(target)){
+                    if(Hash(target)!=marker.Files[name])throw new IOException("New file changed externally; preserving it.");
+                    File.Delete(target);
+                }
+            }catch(Exception restoreProblem){rollbackErrors.Add(name+": "+restoreProblem.Message);}
+            File.WriteAllText(log,"FAILED "+problem+"; rollback errors="+rollbackErrors.Count+"; rollback retained in "+rollback+"\r\n"+string.Join("\r\n",rollbackErrors),Encoding.UTF8);
+            if(rollbackErrors.Count>0)throw new IOException(problem.Message+"\r\nRollback errors:\r\n"+string.Join("\r\n",rollbackErrors),problem);
             throw;
         }
         if(restart)Process.Start(new ProcessStartInfo(Path.Combine(home,"Celesphonia Portable Switcher.exe")){WorkingDirectory=home,UseShellExecute=true});

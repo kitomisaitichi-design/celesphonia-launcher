@@ -1,10 +1,30 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.21
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.22
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Updater: identical installed files are skipped; rollback copies cover only
+changes. The verified staged EXE handles the update without an extra random
+helper EXE. ZIP/payload verification is retained; rollback errors are reported.
+This reduces unnecessary behavior associated with an Advanced Threat Defense
+report. Bitdefender has not validated this revision; a vendor retest is needed.
+
+ONE-TIME TRANSITION FOR BITDEFENDER-AFFECTED 1.0.19–1.0.21 USERS
+The old updater still handles its first upgrade. Download the current ZIP
+and extract it elsewhere. Close the launcher. Back up and replace ONLY these
+three files in your existing launcher folder:
+  Celesphonia Portable Switcher.exe
+  EnglishRuntime.js
+  README.txt
+Keep English, profiles, settings, Control Sessions and game folders in place.
+Other packaged assets are identical for this specific transition. Fresh
+installs should extract the complete ZIP. Subsequent updates use the revised
+updater. No AV settings are changed and quarantined files are not restored.
+If required files were already removed, retain the alert for vendor review.
+
+RETAINED IN 1.0.22
 Maple and Three-in-One status panels have compact labels, aligned values
 and fitted Clothing HP text. Native values, colors and mechanics are retained.
 Help -> Notes & changelogs opens an illustrated, formatted reader with

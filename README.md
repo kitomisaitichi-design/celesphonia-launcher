@@ -2,6 +2,18 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional F8 runtime controls.
 
+## Launcher 1.0.22 — Fewer update writes
+
+In-launcher updates now leave byte-identical installed files untouched and retain rollback copies only for changed files. The verified staged launcher performs the update directly; an extra randomly named copy of the running EXE is no longer created. Full ZIP/payload verification and parent-exit checks remain in place, and rollback failures are reported explicitly.
+
+This addresses unnecessary update behavior investigated after a Bitdefender Advanced Threat Defense report. In the 1.0.19 → 1.0.20 reproduction, only two assets changed but all 38 were previously replaced. **Bitdefender has not validated this revision; the behavior alert's exact scoring cause is not established.**
+
+### If Bitdefender blocked your 1.0.19–1.0.21 updater
+
+The old updater still runs during its first upgrade. Download the current ZIP from Releases and extract it to a separate temporary folder. Close the launcher, back up its existing **Celesphonia Portable Switcher.exe**, **EnglishRuntime.js** and **README.txt**, then copy just those three files from the ZIP into your existing launcher folder. Leave **English**, profiles, settings, Control Sessions and game folders in place. This specific three-file transition applies to 1.0.19–1.0.21, whose other packaged assets are identical. Fresh installations should extract the complete ZIP.
+
+Once installed, subsequent updates use the revised updater. This release does not change antivirus settings or restore quarantined files. If Bitdefender has already removed required files, retain its notification details for review before attempting recovery.
+
 ## Launcher 1.0.21 — A clearer status panel
 
 Maple and Three-in-One resistance panels now keep labels and values in separate cells. Compact labels, aligned percentages and a fitted Clothing HP field prevent adjacent columns from overlapping. Native values, negative-value colors and game rules are retained.
