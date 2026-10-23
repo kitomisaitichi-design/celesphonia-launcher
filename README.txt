@@ -1,10 +1,19 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.24
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.25
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Remaining missing-name cases in Heart/Noicon and other native notification
+modes are fixed. A name-only field no longer becomes a completely blank line.
+Intentional native newlines and stored text are retained.
+Extreme Sensitivity (Intestines) is now Extreme Sensitivity (Anal); the EXP
+modifier also says Anal, matching the native effect-to-stat mapping.
+Works with controls off. Use Play after updating to refresh enabled English.
+Illustrated notes: Help -> Notes & changelogs -> Launcher updates.
+
+RETAINED 1.0.24 FIXES
 Fixed missing Amane/Celesphonia/custom names in nested English notifications.
 Empty locked-memory descriptions stay blank rather than showing 0.
 Memory title columns keep native row spacing and fit long English labels;

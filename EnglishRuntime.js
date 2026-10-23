@@ -248,17 +248,23 @@
     }
     function translate(text) {
         if (typeof text !== 'string') return text;
-        if (own.call(dict, text)) return dict[text];
+        if (own.call(dict, text)) return correctedTerms(dict[text]);
         // English text and rendered Latin glyphs need no pattern searches.
-        if (!/[\u3040-\u30ff\u3400-\u9fff]/.test(text)) return text;
+        if (!/[\u3040-\u30ff\u3400-\u9fff]/.test(text)) return correctedTerms(text);
         if (own.call(cache, text)) return cache[text];
-        var result = translateUncached(text);
+        var result = correctedTerms(translateUncached(text));
         if (text.length <= 6000) {
             if (cacheKeys.length < cacheLimit) cacheKeys.push(text);
             else { delete cache[cacheKeys[cacheCursor]]; cacheKeys[cacheCursor] = text; cacheCursor = (cacheCursor + 1) % cacheLimit; }
             cache[text] = result;
         }
         return result;
+    }
+    function correctedTerms(text) {
+        // Skill 955 tags 110/95 map to anal cap and anal EXP variables.
+        // Correct the two reviewed English labels, not arbitrary anatomy text.
+        return text.replace(/Extreme Sensitivity \(Intestines\)/g,'Extreme Sensitivity (Anal)')
+            .replace(/\[Intestinal development EXP modifier\]/g,'[Anal development EXP modifier]');
     }
     function observe(text) {
         if(global.CelesphoniaEnglish&&global.CelesphoniaEnglish.captureSeen===false)return text;
@@ -528,28 +534,29 @@
         // Map002 E474 and its siblings use TMng Talk -> variable 2944, then
         // CE97 selects that variable through 2995, and CE881 draws a Ticker.
         // Ticker.js bypasses Window_Base.convertEscapeCharacters entirely.
-        // Resolve only that exact native template, from an exact reviewed key,
-        // while the native synchronous ticker draws; never change stored data.
+        // Other TMng modes use the same nested message with different frames.
+        // Resolve its display value while native synchronous drawing runs;
+        // preserve the native argument, log text and stored variables.
         if (!global.TickerManager || typeof TickerManager.show !== 'function' ||
             TickerManager.show._celesphoniaEnglishGroperTicker) return;
-        var native=TickerManager.show, template='\\i[\\v[119]]\\c[\\v[118]]\\v[\\v[2995]]';
+        var native=TickerManager.show;
+        var modes={2944:1,2947:1,2950:1,2953:1,2957:1,2961:1,2964:1,2966:1,2968:1,2970:1,2972:1,2974:1,2976:1,2980:1,2981:1,2983:1,2984:1,2986:1,2988:1,2989:1,2990:1,2991:1,2993:1,2994:1};
         var wrapped=function(text){
             var variables=global.$gameVariables;
-            if (text!==template || !variables || typeof variables.value!=='function') return native.apply(this,arguments);
+            if (typeof text!=='string'||!/(?:\\|\x1b)v\[(?:\\|\x1b)v\[2995\]\]/i.test(text)||!variables||typeof variables.value!=='function') return native.apply(this,arguments);
             var messageId=Number(variables.value(2995));
-            if(messageId!==2944&&messageId!==2974)return native.apply(this,arguments);
+            if(!own.call(modes,messageId))return native.apply(this,arguments);
             var raw=variables.value(messageId);
-            if (typeof raw!=='string' || raw.indexOf('\x1b')<0) return native.apply(this,arguments);
+            if (typeof raw!=='string') return native.apply(this,arguments);
             var source=raw.replace(/\x1b/g,'\\');
-            if (!own.call(dict,source)) return native.apply(this,arguments);
-            var target=dict[source];
-            if (target===source || typeof target!=='string') return native.apply(this,arguments);
+            if (!own.call(dict,source)&&! /\\+n\[\d+\]/i.test(source)) return native.apply(this,arguments);
+            var target=translate(source);
             var rendered=normalizeCodes(target).replace(/\\/g,'\x1b');
-            if(messageId===2944&&global.$gameActors){
-                // This reviewed notification is inserted by a nested variable
-                // after Ticker's slash pass. Resolve its numeric actor slots
-                // now; otherwise a stray escape consumes a Latin actor name.
-                rendered=rendered.replace(/\x1bN\[(\d+)\]/gi,function(code,id){
+            if(messageId!==2974&&global.$gameActors){
+                // Every native TMng mode inserts after Ticker's slash pass.
+                // Consume the complete numeric name escape, including doubled
+                // escapes, before its translated Latin name can become a code.
+                rendered=rendered.replace(/\x1b+N\[(\d+)\]/gi,function(code,id){
                     if(!global.$dataActors||!$dataActors[Number(id)])return code;
                     var actor=$gameActors.actor(Number(id));return actor&&typeof actor.name==='function'?translate(actor.name()):code;
                 });

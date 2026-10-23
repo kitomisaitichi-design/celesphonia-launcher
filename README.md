@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.25 — Remaining notification names and clearer terminology
+
+Extends the missing-name repair to native notification modes including **Heart** and **Noicon**, which were outside 1.0.24's Talk fix. Name-only notifications no longer become empty when the renderer consumes the actor name as a formatting code. Intentional native line breaks and stored text remain intact.
+
+**Extreme Sensitivity (Intestines)** is now **Extreme Sensitivity (Anal)**, with the description's EXP modifier also labeled **Anal**. Both native effect tags map to anal-development stats; game mechanics are unchanged. Works with runtime controls off. Use **Play** after updating to refresh an already-enabled English overlay. See the [illustrated update notes](LAUNCHER%20CHANGELOG.md#1025--remaining-notification-names-and-anal-terminology) and [source trace](docs/notification-1.0.25-trace.md).
+
 ## Launcher 1.0.24 — Actor names and memory descriptions
 
 English notifications retain **Amane**, **Celesphonia** and custom character names. Locked memory descriptions that are empty no longer show **0**. Long English titles fit their columns without changing native row spacing, so the cursor and description match; empty cells cannot display unrelated profile data.
