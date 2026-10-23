@@ -385,6 +385,63 @@
         sprite._celesphoniaEnglishResistanceLayout={width:143,rows:rows};
         return true;
     }
+    function installTitleDescription(){
+        var proto=global.Game_Interpreter&&Game_Interpreter.prototype,native=proto&&proto.command355;
+        if(typeof native!=='function'||native._celesphoniaTitleDescription)return;
+        var wrapped=function(){
+            var list=global.$dataCommonEvents&&$dataCommonEvents[823]&&$dataCommonEvents[823].list;
+            var first=this.currentCommand(),second=this._list&&this._list[this._index+1],third=this._list&&this._list[this._index+2];
+            if(this._list!==list||!first||!second||second.code!==655||third&&third.code===655||
+               first.parameters[0]!=='var SkillID = $gameVariables.value($gameVariables.value(4584))'||
+               second.parameters[0]!=='$gameVariables._data[4587] = $dataSkills[SkillID].description')return native.apply(this,arguments);
+            var variables=global.$gameVariables,read=variables.value,slot=Number(read.call(variables,4584)),count=Number(read.call(variables,4698));
+            if(!isFinite(count)||count<1||count>110||slot>=4601&&slot<=4600+count)return native.apply(this,arguments);
+            // CE823 lets the last column's cursor reach unpopulated rows.
+            // Those addresses belong to unrelated profile fields. Supply the
+            // native blank-description sentinel only during this display read.
+            var wasOwn=own.call(variables,'value');variables.value=function(id){return Number(id)===slot?999:read.apply(this,arguments);};
+            try{return native.apply(this,arguments);}finally{if(wasOwn)variables.value=read;else delete variables.value;}
+        };
+        wrapped._celesphoniaTitleDescription=true;proto.command355=wrapped;
+    }
+    function fitTitleColumn(sprite,info,render,args,nativeResult){
+        var gap=global.$gameVariables&&Number($gameVariables.value(939)),limit=gap>64&&gap<512?gap-8:214;
+        var pitch=info.size+8,lines=info.value.split('\n'),widths=sprite.textWidths||[],fonts=[],icons=[];
+        lines.forEach(function(line,i){
+            var origin=(line.match(/\x1bi\[\d+\]/gi)||[]).length*(Window_Base._iconWidth+4);icons[i]=origin;
+            fonts[i]=Math.max(12,Math.min(info.size,Math.floor(info.size*(limit-origin)/Math.max(1,(widths[i]||0)-origin))));
+        });
+        var layout={width:sprite.bitmap.width,height:sprite.bitmap.height,rowPitch:pitch,fontSizes:fonts,limit:limit};
+        sprite._celesphoniaEnglishTitleLayout=layout;
+        if(sprite.bitmap.width<=limit)return nativeResult;
+        var hidden=SceneManager.getHiddenWindow(),calc=hidden.calcTextHeight,hadCalc=own.call(hidden,'calcTextHeight'),font=hidden.contents.fontSize;
+        var newline=sprite._processNewLine,hadLine=own.call(sprite,'_processNewLine'),character=sprite._processCharacter,hadChar=own.call(sprite,'_processCharacter');
+        try{
+            // CE814's cursor uses a fixed native row pitch. Fitting a long
+            // label must never add lines or move subsequent entries.
+            hidden.calcTextHeight=function(){return pitch;};
+            sprite._processNewLine=function(state,bitmap){var result=newline.apply(this,arguments);this.hiddenWindow.contents.fontSize=fonts[state.line]||info.size;state.height=pitch;return result;};
+            sprite._processCharacter=function(state,bitmap){
+                var origin=icons[state.line]||0,w=(this.textWidths&&this.textWidths[state.line])||0;
+                var scale=Math.min(1,(limit-origin)/Math.max(1,w-origin)),ctx=bitmap instanceof Bitmap&&bitmap._context;
+                var glyph=state.text[state.index];
+                if(!ctx||scale>=1||state.x<origin||glyph==='\x1b'||glyph==='\n')return character.apply(this,arguments);
+                // Keep icons and vertical coordinates native. Compress only
+                // an overlong text row after reducing its own font to 12px.
+                ctx.save();ctx.translate(origin,0);ctx.scale(scale,1);ctx.translate(-origin,0);
+                try{return character.apply(this,arguments);}finally{ctx.restore();}
+            };
+            var result=render.apply(sprite,args),original=sprite.bitmap;
+            if(original.width>limit){var bounded=new Bitmap(limit,original.height);bounded.blt(original,0,0,limit,original.height,0,0);sprite.bitmap=bounded;}
+            layout.width=sprite.bitmap.width;layout.height=sprite.bitmap.height;
+            return result;
+        }finally{
+            if(hadCalc)hidden.calcTextHeight=calc;else delete hidden.calcTextHeight;
+            hidden.contents.fontSize=font;
+            if(hadLine)sprite._processNewLine=newline;else delete sprite._processNewLine;
+            if(hadChar)sprite._processCharacter=character;else delete sprite._processCharacter;
+        }
+    }
     function fitSingleLine(win,text,width){
         var prior=win.contents.fontSize,chosen,size=win.standardFontSize(),rendered=win.convertEscapeCharacters(text);
         var icons=(rendered.match(/\x1bi\[\d+\]/gi)||[]).length,plain=rendered.replace(/\x1b[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g,'').replace(/\x1b[.$|!><^{}\\]/g,'');
@@ -487,7 +544,16 @@
             if (!own.call(dict,source)) return native.apply(this,arguments);
             var target=dict[source];
             if (target===source || typeof target!=='string') return native.apply(this,arguments);
-            var rendered=target.replace(/\\/g,'\x1b');
+            var rendered=normalizeCodes(target).replace(/\\/g,'\x1b');
+            if(messageId===2944&&global.$gameActors){
+                // This reviewed notification is inserted by a nested variable
+                // after Ticker's slash pass. Resolve its numeric actor slots
+                // now; otherwise a stray escape consumes a Latin actor name.
+                rendered=rendered.replace(/\x1bN\[(\d+)\]/gi,function(code,id){
+                    if(!global.$dataActors||!$dataActors[Number(id)])return code;
+                    var actor=$gameActors.actor(Number(id));return actor&&typeof actor.name==='function'?translate(actor.name()):code;
+                });
+            }
             if(messageId===2974){
                 // CE32 stores two escapes before actor 360. Ticker's nested
                 // variable expansion leaves one escape before its name; an
@@ -910,6 +976,7 @@
     }
     function install() {
         if (installed) return; installed = true;
+        installTitleDescription();
         installSeparateBedroomToggle();
         installGlossaryPictureLayout();
         // SceneGlossary loads its authored help pictures through
@@ -1018,6 +1085,13 @@
             var makePicture = Sprite_Picture.prototype.makeDynamicBitmap;
             Sprite_Picture.prototype.makeDynamicBitmap = function () {
                 var info = this.dTextInfo, raw = info && info.originalValue;
+                if(this._pictureId===84&&info&&info.size===20&&typeof raw==='string'&&/^\s*(?:\\|\x1b)v\[4587\]\s*$/i.test(raw)&&global.$gameVariables&&$gameVariables._data[4587]===''){
+                    // CE823 writes an empty description for locked title 999.
+                    // Game_Variables.value turns that empty string into zero;
+                    // preserve its blank presentation without changing storage.
+                    var blank={};Object.keys(info).forEach(function(key){blank[key]=info[key];});blank.value='';this.dTextInfo=blank;
+                    try{return makePicture.apply(this,arguments);}finally{this.dTextInfo=info;}
+                }
                 if((this._pictureId===86||this._pictureId===87)&&typeof raw==='string'&&
                    /^(?:\\|\x1b)c\[16\](?:瘴气耐性|快感耐性)\s/i.test(raw)){
                     var nativeResult=makePicture.apply(this,arguments);
@@ -1059,10 +1133,9 @@
                         }
                     }
                 }
-                // CommonEvent 814 uses fixed 230px columns for skill-title icons.
-                // Keep the canonical picture and variable values intact; fit only
-                // this native title-caption shape on the local drawing copy.
-                var title = info && info.size === 16 && typeof raw === 'string' && /(?:\\|\x1b)is\[(?:\\|\x1b)v\[4581\]\]/i.test(raw);
+                // CommonEvent 814 owns this title-column grammar. Preserve its
+                // fixed row pitch while fitting each English label separately.
+                var title = info && (info.size === 16 || info.size === 21) && typeof raw === 'string' && /(?:\\|\x1b)is\[(?:\\|\x1b)v\[4581\]\]/i.test(raw);
                 var profile = info && typeof raw === 'string' && /(?:\\|\x1b)v\[4691\]/i.test(raw);
                 var quest = info && info.size === 22 && typeof raw === 'string' && /^\s*(?:\\|\x1b)v\[376\]\s*$/i.test(raw) && this._pictureId === 92;
                 var development = info && this._pictureId === 82 && typeof raw === 'string' && /(?:\\|\x1b)v\[1102\]/i.test(raw) && /LV/.test(raw);
@@ -1105,17 +1178,7 @@
                     } finally { this.dTextInfo = info;hidden.standardFontSize = standard;hidden.contents.fontSize = font; }
                 }
                 var result = makePicture.apply(this, arguments);
-                if (!title || !this.bitmap || this.bitmap.width <= 214) return result;
-                var copy = {};Object.keys(info).forEach(function (key) { copy[key] = info[key]; });
-                copy.value=copy.value.replace(/Corruption: Abnormal Sensitivity \(Tongue\)/g,'Corruption: Abn. Sensitivity\n(Tongue)').replace(/Corruption: Abnormal Battlesuit \(Heavenly Garment\)/g,'Corruption: Abn. Battlesuit\n(Heavenly Garment)');
-                try {
-                    this.dTextInfo = copy;
-                    for (var size = 15; size >= 10 && this.bitmap.width > 214; size--) {
-                        copy.size = size;result = makePicture.apply(this, arguments);
-                    }
-                    this._celesphoniaEnglishTitleLayout = {width:this.bitmap.width,height:this.bitmap.height,fontSize:copy.size,limit:214};
-                    return result;
-                } finally { this.dTextInfo = info; }
+                return title&&this.bitmap ? fitTitleColumn(this,info,makePicture,arguments,result) : result;
             };
         }
         installObjectiveLedger();

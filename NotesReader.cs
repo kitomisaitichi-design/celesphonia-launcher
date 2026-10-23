@@ -57,7 +57,7 @@ public sealed class NotesReader : Form {
     }
     static string Html(string text){return System.Net.WebUtility.HtmlEncode(text);}
     static string Image(string path,string alt){
-        var match=Regex.Match(path,@"^(?:docs/)?images/(stat-layout-(?:maple|creator)-(?:before|after)\.png)$");
+        var match=Regex.Match(path,@"^(?:docs/)?images/((?:stat-layout-(?:maple|creator)|text-memory-(?:names|locked|creator|maple))-(?:before|after)\.png)$");
         if(!match.Success)return "<p>"+Html(alt)+"</p>";
         using(var stream=typeof(NotesReader).Assembly.GetManifestResourceStream("Celesphonia.Notes."+match.Groups[1].Value)){
             if(stream==null)throw new IOException("Bundled notes image missing: "+path);

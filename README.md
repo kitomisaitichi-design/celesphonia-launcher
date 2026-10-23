@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.24 — Actor names and memory descriptions
+
+English notifications retain **Amane**, **Celesphonia** and custom character names. Locked memory descriptions that are empty no longer show **0**. Long English titles fit their columns without changing native row spacing, so the cursor and description match; empty cells cannot display unrelated profile data.
+
+These fixes work with **runtime controls off**. Update the launcher, then use **Play**: an already-enabled English overlay refreshes automatically. Saves and unlock prerequisites stay intact. See the [illustrated before/after notes](LAUNCHER%20CHANGELOG.md#1024--actor-names-and-memory-descriptions), also available offline under **Help → Notes & changelogs → Launcher updates**.
+
 ## Launcher 1.0.23 — HDR launch options and live resource bars
 
 The controls panel has live **HP/MP bars and current/maximum values**, clearer navigation, rounded controls and smooth hover highlights. Click the shortcut button in its header to record your preferred combination. The default is **Ctrl+Shift+G**, and the on-screen **Controls** button also opens it. Shortcuts work in docked and detached panels and are saved per control session.

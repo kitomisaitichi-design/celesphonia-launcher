@@ -1,10 +1,20 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.23
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.24
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Fixed missing Amane/Celesphonia/custom names in nested English notifications.
+Empty locked-memory descriptions stay blank rather than showing 0.
+Memory title columns keep native row spacing and fit long English labels;
+the selected description matches the visible row. Empty cells do not read
+unrelated profile fields. Maple keeps its native question-mark placeholders.
+Works without runtime controls. Use Play after updating to refresh an already
+enabled English overlay automatically. Saves/unlock conditions are retained.
+Before/after pictures: Help -> Notes & changelogs -> Launcher updates.
+
+RETAINED CONTROLS
 Live HP/MP bars show current/maximum values across runtime-control tabs.
 Navigation and controls have clearer spacing, rounded edges and hover highlights.
 Ctrl+Shift+G opens/closes the panel by default; click the shortcut button in its

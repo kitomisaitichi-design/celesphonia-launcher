@@ -2,6 +2,36 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.24 — Actor names and memory descriptions
+
+- Nested English notifications retain Amane/Celesphonia and custom actor names. The display hook resolves the native name escape before the ticker inserts the message; it does not rename game actors.
+- Empty locked-memory descriptions remain blank rather than becoming numeric zero. Maple's native question-mark placeholder is preserved.
+- Long memory titles fit the available column width while retaining each variant's native row spacing (24 px in Ver1.053, 29 px in Maple). The last columns no longer drift away from their selection cursor.
+- Selecting an unused cell in the final column uses the native locked-description sentinel for that display read, instead of treating an unrelated profile variable as a skill ID. Stored profile values and unlock prerequisites remain intact.
+- Normal English launches receive these fixes with runtime controls disabled. After updating, use Play to refresh an already-enabled overlay automatically. Existing save paths, HDR options, controls and updater safeguards are retained.
+
+### Missing actor name — before and after
+
+![Before: the nested notification loses Amane's name](docs/images/text-memory-names-before.png)
+![After: the same notification retains Amane's name](docs/images/text-memory-names-after.png)
+
+### Locked description — before and after
+
+![Before: a native empty description displays zero](docs/images/text-memory-locked-before.png)
+![After: the same locked description stays blank](docs/images/text-memory-locked-after.png)
+
+### Ver1.053 memory grid — same selection, before and after
+
+![Before: shrinking an entire column moves its rows away from the cursor](docs/images/text-memory-creator-before.png)
+![After: fitted titles keep the native row positions and selected description](docs/images/text-memory-creator-after.png)
+
+### Maple memory grid — same selection, before and after
+
+![Before: long English titles extend beyond their column](docs/images/text-memory-maple-before.png)
+![After: titles fit Maple's column width with native row spacing retained](docs/images/text-memory-maple-after.png)
+
+These comparisons show actual native ticker/picture layers on a plain backdrop, with identical temporary test state before and after. They do not use or modify player saves. Native checks cover locked/unlocked entries, the last columns, unused tail cells and renamed actors; full gameplay coverage is not claimed.
+
 ## 1.0.23 — HDR compatibility and clearer runtime controls
 
 - Root package.json launch preferences such as chromium-args are accepted in normal and control-session launches. The selected native entry remains verified; deep installation/source hash checks stay exact.
