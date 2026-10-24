@@ -2,6 +2,10 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.27 — Carry legacy runtime sessions after profile rediscovery
+
+Retains the Ver1.06/1.061 support and all 24 new translations from 1.0.26. When shared discovery assigned a new profile ID, an older control session can still hold the same game's independent saves and panel settings. Upgrades now locate a unique matching session by its original save path, back it up and carry it independently. Ambiguous matches remain untouched and stop with an explicit message.
+
 ## 1.0.26 — Ver1.06 / Ver1.061 originals, upgrades and English
 
 - Registers both complete creator content overlays and their full native target inventories: 5,171 overlay files / 11,738 target files per version. The latest forward-upgrade target is Ver1.061.

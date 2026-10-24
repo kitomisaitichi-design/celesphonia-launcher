@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.27 — Legacy runtime-save carryover
+
+Ver1.06/1.061 upgrades also retain runtime saves and panel settings when shared profile discovery changed an older profile's ID. The original save path identifies a unique legacy control session. Multiple matches stop with an explicit message; independent save sets are never silently merged.
+
 ## Launcher 1.0.26 — Three-in-One Ver1.06 and Ver1.061
 
 Install **Ver1.061 directly from GoRPG plus the latest creator content**, or upgrade an older supported Three-in-One 3.3.5 profile. Intermediate patches are not required. Ver1.06 is also recognized. Original ZIP/RAR archives, misleading filenames, recursively discovered extracted folders and individual files can contribute matching bytes through **Combine original sources**. CH/Maple/older game files can supply identical shared files; missing or conflicting bytes are reported before installation.

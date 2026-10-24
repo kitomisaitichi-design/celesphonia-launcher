@@ -18,6 +18,8 @@ Loose original files are checked as complete expected size/hash matches before i
 
 The native and optional runtime-control save branches migrate independently, with verified backups. Existing control saves are not overwritten with normal saves. The control checkbox and panel-settings.json are retained; runtime caches and engine copies are regenerated for the new profile.
 
+Launcher 1.0.27 also resolves legacy control-session IDs when shared discovery assigned a new profile ID. A unique seed source path may identify the existing session; multiple matches fail explicitly. The normal-save set and each launcher's independent control-save set remain separate.
+
 ## English
 
 The new source inventory contains 24 new display keys, including choice help, status labels/descriptions and two script-display notifications. Their reviewed translations are in English/v106-reviewed-overrides.json and are checked against the native source/control codes. Existing reviewed translations and runtime aliases are reused by the established pack builder; the overall English coverage remains partial.

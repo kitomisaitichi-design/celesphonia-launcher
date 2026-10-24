@@ -1,10 +1,14 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.26
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.27
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Legacy runtime-save sessions are also carried when shared discovery assigned
+a new profile ID. Matching uses the original save path; ambiguous sessions
+are preserved and reported instead of being merged or overwritten.
+
 Added Three-in-One Ver1.06 and Ver1.061. Install latest content directly with
 GoRPG; no intermediate patches are needed. ZIP/RAR, misleading archive names,
 extracted folders and individual exact-hash files can be combined. Identical

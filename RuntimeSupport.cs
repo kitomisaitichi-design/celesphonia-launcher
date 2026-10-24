@@ -16,6 +16,20 @@ public static class RuntimeSupport {
     public static void CarryForward(Profile source,Profile target,bool carrySaves) {
         string parent=Path.Combine(Store.Home,"Control Sessions"),from=Store.Child(parent,source.Id),to=Store.Child(parent,target.Id);
         string sourceSaves=Path.Combine(from,"save"),preferences=Path.Combine(from,"panel-settings.json");
+        if(!Directory.Exists(sourceSaves)&&!File.Exists(preferences)&&Directory.Exists(parent)) {
+            var aliases=new System.Collections.Generic.List<string>();int scanned=0;
+            foreach(string folder in Directory.EnumerateDirectories(parent)) {
+                if(++scanned>1000)throw new IOException("Too many control-session folders to resolve a legacy profile safely.");
+                if((File.GetAttributes(folder)&FileAttributes.ReparsePoint)!=0)continue;
+                string seed=Path.Combine(folder,"seed.json");if(!File.Exists(seed)||new FileInfo(seed).Length>65536)continue;
+                var record=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(seed,Encoding.UTF8));object original;
+                if(record!=null&&record.TryGetValue("source",out original)&&!string.IsNullOrWhiteSpace(Convert.ToString(original))&&
+                   Path.GetFullPath(Convert.ToString(original)).TrimEnd('\\','/').Equals(Path.GetFullPath(source.SavePath).TrimEnd('\\','/'),StringComparison.OrdinalIgnoreCase)&&
+                   (File.Exists(Path.Combine(folder,"panel-settings.json"))||Directory.Exists(Path.Combine(folder,"save"))&&Store.SaveFiles(Path.Combine(folder,"save")).Length>0))aliases.Add(folder);
+            }
+            if(aliases.Count>1)throw new IOException("Several legacy control sessions match this game's saves. Preserve them and select a unique source before upgrading.");
+            if(aliases.Count==1){from=aliases[0];sourceSaves=Path.Combine(from,"save");preferences=Path.Combine(from,"panel-settings.json");}
+        }
         bool saves=carrySaves&&Directory.Exists(sourceSaves)&&Store.SaveFiles(sourceSaves).Length>0;
         if(!saves&&!File.Exists(preferences))return;
         if(Directory.Exists(to))throw new IOException("The upgrade's control session already exists; preserve it and choose a new destination.");

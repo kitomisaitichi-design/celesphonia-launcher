@@ -11,6 +11,7 @@ public static class V106ControlCarryTests {
   string from=Store.Child(parent,source.Id),to=Store.Child(parent,target.Id);Directory.CreateDirectory(Path.Combine(from,"save"));
   try{
    File.WriteAllText(Path.Combine(from,"save/file1.rpgsave"),"independent runtime save sentinel");File.WriteAllText(Path.Combine(from,"panel-settings.json"),"{\"hotkey\":\"Ctrl+Shift+G\",\"opacity\":0.8}");
+   File.WriteAllText(Path.Combine(from,"seed.json"),Store.Json.Serialize(new{source=source.SavePath}));source.Id=token+"-remapped";
    string original=Store.Hash(Path.Combine(from,"save/file1.rpgsave"));RuntimeSupport.CarryForward(source,target,true);
    if(Store.Hash(Path.Combine(to,"save/file1.rpgsave"))!=original||Store.Hash(Path.Combine(from,"save/file1.rpgsave"))!=original)throw new Exception("Runtime saves changed");
    if(Store.Hash(Path.Combine(from,"panel-settings.json"))!=Store.Hash(Path.Combine(to,"panel-settings.json")))throw new Exception("Preferences changed");
