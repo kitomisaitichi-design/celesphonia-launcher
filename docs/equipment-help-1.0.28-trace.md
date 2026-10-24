@@ -1,5 +1,7 @@
 # Equipment help display repair, launcher 1.0.28
 
+Follow-up 1.0.29: the user specified the established Kagura/CH56.6 abbreviations ATK, DEF, MAT, MD and AGI while 1.0.28 was already tagged. The corrected immutable follow-up uses MD in compact equipment labels, including existing MDF stat-down captions. No stat IDs or mechanics change. Current native checks use the corrected 1.0.29 runtime; the original 1.0.28 screenshots remain in its gallery, and a separate native before/after pair records the MD correction. Both versions' dictionaries/catalogs remain unchanged.
+
 Reported against Three-in-One Ver1.061 and launcher 1.0.27; checked separately in native Maple 1.7.2. This is a shared display-runtime correction, not a dictionary rewrite or a game-data patch.
 
 ## Native source and cause

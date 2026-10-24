@@ -1,10 +1,13 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.28
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.29
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Standard overflow abbreviations match Kagura/CH56.6: ATK, DEF, MAT, MD, AGI.
+Magic defense uses MD, including compact stat-down traits.
+
 Long equipment help uses standard stat abbreviations when needed. Short help
 keeps full wording. Hover dense help and use the mouse wheel to read every
 effect; arrows indicate more text. Scrolling help does not move the item list.

@@ -519,13 +519,13 @@
             // These are parameter/trait phrases in equipment help, never a
             // global prose replacement or a change to a native stat name.
             return part.replace(/\bPhysical Attack\b/gi,'ATK').replace(/\bPhysical Defense\b/gi,'DEF')
-                .replace(/\b(?:Magic|Magical) Attack\b/gi,'MAT').replace(/\b(?:Magic|Magical) Defense\b/gi,'MDF')
+                .replace(/\b(?:Magic|Magical) Attack\b/gi,'MAT').replace(/\b(?:Magic|Magical) Defense\b/gi,'MD').replace(/\bMDF\b/g,'MD')
                 .replace(/\b(?:Physical|Phys\.) Evasion\b/gi,'PHYS-EVA').replace(/\b(?:Critical|Crit\.?) Evasion\b/gi,'CRIT-EVA')
                 .replace(/\b(?:Magic|Magical) Evasion\b/gi,'MAG-EVA').replace(/\b(?:Magic|Magical) Reflection\b/gi,'MAG-REF')
                 .replace(/\b(?:Physical|Phys\.) Hit\b/gi,'PHYS-HIT').replace(/\bCritical (?:Rate|Chance)\b/gi,'CRIT')
                 .replace(/\b(HP|MP|SP|TP) Regeneration\b/gi,'$1 Regen')
                 .replace(/\[(Attack|Defense|Agility)(?=[+\-\s\d\]])/g,function(whole,label){return '['+({Attack:'ATK',Defense:'DEF',Agility:'AGI'})[label];})
-                .replace(/\b(ATK|DEF|MAT|MDF|AGI) (?:Reduction|Down) \((Minor|Small|Major|Large)\)/g,function(whole,stat,size){return stat+' Down ('+(/Minor|Small/.test(size)?'S':'L')+')';})
+                .replace(/\b(ATK|DEF|MAT|MD|AGI) (?:Reduction|Down) \((Minor|Small|Major|Large)\)/g,function(whole,stat,size){return stat+' Down ('+(/Minor|Small/.test(size)?'S':'L')+')';})
                 .replace(/\[Physical\]/g,'[PHYS]').replace(/\bResistance(?=\[)/g,'Res.').replace(/\bWeakness(?=\[)/g,'Weak.')
                 .replace(/\bElement(?=\[)/g,'Elem.');
         });

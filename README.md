@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.29 — Kagura stat abbreviations
+
+Overflow abbreviations now follow the Kagura/CH56.6 terminology: **ATK, DEF, MAT, MD and AGI**. Magic defense uses **MD**, including compact stat-down traits. Retains 1.0.28's readable equipment help, English AGI labels, help scrolling and native before/after notes for Maple and Three-in-One.
+
 ## Launcher 1.0.28 — Readable equipment help
 
 Long equipment descriptions now use familiar stat abbreviations when full wording does not fit: **ATK, DEF, AGI, PHYS-EVA, MAG-EVA** and similar labels. Already-fitting descriptions keep their full wording. Dense descriptions retain readable text and every effect; hover the help panel and use the **mouse wheel** to read further. Native arrows show more text, and scrolling help leaves the item list alone.
