@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.28 — Readable equipment help
+
+Long equipment descriptions now use familiar stat abbreviations when full wording does not fit: **ATK, DEF, AGI, PHYS-EVA, MAG-EVA** and similar labels. Already-fitting descriptions keep their full wording. Dense descriptions retain readable text and every effect; hover the help panel and use the **mouse wheel** to read further. Native arrows show more text, and scrolling help leaves the item list alone.
+
+Fixes missing English in assembled trait lists, including **AGI Down (Small/Large)**, shown as **AGI Down (S/L)** when abbreviated. Verified with native Maple 1.7.2 and Three-in-One Ver1.061 equipment renderers, with optional controls off. Stats, signs, percentages, conditions, original game records and saves remain intact. See **Help → Notes & changelogs → Launcher updates** for native before/after images and the [equipment display trace](docs/equipment-help-1.0.28-trace.md) for scope and checks.
+
 ## Launcher 1.0.27 — Legacy runtime-save carryover
 
 Ver1.06/1.061 upgrades also retain runtime saves and panel settings when shared profile discovery changed an older profile's ID. The original save path identifies a unique legacy control session. Multiple matches stop with an explicit message; independent save sets are never silently merged.

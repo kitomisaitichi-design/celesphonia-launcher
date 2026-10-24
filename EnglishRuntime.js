@@ -319,7 +319,8 @@
                    (text===glossaryLayout.source || args[0]===glossaryLayout.display)) fit=glossaryLayout.fit;
                 else if(args[0]!==text) fit=fitPanelText(this,args[0],this.contentsWidth()-args[1],this.contentsHeight()-args[2]);
             }
-            if (method === 'drawTextEx' && name === 'Window_Help' && args[0] !== text) fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
+            if (method === 'drawTextEx' && this._celesphoniaEnglishEquipmentPainting) fit = this._celesphoniaEnglishEquipmentLayout;
+            else if (method === 'drawTextEx' && name === 'Window_Help' && args[0] !== text) fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
             if (method === 'drawTextEx' && global.SceneManager && SceneManager._scene && SceneManager._scene._hzChoiceHelpWindow === this && args[0] !== text) fit = fitPanelText(this, args[0], this.contentsWidth() - args[1], this.contentsHeight() - args[2]);
             var reset = this.resetFontSettings, hadReset = own.call(this, 'resetFontSettings'), font = this.contents && this.contents.fontSize;
             var calc = this.calcTextHeight, hadCalc = own.call(this, 'calcTextHeight');
@@ -471,10 +472,10 @@
         var plain = rendered.replace(/\x1b[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g, '').replace(/\x1b[.$|!><^{}\\]/g, '');
         return win.textWidth(plain) + icons.length * (Window_Base._iconWidth + 4);
     }
-    function fitPanelText(win, text, width, height) {
+    function fitPanelText(win, text, width, height, minimum, initial) {
         width = Math.max(1, width - 8);height = Math.max(1, height);
-        var original = win.contents.fontSize, start = win.standardFontSize(), chosen;
-        for (var size = start; size >= 12; size -= 2) {
+        var original = win.contents.fontSize, start = initial || win.standardFontSize(), chosen;
+        for (var size = start; size >= (minimum || 12); size -= 2) {
             win.contents.fontSize = size;var lines = [], widest = 0;
             text.split('\n').forEach(function (paragraph) {
                 var line = '', joiner = '';
@@ -498,6 +499,94 @@
             if (chosen.fits) break;
         }
         win.contents.fontSize = original;return chosen;
+    }
+    function equipmentParts(text, change) {
+        // Escape arguments and plugin tags are opaque, including their labels.
+        return text.split(/((?:\\|\x1b)(?:[A-Za-z]+(?:\[[^\]\r\n]*\]|<[^>\r\n]*>)?|[.$|!><^{}\\])|<[^>\r\n]*>)/g).map(function(part,index){return index%2?part:change(part);}).join('');
+    }
+    function equipmentDisplay(text,item) {
+        // The native formatter prefixes the complete database description, then
+        // appends stats. Translate that original field before its assembled tail.
+        var description=item.description||'',display;
+        if(description&&text.indexOf(description)===0)display=translate(description)+translate(text.substring(description.length));
+        else display=translate(text);
+        return equipmentParts(display,function(part){
+            return part.replace(/\[([^\[\]\r\n]+)\]/g,function(whole,field){return '['+translate(field)+']';});
+        });
+    }
+    function compactEquipment(text) {
+        return equipmentParts(text,function(part){
+            // These are parameter/trait phrases in equipment help, never a
+            // global prose replacement or a change to a native stat name.
+            return part.replace(/\bPhysical Attack\b/gi,'ATK').replace(/\bPhysical Defense\b/gi,'DEF')
+                .replace(/\b(?:Magic|Magical) Attack\b/gi,'MAT').replace(/\b(?:Magic|Magical) Defense\b/gi,'MDF')
+                .replace(/\b(?:Physical|Phys\.) Evasion\b/gi,'PHYS-EVA').replace(/\b(?:Critical|Crit\.?) Evasion\b/gi,'CRIT-EVA')
+                .replace(/\b(?:Magic|Magical) Evasion\b/gi,'MAG-EVA').replace(/\b(?:Magic|Magical) Reflection\b/gi,'MAG-REF')
+                .replace(/\b(?:Physical|Phys\.) Hit\b/gi,'PHYS-HIT').replace(/\bCritical (?:Rate|Chance)\b/gi,'CRIT')
+                .replace(/\b(HP|MP|SP|TP) Regeneration\b/gi,'$1 Regen')
+                .replace(/\[(Attack|Defense|Agility)(?=[+\-\s\d\]])/g,function(whole,label){return '['+({Attack:'ATK',Defense:'DEF',Agility:'AGI'})[label];})
+                .replace(/\b(ATK|DEF|MAT|MDF|AGI) (?:Reduction|Down) \((Minor|Small|Major|Large)\)/g,function(whole,stat,size){return stat+' Down ('+(/Minor|Small/.test(size)?'S':'L')+')';})
+                .replace(/\[Physical\]/g,'[PHYS]').replace(/\bResistance(?=\[)/g,'Res.').replace(/\bWeakness(?=\[)/g,'Weak.')
+                .replace(/\bElement(?=\[)/g,'Elem.');
+        });
+    }
+    function equipmentHover(win) {
+        return win&&win.visible&&win.openness===255&&win._celesphoniaEnglishEquipmentLayout&&win._celesphoniaEnglishEquipmentLayout.scrollable&&
+            TouchInput.x>=win.x&&TouchInput.x<win.x+win.width&&TouchInput.y>=win.y&&TouchInput.y<win.y+win.height;
+    }
+    function installEquipmentHelp() {
+        if(!global.Window_Help||Window_Help.prototype.refresh._celesphoniaEnglishEquipment)return;
+        var proto=Window_Help.prototype,setItem=proto.setItem,refresh=proto.refresh,update=proto.update;
+        proto.setItem=function(item){
+            this._celesphoniaEnglishEquipmentItem=item&&global.DataManager&&(DataManager.isWeapon(item)||DataManager.isArmor(item))?item:null;
+            return setItem.apply(this,arguments);
+        };
+        proto.refresh=function(){
+            var item=this._celesphoniaEnglishEquipmentItem,source=this._text;
+            if(!item||typeof source!=='string'||typeof this.descriotion!=='function'||source!==this.descriotion(item)){
+                this._celesphoniaEnglishEquipmentLayout=null;this.origin.y=0;this.upArrowVisible=false;this.downArrowVisible=false;
+                if(this.contents&&this.contents.height!==this.contentsHeight())this.createContents();
+                return refresh.apply(this,arguments);
+            }
+            var display=equipmentDisplay(source,item),width=this.contentsWidth()-this.textPadding(),height=this.contentsHeight();
+            var base=Window_Base.prototype.standardFontSize.call(this),layout=fitPanelText(this,display,width,height,base,base),compact=display;
+            if(!layout.fits){
+                compact=compactEquipment(display);
+                layout=fitPanelText(this,compact,width,height,20,base);
+                if(!layout.fits){
+                    // Keep dense descriptions readable and all effects reachable
+                    // in the existing panel instead of shrinking to tiny text.
+                    layout=fitPanelText(this,compact,width,Infinity,20,20);
+                    layout.scrollable=layout.height>height;layout.viewportHeight=height;
+                }
+            }
+            layout.abbreviated=compact!==display;layout.originalDisplay=display;layout.source=source;
+            this._celesphoniaEnglishEquipmentLayout=layout;this.origin.y=0;
+            var bitmapHeight=Math.max(height,Math.ceil(layout.height));
+            if(this.contents.width!==this.contentsWidth()||this.contents.height!==bitmapHeight)this.contents=new Bitmap(this.contentsWidth(),bitmapHeight);
+            this.contents.clear();this._celesphoniaEnglishEquipmentPainting=true;
+            try{this.drawTextEx(layout.text,this.textPadding(),0);}
+            finally{this._celesphoniaEnglishEquipmentPainting=false;}
+            this.upArrowVisible=false;this.downArrowVisible=!!layout.scrollable;
+        };
+        proto.refresh._celesphoniaEnglishEquipment=true;
+        proto.update=function(){
+            var result=update.apply(this,arguments),layout=this._celesphoniaEnglishEquipmentLayout;
+            if(layout&&layout.scrollable){
+                var limit=Math.max(0,this.contents.height-this.contentsHeight());
+                if(equipmentHover(this)&&Math.abs(TouchInput.wheelY)>=20)this.origin.y=Math.max(0,Math.min(limit,this.origin.y+(TouchInput.wheelY>0?1:-1)*(layout.fontSize+8)*2));
+                this.upArrowVisible=this.origin.y>0;this.downArrowVisible=this.origin.y<limit;
+            }
+            return result;
+        };
+        if(global.Window_Selectable&&typeof Window_Selectable.prototype.processWheel==='function'){
+            var wheel=Window_Selectable.prototype.processWheel;
+            Window_Selectable.prototype.processWheel=function(){
+                var scene=global.SceneManager&&SceneManager._scene;
+                if(scene&&equipmentHover(scene._helpWindow))return;
+                return wheel.apply(this,arguments);
+            };
+        }
     }
     var liveCommentRendering = false;
     function installLiveComments() {
@@ -1195,6 +1284,7 @@
         installSaveTitles();
         installDiagnosticPresentation();
         installLiveComments();
+        installEquipmentHelp();
         installGroperTicker();
     }
     function flushSeen() {

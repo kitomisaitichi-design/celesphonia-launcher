@@ -1,10 +1,17 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.27
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.28
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Long equipment help uses standard stat abbreviations when needed. Short help
+keeps full wording. Hover dense help and use the mouse wheel to read every
+effect; arrows indicate more text. Scrolling help does not move the item list.
+Composed AGI-down trait labels now display English. Checked in Maple 1.7.2
+and Three-in-One Ver1.061 without optional runtime controls. Stats and saves
+are unchanged. Before/after pictures are in Help > Notes & changelogs.
+
 Legacy runtime-save sessions are also carried when shared discovery assigned
 a new profile ID. Matching uses the original save path; ambiguous sessions
 are preserved and reported instead of being merged or overwritten.
