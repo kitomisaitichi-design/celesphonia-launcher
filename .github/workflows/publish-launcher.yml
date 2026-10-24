@@ -48,6 +48,7 @@ jobs:
             'three-in-one-3-3-5-v1-02','three-in-one-3-3-5-v1-03',
             'three-in-one-3-3-5-v1-04','three-in-one-3-3-5-v1-051',
             'three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053',
+            'three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061',
           )
           allowed.update('English/'+v+'/'+item for v in versions for item in ('manifest.json','dictionary.json','catalog.json'))
           with zipfile.ZipFile(archive) as bundle:
@@ -58,7 +59,7 @@ jobs:
             # Existing updaters allow these five root files and versioned packs.
             # The five English
             # pictures are embedded inside the EXE, never separate ZIP files.
-            assert len(allowed) == 38
+            assert len(allowed) == 44
             executable = bundle.read('Celesphonia Portable Switcher.exe')
             rescue = pathlib.Path('StreamRepeatChoiceRescue.js').read_bytes()
             assert rescue in executable, 'Missing verified repeat-stream choice rescue in EXE'
@@ -77,6 +78,8 @@ jobs:
               'NativeReferenceFiles-maple-1-7-2.json': ('maple-1-7-2', 9727),
               'NativeReferenceFiles-three-in-one-3-3-4.json': ('three-in-one-3-3-4', 9474),
               'NativeReferenceFiles-three-in-one-3-3-5-v1-053.json': ('three-in-one-3-3-5-v1-053', 11730),
+              'NativeReferenceFiles-three-in-one-3-3-5-v1-06.json': ('three-in-one-3-3-5-v1-06', 11738),
+              'NativeReferenceFiles-three-in-one-3-3-5-v1-061.json': ('three-in-one-3-3-5-v1-061', 11738),
             }
             for name, (ident, expected_count) in native_refs.items():
               content = pathlib.Path(name).read_bytes()
@@ -95,7 +98,7 @@ jobs:
             assert b'celesphonia-english/images/' in runtime, 'Help image redirection missing'
             assert b'English/ImageLocalization/manifest.json' in executable, 'Embedded localized artwork missing'
             artwork = json.loads(pathlib.Path('English/ImageLocalization/manifest.json').read_text('utf-8'))
-            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053'}
+            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053','three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061'}
             assert len(artwork['images']) == 5
             for name, info in artwork['images'].items():
               data = pathlib.Path('English/ImageLocalization',name).read_bytes()
@@ -189,6 +192,22 @@ jobs:
             assert all(dictionary.get(k)==v for k,v in engam.items())
             assert all(dictionary.get(k)==v for k,v in choice_aliases.items())
             assert 'Ver1.053' in changelog or 'v1.053' in changelog
+            new_approved=json.loads(pathlib.Path('English/v106-reviewed-overrides.json').read_text('utf-8'))
+            assert len(new_approved)==24
+            for ident,generation,size in [('three-in-one-3-3-5-v1-06',1060,547636557),('three-in-one-3-3-5-v1-061',1061,547640202)]:
+              recipe=next(x for x in recipes if x['Id']==ident)
+              assert recipe['SaveGeneration']==generation and recipe['ArchiveBytes']==size
+              assert recipe['CompleteOverlay'] and len(recipe['Files'])==5171
+              assert 'three-in-one-3-3-5-v1-053' in recipe['UpgradeFrom']
+              folder='English/'+ident+'/'
+              manifest=json.loads(bundle.read(folder+'manifest.json'))
+              dictionary=json.loads(bundle.read(folder+'dictionary.json'))
+              catalog=json.loads(bundle.read(folder+'catalog.json'))
+              assert manifest['Fingerprints']==recipe['Fingerprints']
+              assert manifest['DictionaryHash']==hashlib.sha256(bundle.read(folder+'dictionary.json')).hexdigest()
+              assert manifest['CatalogHash']==hashlib.sha256(bundle.read(folder+'catalog.json')).hexdigest()
+              assert len(dictionary)==manifest['TranslatedTexts'] and len(catalog)==manifest['TotalTexts']
+              assert all(dictionary.get(k)==v for k,v in new_approved.items())
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 

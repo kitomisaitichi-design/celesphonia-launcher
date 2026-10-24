@@ -104,26 +104,30 @@ public static class MixedSourceRecovery {
                 if(remaining.Count==0)break;
                 if(Directory.Exists(input))ProbeFolder(input,remaining,byName,report,cancellation);
                 else if(File.Exists(input)) {
+                    // A native .docx is itself a ZIP. Prefer an exact full-file
+                    // match before treating its signature as a source container.
+                    if(ProbeLooseFile(input,remaining,report,cancellation))continue;
                     string format=ArchiveFormat(input);
                     if(format=="zip")ProbeZip(input,remaining,byName,report,cancellation);
                     else if(format=="7z")Probe7z(input,remaining,byName,report,sevenZip,cancellation);
-                    else ProbeLooseFile(input,remaining,report,cancellation);
                 } else throw new IOException("Original source is missing: "+input);
             }
         }
         report.Missing=remaining.Keys.OrderBy(x=>x,StringComparer.OrdinalIgnoreCase).ToList();
         return report;
     }
-    static void ProbeLooseFile(string source,Dictionary<string,MixedNativeFile> remaining,
+    static bool ProbeLooseFile(string source,Dictionary<string,MixedNativeFile> remaining,
                                MixedRecoveryReport report,CancellationToken cancellation) {
         if(IsLink(source))throw new IOException("Original source is a linked file: "+source);
         long size=new FileInfo(source).Length;
         var candidates=remaining.Values.Where(x=>x.Size==size).ToArray();
-        if(candidates.Length==0)return;
+        if(candidates.Length==0)return false;
         string hash;
         using(var stream=File.OpenRead(source))hash=HashStream(stream,cancellation,size);
-        foreach(var file in candidates.Where(x=>x.Hash==hash))
+        var matches=candidates.Where(x=>x.Hash==hash).ToArray();
+        foreach(var file in matches)
             AddMatch(source,source,"file",file,remaining,report);
+        return matches.Length>0;
     }
     static List<MixedNativeFile> ValidateTargets(IEnumerable<MixedNativeFile> files) {
         if(files==null)throw new IOException("No complete native file inventory was supplied.");

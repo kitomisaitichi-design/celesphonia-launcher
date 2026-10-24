@@ -265,7 +265,7 @@ public static class PortableMain {
             if(args.Length>2 && args[0]=="--prepare-control-session"){var p=Store.Detect(args[1],"Private runtime verification");p.Id="control-verification-fixture";File.WriteAllText(args[2],RuntimeSupport.Prepare(p),new UTF8Encoding(false));return 0;}
             if(args.Length==2 && args[0]=="--native-reference-report") {
                 var manifests=new List<object>();
-                foreach(string id in new[]{"gorpg-1-23","ch-current","maple-1-7-2","three-in-one-3-3-4","three-in-one-3-3-5-v1-053"}) {
+                foreach(string id in new[]{"gorpg-1-23","ch-current","maple-1-7-2","three-in-one-3-3-4","three-in-one-3-3-5-v1-053","three-in-one-3-3-5-v1-06","three-in-one-3-3-5-v1-061"}) {
                     var reference=MixedSourceRecovery.LoadEmbeddedReference(id);
                     string resource=id=="gorpg-1-23"?"Celesphonia.NativeReferenceFiles.json":"Celesphonia.NativeReferenceFiles."+id+".json";
                     using(var stream=typeof(MixedSourceRecovery).Assembly.GetManifestResourceStream(resource))

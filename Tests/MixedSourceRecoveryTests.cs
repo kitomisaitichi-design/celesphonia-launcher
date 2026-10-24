@@ -136,7 +136,8 @@ public static class MixedSourceRecoveryTests {
             if(args.Length>1&&args[1]=="resource") {
                 var expectedCounts=new Dictionary<string,int> {
                     {"gorpg-1-23",7208},{"ch-current",13536},{"maple-1-7-2",9727},
-                    {"three-in-one-3-3-4",9474},{"three-in-one-3-3-5-v1-053",11730}
+                    {"three-in-one-3-3-4",9474},{"three-in-one-3-3-5-v1-053",11730},
+                    {"three-in-one-3-3-5-v1-06",11738},{"three-in-one-3-3-5-v1-061",11738}
                 };
                 foreach(var item in expectedCounts) {
                     var reference=MixedSourceRecovery.LoadEmbeddedReference(item.Key);

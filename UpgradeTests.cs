@@ -13,7 +13,7 @@ public static class UpgradeTests {
     // creator overlay shortcuts and prove the branch boundaries stay closed.
     public static int ForwardCreatorRoutes(){
         var catalog=RecipeSupport.Catalog();
-        string[] releases={"01","02","03","04","051","052","053"};
+        string[] releases={"01","02","03","04","051","052","053","06","061"};
         var ids=releases.Select(x=>"three-in-one-3-3-5-v1-"+x).ToArray();
         int checkedRoutes=0;
         for(int i=0;i<ids.Length;i++){
@@ -178,15 +178,15 @@ public static class UpgradeTests {
             Assert(sourceChecks==5,"Automated source checks were skipped");
             checks.Add("Compatible saved-profile priority, selected tie break, stale profile exclusion, unknown 1.05, archive fail-closed, native-mixed missing-byte rejection");
             int directRoutes=ForwardCreatorRoutes();
-            Assert(directRoutes==21,"Expected all 21 ordered creator version upgrades");
-            checks.Add("All 21 creator forward routes verified through v1.053; reverse, unknown and cross-branch saves rejected");
-            Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-053","The latest developer release must be v1.053");
+            Assert(directRoutes==36,"Expected all 36 ordered creator version upgrades");
+            checks.Add("All 36 creator forward routes verified through v1.061; reverse, unknown and cross-branch saves rejected");
+            Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-061","The latest developer release must be v1.061");
             var catalog=RecipeSupport.Catalog();
             var newest=catalog.Recipes.First(x=>x.Id==UpgradeSupport.Latest);
-            Assert(newest.SaveGeneration==1053&&newest.Files.Count==5163&&newest.ArchiveBytes==547645375,
-                "v1.053 complete creator recipe missing");
-            Assert(MixedSourceRecovery.LoadEmbeddedReference(newest.Id).Files.Count==11730,
-                "v1.053 full original-file target inventory missing");
+            Assert(newest.SaveGeneration==1061&&newest.Files.Count==5171&&newest.ArchiveBytes==547640202,
+                "v1.061 complete creator recipe missing");
+            Assert(MixedSourceRecovery.LoadEmbeddedReference(newest.Id).Files.Count==11738,
+                "v1.061 full original-file target inventory missing");
             var latest=catalog.Recipes.First(x=>x.Id=="three-in-one-3-3-5-v1-052");
             var previous=catalog.Recipes.First(x=>x.Id=="three-in-one-3-3-5-v1-051");
             Assert(latest.Files.Count==5163 && latest.SaveGeneration==1052 &&

@@ -69,12 +69,31 @@ oldest to newest; same-day releases follow their version order.
 
 ---
 
+### Ver1.06 — October 23, 2026
+
+1. Fixed the quest involving the child NPC repeatedly forcing its phase-three ending after it had been reached once, regardless of the selected option.
+2. Fixed Tatar's fixed Lust Crest incorrectly expiring after defeat by another enemy.
+3. Fixed the hypnosis debuff granted by the Awakening Box immediately expiring.
+4. Changed the effects of the Servant Brand and Mashiro's Brand.
+5. The special ointment can now remove the abdominal Lust Crest at any time.
+6. Consecutive climaxes while magic is fully overdrawn now increase the chance of losing transformation. Fixed the Strong Climax trait preventing that transformation-loss trigger.
+7. Clarified the Lust combat outfit's transformation help text.
+
+207. Synced the full release's hypnosis-effect changes: Hypnosis (Obedience) may prevent resistance attempts while restrained; Hypnotic Masturbation can replace combat actions with masturbation. More stacks increase the chance.
+
+### Ver1.061 — October 23, 2026
+
+1. Fixed clothing/underwear checks for the Renegade's suspicious cursed outfit.
+2. Fixed the return event sometimes failing to trigger when leaving a dungeon.
+
+The supplied 1.061 archive contains a folder named 1.062; its bundled creator changelog ends at Ver1.061. The launcher identifies verified contents rather than using that folder label.
+
 ## Source and terminology
 
-Translated from the author's Telegram messages supplied October 10, 16 and 18, 2026,
+Translated from the author's Telegram messages supplied October 10, 16, 18 and 23, 2026,
 and cross-checked against the original Chinese `三合一体验版修复日志.txt`
 included in the creator archives. The developer's original numbering
-**#200**, **#201** and **#203–206** denotes changes inherited from the full release; these
+**#200**, **#201** and **#203–207** denotes changes inherited from the full release; these
 are not extra game-mod versions.
 
 Game terms follow the existing English translation where available:

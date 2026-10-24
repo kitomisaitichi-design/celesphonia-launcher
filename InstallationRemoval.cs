@@ -48,7 +48,7 @@ public static class InstallationRemoval {
     const int MaxEntries = 250000;
     static readonly StringComparer Paths = StringComparer.OrdinalIgnoreCase;
     static readonly string[] MarkerNames = { "launcher-build.json", "launcher-reconstruction.json" };
-    static readonly string[] References = { "gorpg-1-23", "ch-current", "maple-1-7-2", "three-in-one-3-3-4", "three-in-one-3-3-5-v1-053" };
+    static readonly string[] References = { "gorpg-1-23", "ch-current", "maple-1-7-2", "three-in-one-3-3-4", "three-in-one-3-3-5-v1-053", "three-in-one-3-3-5-v1-06", "three-in-one-3-3-5-v1-061" };
 
     static string Full(string path) {
         if(string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path))throw new IOException("A registered absolute game path is required.");

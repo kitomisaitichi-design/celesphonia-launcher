@@ -13,6 +13,32 @@ public static class RuntimeSupport {
             using(var m=new MemoryStream()){s.CopyTo(m);return m.ToArray();}
         }
     }
+    public static void CarryForward(Profile source,Profile target,bool carrySaves) {
+        string parent=Path.Combine(Store.Home,"Control Sessions"),from=Store.Child(parent,source.Id),to=Store.Child(parent,target.Id);
+        string sourceSaves=Path.Combine(from,"save"),preferences=Path.Combine(from,"panel-settings.json");
+        bool saves=carrySaves&&Directory.Exists(sourceSaves)&&Store.SaveFiles(sourceSaves).Length>0;
+        if(!saves&&!File.Exists(preferences))return;
+        if(Directory.Exists(to))throw new IOException("The upgrade's control session already exists; preserve it and choose a new destination.");
+        string stage=Store.Child(parent,target.Id+"-upgrade-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
+        try {
+            if(File.Exists(preferences)) {
+                if((File.GetAttributes(preferences)&FileAttributes.ReparsePoint)!=0)throw new IOException("Linked control preferences cannot be migrated.");
+                File.Copy(preferences,Path.Combine(stage,"panel-settings.json"));
+            }
+            if(saves) {
+                Store.CheckLinks(sourceSaves);
+                var branch=new Profile{Id=source.Id+"-controls",Name=source.Name+" runtime controls",Root=source.Root,SavePath=sourceSaves};
+                string backup=Store.Backup(branch);Store.VerifyBackup(backup);
+                string destination=Path.Combine(stage,"save");Directory.CreateDirectory(destination);
+                foreach(string f in Store.SaveFiles(backup)) {
+                    string targetFile=Path.Combine(destination,Path.GetFileName(f));File.Copy(f,targetFile);
+                    if(Store.Hash(f)!=Store.Hash(targetFile))throw new IOException("Runtime-save migration verification failed.");
+                }
+                File.WriteAllText(Path.Combine(stage,"seed.json"),Store.Json.Serialize(new{source=target.SavePath,upgradedFrom=source.Id,sourceBackup=backup}),new UTF8Encoding(false));
+            }
+            Directory.Move(stage,to);
+        } finally {if(Directory.Exists(stage))ExtendedSafeCleanup.RemoveTreeSafely(stage);}
+    }
     public static string Prepare(Profile p) {
         string home=Store.Child(Path.Combine(Store.Home,"Control Sessions"),p.Id);
         string app=Path.Combine(home,"app"),saves=Path.Combine(home,"save");

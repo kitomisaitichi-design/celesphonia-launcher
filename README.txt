@@ -1,10 +1,21 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.25
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.26
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Added Three-in-One Ver1.06 and Ver1.061. Install latest content directly with
+GoRPG; no intermediate patches are needed. ZIP/RAR, misleading archive names,
+extracted folders and individual exact-hash files can be combined. Identical
+bytes from CH/Maple/older versions can fill gaps. Missing files stay explicit.
+Forward 3.3.5 upgrades back up/carry saves and keep the old profile. Other mod
+save branches remain separate. All 24 new display strings are translated;
+the existing English coverage remains partial. Controls are optional.
+The newer archive's folder says 1.062; its filename/changelog identify 1.061.
+Detection uses native fingerprints and hashes. See Help -> Notes & changelogs.
+
+RETAINED 1.0.25 FIXES
 Remaining missing-name cases in Heart/Noicon and other native notification
 modes are fixed. A name-only field no longer becomes a completely blank line.
 Intentional native newlines and stored text are retained.

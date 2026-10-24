@@ -21,7 +21,7 @@ class NotesReaderSmoke {
                 if(browser.ReadyState!=WebBrowserReadyState.Complete||browser.Document==null||browser.Document.Body==null)return;
                 if(stage==0){
                     check("launcher history renders",browser.Document.Body.InnerText.Contains("1.0.21")&&browser.Document.Body.InnerText.Contains("1.0.1"));
-                    check("current launcher history renders",browser.Document.Body.InnerText.Contains("1.0.25")&&browser.Document.Body.InnerText.Contains("name-only field"));
+                    check("current launcher history renders",browser.Document.Body.InnerText.Contains("1.0.26")&&browser.Document.Body.InnerText.Contains("Ver1.061"));
                     check("all eighteen comparison images render",browser.Document.Images.Count==18&&browser.Document.Images.Cast<HtmlElement>().All(x=>x.OffsetRectangle.Width>0&&x.OffsetRectangle.Height>0));
                     check("no scripts in local notes",browser.Document.GetElementsByTagName("script").Count==0);
                     form.ClientSize=new Size(680,500);stage++;ticks=0;return;

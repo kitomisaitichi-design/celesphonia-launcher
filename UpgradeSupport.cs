@@ -104,6 +104,7 @@ public static class UpgradeSupport {
             File.WriteAllText(Path.Combine(root,"launcher-upgrade.json"),Store.Json.Serialize(new{
                 sourceVersion=sourceId,targetVersion=targetId,sourceBackup=backup,carriedSaves=backup!=null,
                 reverseAllowed=false,verifiedOriginalFiles=report.RequiredCount,sourceKind="pooled original files"}),new UTF8Encoding(false));
+            if(carrySource!=null){game.RuntimeControls=carrySource.RuntimeControls;RuntimeSupport.CarryForward(carrySource,game,true);}
             game.Note="Independent "+recipe.Name+" from "+report.RequiredCount+" exact original file hashes; "+
                 (backup==null?"empty saves":"compatible saves backed up and verified")+"; sources retained";
             return game;
@@ -439,7 +440,8 @@ public static class UpgradeSupport {
             EnglishSupport.Apply(p);
         else if(EnglishSupport.Status(source).Enabled)
             p.Note+="; English display overlay needs a verified "+recipe.Name+" pack";
-        RecipeSupport.VerifyProfile(p);return p;
+        p.RuntimeControls=source.RuntimeControls;
+        RecipeSupport.VerifyProfile(p);RuntimeSupport.CarryForward(source,p,carrySaves);return p;
         }catch{
             if(createdRoot!=null&&Directory.Exists(createdRoot)&&
                Path.GetDirectoryName(Path.GetFullPath(createdRoot)).Equals(

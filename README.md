@@ -2,6 +2,14 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.26 — Three-in-One Ver1.06 and Ver1.061
+
+Install **Ver1.061 directly from GoRPG plus the latest creator content**, or upgrade an older supported Three-in-One 3.3.5 profile. Intermediate patches are not required. Ver1.06 is also recognized. Original ZIP/RAR archives, misleading filenames, recursively discovered extracted folders and individual files can contribute matching bytes through **Combine original sources**. CH/Maple/older game files can supply identical shared files; missing or conflicting bytes are reported before installation.
+
+Forward upgrades back up and carry the selected Three-in-One profile's saves, including save configuration/global metadata, and retain the old profile. GoRPG/CH/Maple save branches remain separate. Normal and optional control launches use the new profile's carried saves. The existing runtime-control checkbox, launcher settings and prior translation repairs are retained.
+
+Both new versions include translations for **all 24 newly introduced display strings**; the existing English coverage remains partial. Native scripts, mechanics, IDs and unlock requirements are unchanged. The creator's newer archive is named **1.061** and its changelog ends at **Ver1.061**, although its internal folder says **1.062**. Detection uses verified content, not that folder name. Read the [source and compatibility trace](docs/v106-support-trace.md) and chronological game developer notes in **Help → Notes & changelogs**.
+
 ## Launcher 1.0.25 — Remaining notification names and clearer terminology
 
 Extends the missing-name repair to native notification modes including **Heart** and **Noicon**, which were outside 1.0.24's Talk fix. Name-only notifications no longer become empty when the renderer consumes the actor name as a formatting code. Intentional native line breaks and stored text remain intact.
@@ -58,7 +66,7 @@ These are captures of the native CE806 status pictures, rendered with the same i
 
 Open **Help → Notes & changelogs** for an illustrated, scrollable reader. Switch between **Start here**, **Launcher updates** and **Game developer notes**, or jump directly to a section. The reader follows the launcher theme, can be moved and resized independently, and works offline.
 
-Read the full [launcher changelog](LAUNCHER%20CHANGELOG.md) or the separate [Three-in-One developer announcements](GAME%20MOD%20CHANGELOG.md). Developer announcements currently cover Three-in-One v1.01–Ver1.053; verified Maple developer notes have not been supplied. Launcher and game versions are separate.
+Read the full [launcher changelog](LAUNCHER%20CHANGELOG.md) or the separate [Three-in-One developer announcements](GAME%20MOD%20CHANGELOG.md). Developer announcements currently cover Three-in-One v1.01–Ver1.061; verified Maple developer notes have not been supplied. Launcher and game versions are separate.
 
 ## Download and update
 

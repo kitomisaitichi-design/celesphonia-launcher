@@ -870,7 +870,9 @@
         var version=global.CelesphoniaEnglishMeta && global.CelesphoniaEnglishMeta.version;
         if(version!=='three-in-one-3-3-5-v1-051' &&
            version!=='three-in-one-3-3-5-v1-052' &&
-           version!=='three-in-one-3-3-5-v1-053') return;
+           version!=='three-in-one-3-3-5-v1-053' &&
+           version!=='three-in-one-3-3-5-v1-06' &&
+           version!=='three-in-one-3-3-5-v1-061') return;
         if(!global.Game_Map || !global.Game_Event ||
             typeof Game_Map.prototype.update!=='function' ||
             typeof Game_Event.prototype.meetsConditions!=='function') return;
