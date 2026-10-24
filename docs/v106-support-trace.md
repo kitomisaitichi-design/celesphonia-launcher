@@ -24,6 +24,8 @@ The new source inventory contains 24 new display keys, including choice help, st
 
 The five localized native artwork sources and unchanged Map005 data retain their previous hashes. No translated name or description is written into native gameplay data. The existing normal-launch English refresh applies the new version-specific pack without requiring runtime controls.
 
+All 13 portable text catalogs use lossless gzip/base64 JSON envelopes to stay below existing updaters' 180 MiB expanded-package limit. Decompression restores identical source keys, kinds and contexts, with a 32 MiB per-catalog expansion bound and SHA-256 verification. Plain catalogs remain supported. Existing dictionary bytes are unchanged; only catalog storage and manifest hashes change. Translation export/import still works with full reconstructed metadata.
+
 ## Validation scope
 
 Acceptance requires exact native reconstruction, forward route and branch-boundary checks, source discovery, partial/individual source recovery and missing-file rejection, save hash preservation, uninstall preview/rollback boundaries, normal/control save routing, native English startup/render checks and final package/public ZIP verification. These checks do not establish an exhaustive playthrough of every new event or cross-version save state.

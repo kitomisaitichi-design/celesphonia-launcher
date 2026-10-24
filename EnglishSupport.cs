@@ -172,7 +172,18 @@ public static class EnglishSupport {
         if(result.Pack!=null&&!result.Modified){var problems=EnglishRelease.LooseProblems(result.VersionId);if(problems.Count>0)result.Detail+="\r\nUsing the verified built-in English pack; "+problems.Count+" loose pack files are missing or from a different release. Extract the complete ZIP into "+Store.Home+" to refresh them.";}
         return result;
     }
-    static Dictionary<string,object> Catalog(string id,EnglishManifest pack){byte[] bytes=EnglishRelease.Read(id,"catalog.json");if(EnglishRelease.Hash(bytes)!=pack.CatalogHash)throw new IOException("Bundled English catalog does not match its manifest: "+id);var result=Store.Json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(bytes));string observed=Path.Combine(PackFolder(id),"observed-catalog.json");if(File.Exists(observed))foreach(var item in Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(observed,Encoding.UTF8)))if(Cjk.IsMatch(item.Key)&&item.Key.Length<6000&&!result.ContainsKey(item.Key))result[item.Key]=item.Value;
+    static Dictionary<string,object> DecodeCatalog(byte[] bytes){
+        var result=Store.Json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(bytes));object format;
+        if(!result.TryGetValue("format",out format)||Convert.ToString(format)!="cph-catalog-gzip-v1")return result;
+        using(var input=new MemoryStream(Convert.FromBase64String(Convert.ToString(result["data"]))))
+        using(var gzip=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress))
+        using(var output=new MemoryStream()){
+            var buffer=new byte[65536];int read;while((read=gzip.Read(buffer,0,buffer.Length))>0){if(output.Length+read>32*1024*1024)throw new IOException("Expanded English catalog exceeds its limit.");output.Write(buffer,0,read);}
+            bytes=output.ToArray();if(EnglishRelease.Hash(bytes)!=Convert.ToString(result["sha256"]))throw new IOException("Expanded English catalog hash mismatch.");
+            return Store.Json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(bytes));
+        }
+    }
+    static Dictionary<string,object> Catalog(string id,EnglishManifest pack){byte[] bytes=EnglishRelease.Read(id,"catalog.json");if(EnglishRelease.Hash(bytes)!=pack.CatalogHash)throw new IOException("Bundled English catalog does not match its manifest: "+id);var result=DecodeCatalog(bytes);string observed=Path.Combine(PackFolder(id),"observed-catalog.json");if(File.Exists(observed))foreach(var item in Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(observed,Encoding.UTF8)))if(Cjk.IsMatch(item.Key)&&item.Key.Length<6000&&!result.ContainsKey(item.Key))result[item.Key]=item.Value;
         // Portable catalogs deduplicate an identical source value: the JSON
         // object key is itself the complete native source text. Restore the
         // redundant field in memory for existing export/MTool consumers.
@@ -333,7 +344,7 @@ public static class EnglishSupport {
         foreach(var item in supplied){if(string.IsNullOrWhiteSpace(item.Value)||!catalog.ContainsKey(item.Key)){ignored++;continue;}if(item.Key==item.Value){unchanged++;continue;}if(!Compatible(item.Key,item.Value))throw new IOException("Import rejected: control codes, plugin conditions or line count changed in: "+item.Key.Substring(0,Math.Min(100,item.Key.Length)));accepted[item.Key]=item.Value;}
         if(accepted.Count==0)return "No translated values found. "+unchanged.ToString("N0")+" unchanged template entries; "+ignored.ToString("N0")+" outside this version's display catalog.";
         string file=Path.Combine(PackFolder(status.VersionId),"user-translations.json");var merged=File.Exists(file)?Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(file,Encoding.UTF8)):new Dictionary<string,string>();foreach(var item in accepted)merged[item.Key]=item.Value;JsonWrite(file,merged);
-        var built=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(Path.Combine(PackFolder(status.VersionId),"catalog.json"),Encoding.UTF8));foreach(var item in accepted)if(!built.ContainsKey(item.Key))observed[item.Key]=catalog[item.Key];JsonWrite(observedFile,observed);
+        var built=DecodeCatalog(File.ReadAllBytes(Path.Combine(PackFolder(status.VersionId),"catalog.json")));foreach(var item in accepted)if(!built.ContainsKey(item.Key))observed[item.Key]=catalog[item.Key];JsonWrite(observedFile,observed);
         var defaults=Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(Path.Combine(PackFolder(status.VersionId),"dictionary.json"),Encoding.UTF8));JsonWrite(Path.Combine(PackFolder(status.VersionId),"user-statistics.json"),new{DictionaryHash=status.Pack.DictionaryHash,AdditionalTexts=merged.Keys.Count(x=>!defaults.ContainsKey(x)),ExtraCatalogTexts=observed.Keys.Count(x=>!built.ContainsKey(x))});
         if(status.Enabled)Apply(profile);return "Imported "+accepted.Count.ToString("N0")+" translations for "+status.Pack.Name+"; ignored "+ignored.ToString("N0")+" unrelated entries.";
     }

@@ -29,6 +29,14 @@ jobs:
         run: |
           python3 - <<'PY'
           import hashlib, json, os, pathlib, re, struct, zipfile, zlib
+          import base64,gzip
+          def read_catalog(data):
+            value=json.loads(data)
+            if value.get('format')=='cph-catalog-gzip-v1':
+              decoded=gzip.decompress(base64.b64decode(value['data'],validate=True))
+              assert len(decoded)<=32*1024*1024 and hashlib.sha256(decoded).hexdigest()==value['sha256']
+              return json.loads(decoded)
+            return value
           tag = os.environ['GITHUB_REF_NAME']
           match = re.fullmatch(r'launcher-v(\d+\.\d+\.\d+)', tag)
           assert match, 'Unexpected release tag'
@@ -129,7 +137,7 @@ jobs:
             assert latest_fingerprint['Fingerprints']==latest['Fingerprints'], 'v1.052 native detection mismatch'
             assert 'kitomisaitichi-design/celesphonia-launcher' in source, 'Official update source not embedded'
             translation = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/dictionary.json'))
-            catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-04/catalog.json'))
+            catalog = read_catalog(bundle.read('English/three-in-one-3-3-5-v1-04/catalog.json'))
             aliases = [k for k, row in catalog.items() if 'legacy-runtime-display' in row.get('kinds', [])]
             assert len(aliases) == 472 and all(k in translation for k in aliases), 'Missing verified legacy v1.04 runtime displays'
             title = [k for k in translation if k.startswith('魔法少女苍蓝星★三合一改')]
@@ -143,7 +151,7 @@ jobs:
                 assert translation.get(source)==target, 'Missing legacy display: '+source
             new_manifest = json.loads(bundle.read('English/three-in-one-3-3-5-v1-051/manifest.json'))
             new_dictionary = json.loads(bundle.read('English/three-in-one-3-3-5-v1-051/dictionary.json'))
-            new_catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-051/catalog.json'))
+            new_catalog = read_catalog(bundle.read('English/three-in-one-3-3-5-v1-051/catalog.json'))
             assert len(new_dictionary) >= 34996, 'Ver1.051 translation coverage regressed'
             assert len(new_dictionary)==new_manifest['TranslatedTexts'] and len(new_catalog)==new_manifest['TotalTexts']
             assert new_manifest['Fingerprints']==new_recipe['Fingerprints']
@@ -158,7 +166,7 @@ jobs:
             assert len(engam)==9 and all(new_dictionary.get(k)==v for k,v in engam.items()), 'Creator Skill Engram line descriptions regressed'
             latest_manifest = json.loads(bundle.read('English/three-in-one-3-3-5-v1-052/manifest.json'))
             latest_dictionary = json.loads(bundle.read('English/three-in-one-3-3-5-v1-052/dictionary.json'))
-            latest_catalog = json.loads(bundle.read('English/three-in-one-3-3-5-v1-052/catalog.json'))
+            latest_catalog = read_catalog(bundle.read('English/three-in-one-3-3-5-v1-052/catalog.json'))
             assert latest_manifest['Fingerprints']==latest['Fingerprints']
             assert latest_manifest['DictionaryHash']==hashlib.sha256(bundle.read('English/three-in-one-3-3-5-v1-052/dictionary.json')).hexdigest()
             assert latest_manifest['CatalogHash']==hashlib.sha256(bundle.read('English/three-in-one-3-3-5-v1-052/catalog.json')).hexdigest()
@@ -180,7 +188,7 @@ jobs:
             folder='English/'+creator['Id']+'/'
             manifest=json.loads(bundle.read(folder+'manifest.json'))
             dictionary=json.loads(bundle.read(folder+'dictionary.json'))
-            catalog=json.loads(bundle.read(folder+'catalog.json'))
+            catalog=read_catalog(bundle.read(folder+'catalog.json'))
             assert manifest['Fingerprints']==creator['Fingerprints']
             assert manifest['DictionaryHash']==hashlib.sha256(bundle.read(folder+'dictionary.json')).hexdigest()
             assert manifest['CatalogHash']==hashlib.sha256(bundle.read(folder+'catalog.json')).hexdigest()
@@ -202,7 +210,7 @@ jobs:
               folder='English/'+ident+'/'
               manifest=json.loads(bundle.read(folder+'manifest.json'))
               dictionary=json.loads(bundle.read(folder+'dictionary.json'))
-              catalog=json.loads(bundle.read(folder+'catalog.json'))
+              catalog=read_catalog(bundle.read(folder+'catalog.json'))
               assert manifest['Fingerprints']==recipe['Fingerprints']
               assert manifest['DictionaryHash']==hashlib.sha256(bundle.read(folder+'dictionary.json')).hexdigest()
               assert manifest['CatalogHash']==hashlib.sha256(bundle.read(folder+'catalog.json')).hexdigest()

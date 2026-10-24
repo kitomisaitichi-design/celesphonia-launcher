@@ -1,7 +1,7 @@
 """Read-only Celesphonia text inventory, reference alignment, and overlay pack builder.
 Never writes into a game directory. Translation keys are original displayed strings.
 """
-import base64,collections,difflib,hashlib,json,pathlib,re,sys
+import base64,collections,difflib,gzip,hashlib,json,pathlib,re,sys
 HOME=pathlib.Path(__file__).resolve().parent
 if HOME.name=='Source':HOME=HOME.parent
 CJK=re.compile(r'[\u3040-\u30ff\u3400-\u9fff]')
@@ -42,7 +42,12 @@ def parametertexts(obj,path=(),depth=0):
   for k,v in obj.items():yield from parametertexts(v,path+(k,),depth+1)
 def sha(b):return hashlib.sha256(b).hexdigest()
 def dump(p,obj):p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(obj,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-def load(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def load(p):
+ data=json.loads(p.read_text(encoding='utf-8-sig'))
+ if isinstance(data,dict) and data.get('format')=='cph-catalog-gzip-v1':
+  raw=gzip.decompress(base64.b64decode(data['data'],validate=True));assert len(raw)<=32*1024*1024 and sha(raw)==data['sha256']
+  return json.loads(raw)
+ return data
 def webroot(root):return (root/load(root/'package.json')['main']).parent
 def dataread(p):
  b=p.read_bytes()

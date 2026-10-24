@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs'), vm = require('vm'), path = require('path'), assert = require('assert');
+function readCatalog(file){const value=JSON.parse(fs.readFileSync(file,'utf8'));return value.format==='cph-catalog-gzip-v1'?JSON.parse(require('zlib').gunzipSync(Buffer.from(value.data,'base64'))):value;}
 const home = path.dirname(__dirname), calls = [], written = {};
 const data = {actors: {1: {name: '天音'}}, variables: {4: '秘密记忆', 8: 3202, 9: 4}, choices: ['是', '否'], messages: ['原文一', '原文二'], tickerLog: ['\\i[\\V[8]]\\c[\\V[9]] 任务完成！']};
 data.items = {301: {name: '怪魔的魂片(极小)', iconIndex: 2245}, 303: {name: '怪魔的魂片(中)', iconIndex: 2245}};
@@ -41,12 +42,12 @@ Spriteset_Map.prototype.createUpperLayer=function(){this._hzChoiceScreen={bitmap
 Scene_Boot.prototype.start = function () { calls.push('boot'); };
 const realV104Titles=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-04','dictionary.json'),'utf8'));
 const realV1051=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-051','dictionary.json'),'utf8'));
-const realV1051Catalog=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-051','catalog.json'),'utf8'));
+const realV1051Catalog=readCatalog(path.join(home,'English','three-in-one-3-3-5-v1-051','catalog.json'));
 const realV1051Manifest=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-051','manifest.json'),'utf8'));
 const realV1051Aliases=JSON.parse(fs.readFileSync(path.join(home,'English','v1051-rendered-choice-aliases.json'),'utf8')).derived_aliases;
 const realV1051Engrams=JSON.parse(fs.readFileSync(path.join(home,'English','v1051-engram-overrides.json'),'utf8'));
 const realV1052=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-052','dictionary.json'),'utf8'));
-const realV1052Catalog=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-052','catalog.json'),'utf8'));
+const realV1052Catalog=readCatalog(path.join(home,'English','three-in-one-3-3-5-v1-052','catalog.json'));
 const realV1052Manifest=JSON.parse(fs.readFileSync(path.join(home,'English','three-in-one-3-3-5-v1-052','manifest.json'),'utf8'));
 assert.strictEqual(realV1052Manifest.VersionId,'three-in-one-3-3-5-v1-052');
 assert.strictEqual(Object.keys(realV1052).length,realV1052Manifest.TranslatedTexts);
@@ -408,7 +409,7 @@ assert.equal(mapCalls[0].text,'Private Ninomiya Academy');assert.equal(mapCalls[
 for (const id of ['gorpg-1-23', 'maple-1-7-2', 'three-in-one-3-3-4', 'three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01']) {
     const directory = path.join(home, 'English', id), dict = JSON.parse(fs.readFileSync(path.join(directory, 'dictionary.json'), 'utf8'));
     const meta = JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'), 'utf8'));
-    const catalog = JSON.parse(fs.readFileSync(path.join(directory, 'catalog.json'), 'utf8'));
+    const catalog = readCatalog(path.join(directory, 'catalog.json'));
     assert.equal(Object.keys(dict).length, meta.TranslatedTexts);
     const controls = /(?:\\|\x1b)(?:[A-Za-z]+(?:\[[^\]\r\n]*\]|<[^>\r\n]*>)?|[.$|!><^{}\\])|%[1-9]|<(?:\/?[A-Za-z][^>\r\n]*)>|(?:if|en|cmpd|cmxs)\([^\r\n]*\)/g;
     for (const [source, target] of Object.entries(dict)) {

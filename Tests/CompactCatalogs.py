@@ -5,6 +5,8 @@ row's source field. Remove only that redundant copy. The application puts it
 back in memory when exporting translations or reading source metadata.
 """
 import hashlib
+import base64
+import gzip
 import json
 import pathlib
 import sys
@@ -34,6 +36,8 @@ def main():
         manifest_file = folder / "manifest.json"
         data = cat_file.read_bytes()
         rows = json.loads(data.decode("utf-8-sig"))
+        if rows.get('format')=='cph-catalog-gzip-v1':
+            decoded=gzip.decompress(base64.b64decode(rows['data'],validate=True));assert sha(decoded)==rows['sha256'];rows=json.loads(decoded)
         manifest = json.loads(manifest_file.read_text("utf-8-sig"))
         assert manifest["TotalTexts"] == len(rows)
         assert all(isinstance(row, dict) and set(row) <= {"source", "kinds", "contexts"}
@@ -43,7 +47,9 @@ def main():
         compact = {key: {field: value for field, value in row.items()
                          if field != "source"} for key, row in rows.items()}
         full = {key: {"source": key, **row} for key, row in compact.items()}
-        compact_bytes = serialized(compact)
+        raw_compact = serialized(compact)
+        compact_bytes = serialized({'format':'cph-catalog-gzip-v1','sha256':sha(raw_compact),'data':base64.b64encode(gzip.compress(raw_compact,compresslevel=9,mtime=0)).decode('ascii')})
+        assert json.loads(gzip.decompress(base64.b64decode(json.loads(compact_bytes)['data'])))==compact
         rebuilt_full = serialized(full)
         original_digest = sha(rebuilt_full)
         if ident in previous:
@@ -73,7 +79,7 @@ def main():
             "losslessRecoveredOriginal": sha(rebuilt_full) == original_digest,
         }
     if prior.is_file():
-        assert all(results.get(ident) == proof for ident, proof in previous.items()), (
+        assert all(results[ident]['fullSha256']==proof['fullSha256'] and results[ident]['sourceKeysPreserved']==proof['sourceKeysPreserved'] for ident, proof in previous.items()), (
             "Rebuilt catalog deduplication changed previously verified metadata")
     prior.write_bytes(serialized(results))
     print(json.dumps({
