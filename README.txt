@@ -10,9 +10,11 @@ folder. Automatic and saved defaults move outside source folders. Conflicting
 custom choices open a folder picker with folder creation. Existing games,
 saves and valid custom locations stay unchanged. No source re-download is
 needed for this destination error. Original-file checks remain enabled.
+The update notice now shows the catalog's latest game release, Ver1.061,
+and follows future supported versions automatically.
 
-Standard overflow abbreviations match Kagura/CH56.6: ATK, DEF, MAT, MD, AGI.
-Magic defense uses MD, including compact stat-down traits.
+Standard overflow abbreviations are ATK, DEF, MAT, MDF, AGI.
+Magic defense uses MDF, including compact stat-down traits.
 
 Long equipment help uses standard stat abbreviations when needed. Short help
 keeps full wording. Hover dense help and use the mouse wheel to read every

@@ -57,6 +57,11 @@ class InstallDestinationTests {
                 Check("native Install page has destination text",!string.IsNullOrEmpty((string)evidence["destinationText"]));form.Close();
             }
             if(fixedBuild){
+                string releaseText=(string)Call("LauncherUpdate","CurrentVersionMessage","fixture/repository");
+                Check("update notice names catalog's actual latest release",releaseText.Contains((string)Get(assembly.GetType("UpgradeSupport"),"LatestName"))&&releaseText.Contains("1.061")&&!releaseText.Contains("1.053"));
+                object catalog=Call("RecipeSupport","Catalog");var recipes=(IList)Get(catalog,"Recipes");
+                object future=json.Deserialize("{\"Id\":\"future-fixture\",\"Name\":\"Future release fixture\",\"Family\":\"combined-story\",\"SaveGeneration\":999999,\"UpgradeFrom\":[\"three-in-one-3-3-5-trial\"]}",assembly.GetType("ModRecipe"));
+                recipes.Add(future);try{Check("update notice follows a future catalog release",((string)Call("LauncherUpdate","CurrentVersionMessage","fixture/repository")).Contains("Future release fixture"));}finally{recipes.Remove(future);}
                 string resolved=(string)Get(settings,"InstallRoot");
                 Check("default moves outside source folder",!(bool)Call("InstallDestination","Within",resolved,root));
                 Check("safe suggestion creates no directory",directoriesBefore.SequenceEqual(Directory.GetDirectories(Path.GetDirectoryName(root)).OrderBy(x=>x)));

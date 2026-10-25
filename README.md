@@ -6,7 +6,9 @@ Portable Windows launcher with verified installation and upgrades, separate game
 
 Fixes **“Select a destination outside original source folders”** when the launcher was extracted inside GoRPG or another source game. Automatic and previously saved automatic destinations now move outside the selected source folders before installation. Custom conflicting locations open a validated folder picker that can create a separate folder. Existing games, save paths and valid custom destinations stay unchanged.
 
-This applies to the shared installation/upgrade flow, including direct GoRPG plus Ver1.061 and combined original sources. Exact native-file checks and source protection remain enabled. Read the [destination trace](docs/destination-1.0.30-trace.md); native before/after previews are in **Help → Notes & changelogs → Launcher updates**. English/runtime controls and the Kagura abbreviations from 1.0.29 are unchanged.
+This applies to the shared installation/upgrade flow, including direct GoRPG plus Ver1.061 and combined original sources. Exact native-file checks and source protection remain enabled. Read the [destination trace](docs/destination-1.0.30-trace.md); native before/after previews are in **Help → Notes & changelogs → Launcher updates**. Equipment abbreviations use **ATK, DEF, MAT, MDF and AGI**, correcting 1.0.29's MD label. Runtime-control behavior and translation dictionaries remain unchanged.
+
+The launcher-update notice also reads the supported game release from the shared catalog, showing **Ver1.061** instead of the stale Ver1.053 label.
 
 ## Launcher 1.0.29 — Kagura stat abbreviations
 

@@ -33,7 +33,7 @@
                 if(fixed){
                     check('equipment complete readable layout '+p.join('-'),!!layout&&layout.fits&&layout.fontSize>=20,row);
                     check('equipment has no missing AGI labels '+p.join('-'),!/敏捷下降/.test(row.rendered),{});
-                    if(layout.abbreviated)check('Kagura MD abbreviation '+p.join('-'),!/\bMDF\b/.test(layout.text),{});
+                    if(layout.abbreviated)check('canonical MDF abbreviation '+p.join('-'),!/\bMD\b/.test(layout.text),{});
                     var numbers=function(t){return t.match(/[+\-]?\d+(?:\.\d+)?%?/g)||[];},codes=function(t){return t.match(/(?:\\|\x1b)[A-Za-z]+(?:\[[^\]\r\n]*\]|<[^>\r\n]*>)?/g)||[];};
                     check('numbers and display codes preserved '+p.join('-'),JSON.stringify(numbers(layout.text))===JSON.stringify(numbers(layout.originalDisplay))&&JSON.stringify(codes(layout.text))===JSON.stringify(codes(layout.originalDisplay)),{});
                     if(item===$dataWeapons[10])check('short description retains full wording and native font',!layout.abbreviated&&layout.fontSize===Window_Base.prototype.standardFontSize.call(help),layout);

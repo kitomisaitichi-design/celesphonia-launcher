@@ -428,8 +428,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             if(IsDisposed)return;
             if(info==null){
                 status.Text="Celesphonia launcher v"+LauncherUpdate.CurrentVersion+" is up to date.";
-                MessageBox.Show(this,"You're running the newest launcher version available from "+config.Repository+
-                    ".\r\nLatest supported game/mod release: Three-in-One 3.3.5 Ver1.053. Game releases are independent of launcher updates.","Launcher updates");
+                MessageBox.Show(this,LauncherUpdate.CurrentVersionMessage(config.Repository),"Launcher updates");
                 return;
             }
             status.Text="Launcher v"+info.Version+" available from "+info.Repository;

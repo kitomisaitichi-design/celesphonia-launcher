@@ -35,6 +35,10 @@ public class LauncherUpdateStage {
 }
 public static class LauncherUpdate {
     public const string CurrentVersion="1.0.30";
+    public static string CurrentVersionMessage(string repository){
+        return "You're running the newest launcher version available from "+repository+
+            ".\r\nLatest supported game/mod release: "+UpgradeSupport.LatestName+". Game releases are independent of launcher updates.";
+    }
     public const string OfficialRepository="kitomisaitichi-design/celesphonia-launcher";
     public const string Asset="Celesphonia-Delta-Launcher-CH1.zip";
     const string ChecksumAsset="Celesphonia-Delta-Launcher-CH1.zip.sha256.txt";

@@ -42,6 +42,7 @@ public sealed class UpgradeSourceChoice {
 public static class UpgradeSupport {
     public const string Trial="three-in-one-3-3-5-trial";
     public static string Latest {get{return RecipeSupport.Catalog().Recipes.Where(x=>x.Family=="combined-story"&&x.UpgradeFrom!=null&&x.UpgradeFrom.Length>0).OrderByDescending(x=>x.SaveGeneration).First().Id;}}
+    public static string LatestName {get{return RecipeSupport.Catalog().Recipes.First(x=>x.Id==Latest).Name;}}
     // The creator's full v1.051/v1.052 bundle can be applied directly to an
     // earlier installed 3.3.5 game when the target contains every file in the
     // older full overlay. A delta pack or intermediate version is not needed.
