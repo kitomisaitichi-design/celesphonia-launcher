@@ -113,6 +113,7 @@ public static class UniversalSupport {
         throw new IOException("This game folder does not match a supported reference build. Select an intact CH, Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 trial installation. Folder names alone are not enough.");
     }
     public static Profile Install(string pack,string source,string installRoot,string targetId){
+        InstallDestination.RequireSafe(installRoot,new[]{source,pack});
         UpgradeSupport.RequireRoute(Identify(source),targetId);
         using(var zip=ZipFile.OpenRead(pack)){
             var m=Manifest(zip);string sourceId=SourceId(m,source);var target=m.Versions.FirstOrDefault(x=>x.Id==targetId);if(target==null)throw new IOException("The selected version is not present in this pack.");if(sourceId==targetId)throw new IOException("You already have this version. Register its folder and switch to it directly.");

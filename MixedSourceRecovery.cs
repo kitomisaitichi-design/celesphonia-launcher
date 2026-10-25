@@ -39,6 +39,69 @@ public sealed class MixedRecoveryReport {
     public List<MixedRecoverySelection> Selections {get;internal set;}
     internal List<MixedNativeFile> Expected;
 }
+// Shared new-install policy. This never moves an existing game or creates a folder.
+public static class InstallDestination {
+    public static string Full(string path){
+        string full=System.IO.Path.GetFullPath(path),root=System.IO.Path.GetPathRoot(full);
+        return full.Length>root.Length?full.TrimEnd('\\','/'):root;
+    }
+    public static bool Within(string path,string parent){
+        string target=Full(path),source=Full(parent);
+        return target.Equals(source,StringComparison.OrdinalIgnoreCase)||
+            target.StartsWith(source.TrimEnd('\\','/')+System.IO.Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase);
+    }
+    public static string[] SourceFolders(IEnumerable<string> sources){
+        return (sources??Enumerable.Empty<string>()).Where(x=>!string.IsNullOrWhiteSpace(x)&&Directory.Exists(x))
+            .Select(Full).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+    public static bool Conflicts(string location,IEnumerable<string> sources){
+        return SourceFolders(sources).Any(x=>Within(location,x));
+    }
+    static bool LinkedParent(string location){
+        string current=Full(location);
+        while(!string.IsNullOrEmpty(current)){
+            if((Directory.Exists(current)||File.Exists(current))&&
+               (File.GetAttributes(current)&FileAttributes.ReparsePoint)!=0)return true;
+            current=System.IO.Path.GetDirectoryName(current);
+        }
+        return false;
+    }
+    public static bool Safe(string location,IEnumerable<string> sources){
+        return !string.IsNullOrWhiteSpace(location)&&!File.Exists(location)&&!Conflicts(location,sources)&&!LinkedParent(location);
+    }
+    public static void RequireSafe(string location,IEnumerable<string> sources){
+        if(!Safe(location,sources))throw new IOException("Choose an installation folder outside all original source folders. Use Change install folder to select or create a separate folder; existing games and saves stay where they are.");
+    }
+    public static bool Automatic(Settings settings,string home){
+        return settings.InstallRootUserSelected.HasValue?!settings.InstallRootUserSelected.Value:
+            !string.IsNullOrWhiteSpace(settings.InstallRoot)&&Full(settings.InstallRoot).Equals(Full(System.IO.Path.Combine(home,"Game Profiles")),StringComparison.OrdinalIgnoreCase);
+    }
+    public static string Suggest(string location,IEnumerable<string> sources){
+        if(string.IsNullOrWhiteSpace(location))location=Store.Home;
+        string[] folders=SourceFolders(sources);var candidates=new List<string>();
+        foreach(string blocked in folders.Where(x=>Within(location,x)).OrderBy(x=>x.Length)){
+            string parent=System.IO.Path.GetDirectoryName(blocked);
+            if(!string.IsNullOrEmpty(parent))candidates.Add(System.IO.Path.Combine(parent,"Celesphonia Game Profiles"));
+        }
+        foreach(string parent in new[]{Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)})
+            if(!string.IsNullOrEmpty(parent))candidates.Add(System.IO.Path.Combine(parent,"Celesphonia Game Profiles"));
+        return candidates.Distinct(StringComparer.OrdinalIgnoreCase).FirstOrDefault(x=>Safe(x,folders));
+    }
+    public static bool RepairDefault(Settings settings,IEnumerable<string> sources,string home){
+        if(Safe(settings.InstallRoot,sources)||!Automatic(settings,home))return false;
+        string replacement=Suggest(settings.InstallRoot,sources);if(replacement==null)return false;
+        settings.InstallRoot=replacement;settings.InstallRootUserSelected=false;return true;
+    }
+    public static string Resolve(Settings settings,IEnumerable<string> sources,string home,Func<string,string> choose){
+        string[] folders=SourceFolders(sources);
+        if(Safe(settings.InstallRoot,folders))return settings.InstallRoot;
+        if(RepairDefault(settings,folders,home))return settings.InstallRoot;
+        string selected=choose(Suggest(settings.InstallRoot,folders)??settings.InstallRoot);
+        if(selected==null)return null;
+        RequireSafe(selected,folders);settings.InstallRoot=Full(selected);settings.InstallRootUserSelected=true;
+        return settings.InstallRoot;
+    }
+}
 public static class MixedSourceRecovery {
     const string ReferenceResource = "Celesphonia.NativeReferenceFiles.json";
     const string SevenZipExeResource = "Celesphonia.Rar7z.exe";
@@ -337,11 +400,12 @@ public static class MixedSourceRecovery {
         if(expected.Count!=report.Selections.Count ||
            expected.Any(x=>!report.Selections.Any(y=>PathComparer.Equals(x.Path,y.Path)&&x.Hash==y.Hash&&x.Size==y.Size)))
             throw new IOException("Recovery report is incomplete or was changed.");
-        foreach(var selection in report.Selections) {
-            string src=System.IO.Path.GetFullPath(selection.Source).TrimEnd('\\','/');
-            if(target.StartsWith(src+System.IO.Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
-                throw new IOException("Select a destination outside original source folders.");
+        // Retain the original lexical guard even if a probed source disappears.
+        foreach(var selection in report.Selections){
+            if(InstallDestination.Within(target,selection.Source))
+                throw new IOException("Select a destination outside original source folders. Use Change install folder to choose a separate location.");
         }
+        InstallDestination.RequireSafe(target,report.Selections.Select(x=>x.Source));
         string parent=System.IO.Path.GetDirectoryName(target);
         if(!Directory.Exists(parent))throw new IOException("Recovery destination parent does not exist.");
         string stage=System.IO.Path.Combine(parent,".cph-mixed-"+Guid.NewGuid().ToString("N"));

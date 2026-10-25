@@ -1,10 +1,16 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.29
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.30
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Fixes unsafe install defaults when the launcher is inside an original game
+folder. Automatic and saved defaults move outside source folders. Conflicting
+custom choices open a folder picker with folder creation. Existing games,
+saves and valid custom locations stay unchanged. No source re-download is
+needed for this destination error. Original-file checks remain enabled.
+
 Standard overflow abbreviations match Kagura/CH56.6: ATK, DEF, MAT, MD, AGI.
 Magic defense uses MD, including compact stat-down traits.
 

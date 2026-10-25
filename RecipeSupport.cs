@@ -109,6 +109,7 @@ public static class RecipeSupport {
     }
     public static Profile Install(string basis,string installRoot,string name,List<LayerInput> inputs){
         ValidateBase(basis);if(inputs.Count==0)throw new IOException("Choose at least one overlay.");
+        InstallDestination.RequireSafe(installRoot,new[]{basis}.Concat(inputs.Select(x=>x.Source)));
         string id=Guid.NewGuid().ToString("N"),staging=Store.ArchiveStaging("layers");
         var layers=new List<Tuple<string,ModRecipe,string,string>>();
         try {
@@ -244,7 +245,7 @@ public static class RecipeSupport {
         var button=new Button{Text="Install ordered mod layers",Location=new Point(452,508),Size=new Size(396,42),FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(87,75,181),ForeColor=Color.White};button.FlatAppearance.BorderSize=0;form.Controls.Add(button);
         var label=form.Controls.OfType<Label>().First(x=>x.Location.Y==560);label.Text="Full independent installs; saves stay with each version. See UPGRADE PATHS.md.";
         var location=new Button{Text="Install location...",Location=new Point(683,409),Size=new Size(165,30),FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(43,51,71),ForeColor=Color.White};location.FlatAppearance.BorderSize=0;form.Controls.Add(location);
-        location.Click+=delegate{using(var pick=new FolderBrowserDialog{Description="Choose where new complete game profiles will be installed. Existing profiles stay where they are.",SelectedPath=settings.InstallRoot})if(pick.ShowDialog(form)==DialogResult.OK){settings.InstallRoot=pick.SelectedPath;Store.Write(settings);MessageBox.Show(form,"New profiles will be installed in:\r\n"+settings.InstallRoot);}};
+        location.Click+=delegate{using(var pick=new FolderBrowserDialog{Description="Choose where new complete game profiles will be installed. Existing profiles stay where they are.",SelectedPath=settings.InstallRoot})if(pick.ShowDialog(form)==DialogResult.OK){settings.InstallRoot=pick.SelectedPath;settings.InstallRootUserSelected=true;Store.Write(settings);MessageBox.Show(form,"New profiles will be installed in:\r\n"+settings.InstallRoot);}};
         button.Click+=delegate{
             if(Store.Running(settings)){MessageBox.Show(form,"Save and close the game first.");return;}
             var bases=settings.Profiles.Where(x=>IsCleanBase(x.Root)).ToArray();if(bases.Length==0){MessageBox.Show(form,"Register clean Gorpg 1.23 or install its delta pack first. Existing patched branches cannot be the base.");return;}

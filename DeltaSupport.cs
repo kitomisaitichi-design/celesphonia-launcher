@@ -182,6 +182,7 @@ public static class DeltaSupport {
         if(f.Source!=null && f.Suffix>0)using(var source=File.OpenRead(Resolve(basis,f.Source)))CopyPart(source,output,source.Length-f.Suffix,f.Suffix);
     }
     public static Profile Install(string pack,string basis,string installRoot) {
+        InstallDestination.RequireSafe(installRoot,new[]{basis,pack});
         hashCache.Clear();
         using(var zip=ZipFile.OpenRead(pack)) {
             var manifest=Manifest(zip);Preflight(basis,manifest);

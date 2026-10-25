@@ -2,6 +2,23 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.30 — Fix original-source destination conflicts
+
+- Fixes the default install location when the portable launcher sits inside GoRPG or another original source folder. A new independent game is placed outside all selected source folders, instead of failing after a successful source audit.
+- Repairs older saved automatic defaults too. Valid custom destinations remain unchanged; unsafe custom locations open a validated folder picker with folder creation. Cancelling preserves the previous settings and starts no installation.
+- Shares the destination check across direct/combined-original installation, creator upgrades, layered mods and reconstruction. Checks run before creating the new destination/staging parent. Native source containment and exact hashes remain enforced.
+- Keeps existing installed game roots, saves, control sessions, selected profiles and translation behavior intact. This is an installation-location fix; it does not add a speed optimization or relax source verification.
+
+### Before and after — launcher extracted inside an original game
+
+The native Install-page previews below use the same isolated folder layout and source selection. Before: the default sits inside Original GoRPG/Launcher/Game Profiles. After: Celesphonia Game Profiles sits outside the source tree. A minimal exact-byte reconstruction separately reproduces the old failure and succeeds at the corrected location; these previews do not claim a full-game install.
+
+![Unsafe nested install default before](docs/images/destination-before.png)
+
+![Safe external install default after](docs/images/destination-after.png)
+
+If an earlier attempt displayed this specific error, update the launcher and retry with the same original files. You do not need to remove the English overlay or download those files again. For custom destinations, choose or create a folder outside every selected original source folder. See the [source and verification trace](docs/destination-1.0.30-trace.md).
+
 ## 1.0.29 — Match Kagura and CH56.6 stat abbreviations
 
 Uses **ATK, DEF, MAT, MD and AGI** when compacting equipment descriptions. Magic defense and its compact stat-down effects now use **MD**, retaining the familiar Kagura/CH56.6 terminology. This changes display labels only; original stat IDs, modifiers, signs and numeric values are unchanged.

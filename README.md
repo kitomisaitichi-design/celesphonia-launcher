@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.30 — Safe install destinations
+
+Fixes **“Select a destination outside original source folders”** when the launcher was extracted inside GoRPG or another source game. Automatic and previously saved automatic destinations now move outside the selected source folders before installation. Custom conflicting locations open a validated folder picker that can create a separate folder. Existing games, save paths and valid custom destinations stay unchanged.
+
+This applies to the shared installation/upgrade flow, including direct GoRPG plus Ver1.061 and combined original sources. Exact native-file checks and source protection remain enabled. Read the [destination trace](docs/destination-1.0.30-trace.md); native before/after previews are in **Help → Notes & changelogs → Launcher updates**. English/runtime controls and the Kagura abbreviations from 1.0.29 are unchanged.
+
 ## Launcher 1.0.29 — Kagura stat abbreviations
 
 Overflow abbreviations now follow the Kagura/CH56.6 terminology: **ATK, DEF, MAT, MD and AGI**. Magic defense uses **MD**, including compact stat-down traits. Retains 1.0.28's readable equipment help, English AGI labels, help scrolling and native before/after notes for Maple and Three-in-One.

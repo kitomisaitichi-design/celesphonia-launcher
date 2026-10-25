@@ -78,6 +78,7 @@ public static class UpgradeSupport {
             string.Join(", ",report.Missing.Take(8).ToArray())+
             ". Add original archives, folders or the missing individual files. Intermediate versions are not required.");
         string sourceId=null,backup=null,full=Path.GetFullPath(installRoot);
+        InstallDestination.RequireSafe(full,report.Selections.Select(x=>x.Source).Concat(carrySource==null?new string[0]:new[]{carrySource.Root}));
         if(carrySource!=null){
             sourceId=UniversalSupport.Identify(carrySource.Root);RequireTransfer(sourceId,targetId);
             if(Store.Running(new Settings{Profiles=new List<Profile>{carrySource}}))
@@ -288,6 +289,7 @@ public static class UpgradeSupport {
     // backed up and copied by the same verified migration as installed saves.
     public static Profile InstallFromGameArchive(string originalArchive,string creatorBundle,
                                       string installRoot,string targetId,bool carryArchivedSaves){
+        InstallDestination.RequireSafe(installRoot,new[]{creatorBundle});
         if(!File.Exists(originalArchive))
             throw new IOException("Original full-game archive is missing: "+originalArchive);
         if(!IsUpgrade(targetId))
@@ -337,6 +339,7 @@ public static class UpgradeSupport {
             throw new IOException("This target needs a registered complete GoRPG creator update.");
         var report=PlanMixedGoRpg(inputs,cancellation);
         string full=Path.GetFullPath(installRoot);
+        InstallDestination.RequireSafe(full,report.Selections.Select(x=>x.Source).Concat(new[]{creatorBundle}));
         Directory.CreateDirectory(full);
         string token=Guid.NewGuid().ToString("N");
         string stage=Path.Combine(full,".cph-upgrade-gorpg-"+token);
@@ -400,6 +403,7 @@ public static class UpgradeSupport {
     }
     public static Profile Install(Profile source,string bundle,string installRoot,string targetId,bool carrySaves){
         string sourceId=UniversalSupport.Identify(source.Root);RequireRoute(sourceId,targetId);
+        InstallDestination.RequireSafe(installRoot,new[]{source.Root,bundle});
         var recipe=RecipeSupport.Catalog().Recipes.First(x=>x.Id==targetId);if(sourceId==targetId)throw new IOException("Already installed; select this version in Files.");
         if(Store.Running(new Settings{Profiles=new List<Profile>{source}}))throw new IOException("Save and close the source game before upgrading.");
         // Recover intact native files from a partial/stale English sidecar,

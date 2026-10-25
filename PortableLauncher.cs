@@ -25,6 +25,8 @@ public class Settings {
     public List<Profile> Profiles { get; set; }
     public string SelectedId { get; set; }
     public string InstallRoot { get; set; }
+    // Null preserves older settings: only the old beside-launcher default is automatic.
+    public bool? InstallRootUserSelected { get; set; }
     public string LauncherTheme { get; set; }
     public List<string> SearchRoots {get;set;}
     // User-removed entries must not be resurrected by shared-index discovery.
