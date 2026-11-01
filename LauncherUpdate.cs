@@ -34,7 +34,7 @@ public class LauncherUpdateStage {
     public Dictionary<string,string> Files {get;set;}
 }
 public static class LauncherUpdate {
-    public const string CurrentVersion="1.0.35";
+    public const string CurrentVersion="1.0.36";
     public static string CurrentVersionMessage(string repository){
         return "You're running the newest launcher version available from "+repository+
             ".\r\nLatest supported game/mod release: "+UpgradeSupport.LatestName+". Game releases are independent of launcher updates.";

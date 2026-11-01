@@ -1096,6 +1096,20 @@ public class PolishedLauncher : ReplacementAwareForm {
                 var full=Found(recipe.Id,"Full game archive");
                 var detected=Found(recipe.Id,"Extracted bundle")??Found(recipe.Id,"Original archive");
                 string update=detected==null?PickBundle(recipe):detected.Path;if(update==null)return;
+                // The file picker can introduce a creator archive that was not
+                // available to the initial scan. Prove that new pool before an
+                // older installed source can block an independent reconstruction.
+                if(HasNativeInventory(recipe.Id)&&detected==null){
+                    string[] pickedSources=NativeRecoveryInputs(recipe.Id,update);
+                    var pickedPlan=await Task.Run(()=>UpgradeSupport.ProbePickedOriginalTarget(MixedSourceRecovery.LoadEmbeddedReference(recipe.Id),pickedSources,update,CancellationToken.None));
+                    if(pickedPlan.Complete){
+                        Profile pickedDonor=startingSource!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(startingSource.Root),recipe.Id)
+                            ?startingSource:UpgradeSupport.StartingProfile(settings,recipe.Id);
+                        if(!PrepareInstallLocation(ref location,pickedSources.Concat(pickedDonor==null?new string[0]:new[]{pickedDonor.Root})))return;
+                        await RunInstall(()=>{var game=UpgradeSupport.InstallVerifiedOriginalFiles(pickedPlan,location,recipe.Id,pickedDonor,CancellationToken.None);
+                            SetInstalledEnglish(game,english);return game;});return;
+                    }
+                }
                 var candidatePaths=originalInputs.Concat(discovered.Where(x=>x.Kind=="Game archive candidate"&&
                     string.IsNullOrEmpty(x.Problem)&&UpgradeSupport.MayUpgrade(x.RecipeId,recipe.Id)).Select(x=>x.Path))
                     .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();

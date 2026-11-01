@@ -1,10 +1,12 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.35
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.36
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Includes the Map027 upgrade repair even when the creator archive is chosen
+manually after initial discovery. Picker selections receive fresh byte checks.
 Fixes upgrades blocked by an older installed game's Map027 mismatch when
 the original inputs already contain every exact file for the new target.
 Both source methods can reconstruct the verified target and carry compatible,

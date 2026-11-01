@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.36 — Include manually selected originals in upgrade recovery
+
+Includes the 1.0.35 Map027 recovery fix below and handles a creator archive first chosen through the file picker after initial discovery. The chosen originals receive fresh byte checks before the older source can block recovery, including a download replaced under the same filename. Exact target hashes, compatible save backup/copy and strict conversion-source checks remain in force.
+
 ## Launcher 1.0.35 — Recover an upgrade despite an older source-file mismatch
 
 When original inputs supply every exact file for the new version, both installation source methods now reconstruct that verified target and carry compatible, backed-up saves independently of an old map mismatch. This fixes the reported `data/Map027.json` upgrade dead end. Old files and saves remain untouched; incomplete targets and conversions requiring damaged source bytes stay rejected. [Cause, before/after evidence and verification limits](docs/map027-upgrade-1.0.35-trace.md).

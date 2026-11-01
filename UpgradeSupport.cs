@@ -79,6 +79,14 @@ public static class UpgradeSupport {
     // Both source-method buttons can recover an independently verified target.
     // Without complete originals, the conversion path retains its strict source
     // validation. Explicit original-file requests retain precise missing reports.
+    internal static MixedRecoveryReport ProbePickedOriginalTarget(MixedNativeReference reference,IEnumerable<string> inputs,string picked,CancellationToken cancellation){
+        if(string.IsNullOrWhiteSpace(picked))throw new IOException("Select an original creator archive or extracted folder.");
+        var sources=(inputs??Enumerable.Empty<string>()).Concat(new[]{picked}).Select(Path.GetFullPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        // A user may replace a download under the same filename while the
+        // picker is open. A new selection event always gets fresh byte checks.
+        return MixedSourceRecovery.Probe(reference,sources,cancellation,true);
+    }
     internal static bool UseOriginalTargetRecovery(int method,bool explicitOriginals,MixedRecoveryReport report){
         return (method==0||method==1)&&(method==1||explicitOriginals||report!=null&&report.Complete);
     }

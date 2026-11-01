@@ -1,5 +1,13 @@
 # Map027 upgrade blocker — before/after and source trace
 
+## 1.0.36 manual-picker completion
+
+Final review found one additional entrance: a creator archive first chosen through PickBundle after the initial pool check was not included in that proof. The legacy path could then reach BestCompatibleSource and reject the older map. The picker result now joins fresh exact-target checks before that source audit. A path-only reuse shortcut was rejected during review because a user can replace a download under the same filename while the picker is open.
+
+Six compiled checks exercise the actual new planning helper with a source-exact Map027 subset: unsuitable base bytes; the original creator archive; a same-path/same-size/same-timestamp replacement that requires fresh hashing; duplicate Windows paths; cancellation; empty selection. Original source bytes remain unchanged. This is a one-file planner fixture; the installer still requires the complete embedded target inventory and rejects subset proofs, as checked by the full reconstruction tests below. The verified-target installer, save-donor validation and strict native-source verifier are source-identical to 1.0.35. Those 31 checks are reused; the complete game copy is not repeated for this input-event change.
+
+The 1.0.35 tag remains immutable; 1.0.36 is the completed follow-up. Neither release changes translation dictionaries or game data.
+
 Baseline: launcher 1.0.34, source 1b155e81dafb80992a2a1d2f7c5ab7e0072101d8. The reporter's screenshots show a Ver1.052 installed source failing `Source creator file changed or missing: data/Map027.json`, including under creator-bundle recovery. The earlier successful single-file target probe did not cover old-source selection or save migration.
 
 ## Root cause

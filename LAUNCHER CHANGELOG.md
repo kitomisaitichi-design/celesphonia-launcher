@@ -2,6 +2,12 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.36 — Cover the manual creator-archive picker too
+
+Completes the Map027 upgrade recovery below when the creator bundle is first selected manually after the initial source scan. The chosen archive receives fresh exact-target checks before the older source audit can block recovery, including a download replaced under the same filename. Full target verification, compatible save backup/copy, strict source checks when conversion needs them, and original-file preservation remain unchanged.
+
+**Before:** a manually picked bundle could still fall through to the old-source Map027 error. **After:** a complete exact target is reconstructed through the same verified path as discovered originals. [Diagnostic trace and limits](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.36/docs/map027-upgrade-1.0.35-trace.md).
+
 ## 1.0.35 — Recover upgrades blocked by an older source map
 
 Fixes both source-method choices getting stuck on **Source creator file changed or missing: data/Map027.json** in an older installed game, even when the original inputs already supply every correct file for Ver1.061.
