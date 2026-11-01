@@ -2,6 +2,10 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.32 — Preserve imported translations during automatic refresh
+
+Fixes automatic English refresh reporting failure after a bundled dictionary update when a user has additional imported translations. The overlay was applied successfully, but stale cached counts made it appear outdated again and could block launch. Refresh now rebuilds only those derived counters from the validated merged dictionary. Custom translation files, native data and saves stay unchanged. Includes all 1.0.31 imprint fixes and the native before/after gallery below.
+
 ## 1.0.31 — Readable English imprint descriptions
 
 - Fixes the imprint menu splitting original descriptions into fragments before translation. Complete reviewed skill descriptions now translate first, then wrap at word boundaries. This resolves mixed Chinese/English in Cyclone Break, Burst Impact, Mental Focus and the related imprint skill panels in Three-in-One and Maple.

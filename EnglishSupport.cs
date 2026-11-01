@@ -334,6 +334,11 @@ public static class EnglishSupport {
         }
         string digest;using(var sha=System.Security.Cryptography.SHA256.Create())digest=BitConverter.ToString(sha.ComputeHash(patched)).Replace("-","").ToLowerInvariant();state.PatchedHash=digest;
         JsonWrite(Path.Combine(folder,"state.json"),state);Atomic(entry,patched);Verify(profile.Root);
+        // A new bundled dictionary invalidates the old imported-text counters.
+        // Rebuild only that derived cache from the validated merged dictionary.
+        string statistics=Path.Combine(PackFolder(id),"user-statistics.json");
+        if(File.Exists(statistics)||data.Count!=pack.TranslatedTexts)
+            JsonWrite(statistics,new{DictionaryHash=pack.DictionaryHash,AdditionalTexts=Math.Max(0,data.Count-pack.TranslatedTexts),ExtraCatalogTexts=Math.Max(0,state.TotalTexts-pack.TotalTexts)});
     }
     public static void Restore(Profile profile){RequireClosed(profile);var state=ReadState(profile.Root);if(state==null)return;ValidateState(profile.Root,state,false);Atomic(Entry(profile.Root),File.ReadAllBytes(Path.Combine(Folder(profile.Root),"original-entry.bin")));}
     public static string Import(Profile profile,string input){

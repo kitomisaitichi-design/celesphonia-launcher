@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.32 — Imprint fix and reliable English refresh
+
+Includes the imprint-menu correction below and fixes a stale imported-translation counter that could make automatic English refresh report failure after an update. Custom translations and saves are preserved.
+
 ## Launcher 1.0.31 — Readable imprint descriptions
 
 The **Memory Slots / Equip Imprints** menu now translates complete skill descriptions before wrapping them, fixing mixed Chinese/English and clipped titles in Maple and Three-in-One. Long descriptions use readable wrapping, familiar stat abbreviations when needed, and hover-wheel scrolling with native arrows. Native skill colors, imprint actions and game effects are preserved.

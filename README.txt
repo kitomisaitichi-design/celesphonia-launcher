@@ -1,10 +1,12 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.31
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.32
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Also fixes stale imported-translation counts during automatic English refresh,
+preserving custom translations and preventing a false update failure.
 Imprint skill descriptions translate before wrapping, fixing Chinese fragments
 and clipped English titles in Maple and Three-in-One. Long panels support
 hover-wheel scrolling with native arrows. Four ATK/Max HP percentage labels
