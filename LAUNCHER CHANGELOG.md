@@ -2,6 +2,23 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.33 — Readable enemy stats, states and traits
+
+- Gives stat labels and values separate space in Three-in-One's battle inspector, fixing overlapping evasion, reflection, attack-speed and recovery captions. Native HP, MP, percentages and other values stay exact.
+- Wraps long state names and puts permanent/remaining-turn captions on a separate row. Dense state lists retain native selection and scrolling.
+- Fits resistance/trait tables inside the screen. Conventional abbreviations are used when required, and the table uses fewer columns when needed. Long tables keep their full content: hover the table and use the mouse wheel; native arrows indicate more rows. The list underneath keeps its selection while you scroll the table.
+- Runs with the ordinary English overlay; runtime controls are not required. The adapter checks the native plugin's actual capabilities. Maple's different tooltip has been checked and keeps its existing behavior.
+
+**Before — overlapping stat values and state captions**
+
+![Enemy information before](docs/images/enemy-info-stats-before.png)
+
+**After — aligned values and separate duration rows**
+
+![Enemy information after](docs/images/enemy-info-stats-after.png)
+
+[Full native trait-table before/after gallery](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.33/docs/enemy-info-1.0.33-gallery.md) · [Source trace and verification limits](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.33/docs/enemy-info-1.0.33-trace.md)
+
 ## 1.0.32 — Preserve imported translations during automatic refresh
 
 Fixes automatic English refresh reporting failure after a bundled dictionary update when a user has additional imported translations. The overlay was applied successfully, but stale cached counts made it appear outdated again and could block launch. Refresh now rebuilds only those derived counters from the validated merged dictionary. Custom translation files, native data and saves stay unchanged. Includes all 1.0.31 imprint fixes and the native before/after gallery below.

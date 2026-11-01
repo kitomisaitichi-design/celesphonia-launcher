@@ -1,10 +1,13 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.32
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.33
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Enemy-inspector stat values and state durations have their own space.
+Long state names wrap. Oversized trait tables fit the screen and retain
+their full text with hover-wheel scrolling. Maple compatibility is checked.
 Also fixes stale imported-translation counts during automatic English refresh,
 preserving custom translations and preventing a false update failure.
 Imprint skill descriptions translate before wrapping, fixing Chinese fragments

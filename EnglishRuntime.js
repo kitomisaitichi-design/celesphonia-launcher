@@ -296,6 +296,7 @@
                 if(args[1]===170){args[1]=148;args[3]=Math.max(1,this.contentsWidth()-148);}
             }
             if(method==='drawTextEx'&&name==='Window_Custom'&&args[1]<this.contentsWidth()) fit=fitSingleLine(this,args[0],this.contentsWidth()-args[1]);
+            if(method==='drawTextEx'&&name==='Window_ObjectInfo'&&this._celesphoniaEnglishStateInfo&&args[1]<this.contentsWidth())fit=fitSingleLine(this,args[0],this.contentsWidth()-args[1]);
             if(method==='drawTextEx'&&name==='Window_SoloStatus'){
                 installSoloFieldWidth(Object.getPrototypeOf(this));
                 if(args[1]<this.contentsWidth())fit=fitSingleLine(this,args[0],Math.min(this._celesphoniaEnglishFieldWidth||this.contentsWidth()-args[1],this.contentsWidth()-args[1]));
@@ -533,6 +534,154 @@
     function equipmentHover(win) {
         return win&&win.visible&&win.openness===255&&win._celesphoniaEnglishEquipmentLayout&&win._celesphoniaEnglishEquipmentLayout.scrollable&&
             TouchInput.x>=win.x&&TouchInput.x<win.x+win.width&&TouchInput.y>=win.y&&TouchInput.y<win.y+win.height;
+    }
+    function compactEnemyInfo(text) {
+        var display=equipmentParts(compactEquipment(text),function(part){
+            return part.replace(/\bAttack\b/g,'ATK').replace(/\bDefense\b/g,'DEF').replace(/\bAgility\b/g,'AGI')
+                .replace(/\b(HP|MP|SP) Automatic Recovery\b/gi,'$1 Regen')
+                .replace(/\bResistance\b/g,'Res.').replace(/\bState Immunity\b/g,'Immune');
+        });
+        return display.replace(/((?:(?:\\|\x1b)C\[\d+\])*)Res\.(?=(?:(?:\\|\x1b)C\[\d+\])*[+-]?\d)/gi,' $1Res. ')
+            .replace(/\bImmune:/g,'Immune: ');
+    }
+    function paintEnemyInfo(win,text,x,y,width,align,layout) {
+        var fit=layout||fitSingleLine(win,text,width),font=win.contents.fontSize,color=win.contents.textColor;
+        var standard=win.standardFontSize,had=own.call(win,'standardFontSize');
+        win.standardFontSize=function(){return fit.fontSize;};win.contents.fontSize=fit.fontSize;
+        try {if(align)win.drawText(fit.text,x,y,width,align);else win.drawTextEx(fit.text,x,y);}
+        finally {if(had)win.standardFontSize=standard;else delete win.standardFontSize;win.contents.fontSize=font;win.contents.textColor=color;}
+        return fit;
+    }
+    function installEnemyInfoStats(proto) {
+        if(!proto||!proto.drawAttributes||proto.drawAttributes._celesphoniaEnglishEnemyInfo)return;
+        ['drawAttributes','drawXParams'].forEach(function(method,column){
+            var native=proto[method];if(typeof native!=='function')return;
+            var wrapped=function(){
+                // Let the native plugin calculate every value, then lay out its
+                // presentation calls. No stat formula is copied or replaced.
+                var win=this,calls=[],saved={},methods=['drawTextEx','drawText','drawTableOutline'];
+                methods.forEach(function(key){saved[key]={value:win[key],had:own.call(win,key)};});
+                win.drawTextEx=function(text){calls.push({label:String(text)});return 0;};
+                win.drawText=function(text){calls.push({value:String(text).replace(/^\s*:\s*/,'')});};
+                win.drawTableOutline=function(){};
+                var result;try{result=native.apply(this,arguments);}finally{methods.forEach(function(key){if(saved[key].had)win[key]=saved[key].value;else delete win[key];});}
+                var rows=[],pending='',width=this.contentsWidth()/2,x=column*width,valueWidth=64,font=this.contents.fontSize;
+                this.contents.fontSize=this.standardFontSize();
+                calls.forEach(function(call){if(call.label!==undefined)pending=translate(call.label);else{rows.push({label:pending,value:call.value});valueWidth=Math.max(valueWidth,win.textWidth(call.value)+8);}});
+                this.contents.fontSize=font;valueWidth=Math.min(width*0.48,valueWidth);
+                rows.forEach(function(row,index){
+                    var labelWidth=Math.max(1,width-valueWidth-20),display=row.label,y=index*win.lineHeight()+10;
+                    var fit=fitSingleLine(win,display,labelWidth);
+                    if(fit.fontSize<win.standardFontSize()){display=compactEnemyInfo(display);fit=fitSingleLine(win,display,labelWidth);}
+                    paintEnemyInfo(win,display,x+6,y,labelWidth,null,fit);
+                    win.resetTextColor();paintEnemyInfo(win,row.value,x+width-valueWidth-6,y,valueWidth,'right');
+                    row.display=display;row.labelWidth=labelWidth;row.valueWidth=valueWidth;row.fontSize=fit.fontSize;
+                });
+                this.drawTableOutline(x,10,width-4,this.lineHeight()*rows.length);
+                this._celesphoniaEnglishEnemyStats=this._celesphoniaEnglishEnemyStats||{};
+                this._celesphoniaEnglishEnemyStats[method]={rows:rows,columnWidth:width};return result;
+            };
+            wrapped._celesphoniaEnglishEnemyInfo=true;proto[method]=wrapped;
+        });
+    }
+    function installEnemyInfoStates(proto) {
+        if(!proto||!proto.drawStateTurns||!proto.makeItemList||proto.makeItemList._celesphoniaEnglishEnemyStates)return;
+        var make=proto.makeItemList,turns=proto.drawStateTurns,set=proto.setInfoObject;
+        proto.makeItemList=function(){
+            var result=make.apply(this,arguments),win=this,width=this.itemWidth()-this.textPadding()-Window_Base._iconWidth-4;
+            this._celesphoniaEnglishStateRows=(this._data||[]).map(function(state){
+                return {id:state.id,layout:fitPanelText(win,translate(state.name),width,Infinity,win.standardFontSize(),win.standardFontSize())};
+            });
+            this._celesphoniaEnglishStateRowHeight=this._celesphoniaEnglishStateRows.reduce(function(height,row){return Math.max(height,row.layout.height+win.lineHeight());},this.lineHeight()*2);
+            return result;
+        };
+        proto.makeItemList._celesphoniaEnglishEnemyStates=true;
+        proto.itemHeight=function(){return this._celesphoniaEnglishStateRowHeight||this.lineHeight()*2;};
+        proto.setInfoObject=function(object){if(object!==this._stateObj&&this.setTopRow)this.setTopRow(0);return set.apply(this,arguments);};
+        proto.drawItem=function(index){
+            var state=this._data[index],row=this._celesphoniaEnglishStateRows&&this._celesphoniaEnglishStateRows[index];if(!state||!row)return;
+            var rect=this.itemRect(index),left=Window_Base._iconWidth+4,width=rect.width-this.textPadding()-left;
+            this.changePaintOpacity(this.isEnabled(state));this.resetTextColor();
+            this.drawStateIcon(state,rect.x+2,rect.y+2);
+            paintEnemyInfo(this,row.layout.text,rect.x+left,rect.y,width,null,row.layout);
+            // The original method retains its permanent/remaining-turn rules.
+            turns.call(this,state,rect.x+left,rect.y+rect.height-this.lineHeight(),width);
+            this.changePaintOpacity(1);
+        };
+    }
+    function enemyInfoHover(win) {
+        if(!win||!win.visible||win.openness!==255)return false;
+        var x=typeof TouchInput._mouseOverX==='number'?TouchInput._mouseOverX:TouchInput.x;
+        var y=typeof TouchInput._mouseOverY==='number'?TouchInput._mouseOverY:TouchInput.y;
+        x=win.canvasToLocalX(x);y=win.canvasToLocalY(y);
+        return x>=0&&y>=0&&x<win.width&&y<win.height;
+    }
+    function installStateObjectInfo(proto) {
+        if(!proto||typeof proto.getStateCul!=='function'||!global.DataManager||typeof DataManager.isState!=='function'||!proto.makeObjInfo||!proto.calculateWindowSize||proto.makeObjInfo._celesphoniaEnglishStateInfo)return;
+        var make=proto.makeObjInfo,calculate=proto.calculateWindowSize,cols=proto.maxCols,wheel=proto.processWheel,update=proto.update;
+        var fields=['_data','_textTop','_textBottom','_damageData','_costData','_requireData','_lastData'];
+        function mapRows(win,change){fields.forEach(function(key){if(win[key])win[key]=win[key].map(function(text){return typeof text==='string'?change(text):text;});});}
+        proto.makeObjInfo=function(){
+            this._celesphoniaEnglishStateInfo=null;this.upArrowVisible=false;this.downArrowVisible=false;
+            var result=make.apply(this,arguments);
+            if(this._item&&global.DataManager&&DataManager.isState(this._item)){
+                this._celesphoniaEnglishStateInfo={itemId:this._item.id,sourceRows:this._data.slice(),abbreviated:false,wrapped:false};
+                // These arrays belong only to the information window. Measuring
+                // and drawing the same translated copies keeps columns aligned.
+                mapRows(this,translate);
+            }
+            return result;
+        };
+        proto.makeObjInfo._celesphoniaEnglishStateInfo=true;
+        proto.maxCols=function(){var layout=this._celesphoniaEnglishStateInfo;return layout&&layout.columns||cols.apply(this,arguments);};
+        proto.calculateWindowSize=function(){
+            var result=calculate.apply(this,arguments),layout=this._celesphoniaEnglishStateInfo;if(!layout||!this.dataLength())return result;
+            var win=this,maxWidth=Graphics.boxWidth-16,maxHeight=Graphics.boxHeight-16,padding=this.standardPadding(),gap=this.textPadding()*2;
+            function available(){return (Math.min(win.width,maxWidth)-padding*2)/win.maxCols()-gap;}
+            function overflows(){return win.width>maxWidth||win.calAllDataWidth(0)>available()+1;}
+            if(overflows()){
+                mapRows(this,function(text){var compact=compactEnemyInfo(text);if(compact!==text)layout.abbreviated=true;return compact;});
+                calculate.apply(this,arguments);
+            }
+            while(overflows()&&this.maxCols()>1){layout.columns=this.maxCols()-1;calculate.apply(this,arguments);}
+            if(this.calAllDataWidth(0)>available()+1){
+                // Unusually long single-column fields keep all words. Carry the
+                // active native color into each continuation row.
+                layout.columns=1;var width=maxWidth-padding*2-gap;
+                fields.forEach(function(key){var rows=[];(win[key]||[]).forEach(function(text){
+                    if(typeof text!=='string'){rows.push(text);return;}
+                    var fit=fitPanelText(win,text,width,Infinity,win.standardFontSize(),win.standardFontSize()),color='';
+                    fit.text.split('\n').forEach(function(line){var codes=line.match(/(?:\\|\x1b)C\[\d+\]/gi);rows.push(color+line);if(codes)color=codes[codes.length-1];});
+                });win[key]=rows;});layout.wrapped=true;calculate.apply(this,arguments);
+            }
+            this.width=Math.max(1,Math.min(this.width,maxWidth));this.height=Math.max(1,Math.min(this.height,maxHeight));
+            layout.columns=this.maxCols();layout.scrollable=this.contentsHeight()>this.height-padding*2+1;
+            return result;
+        };
+        proto.processWheel=function(){
+            var layout=this._celesphoniaEnglishStateInfo;
+            if(!layout)return wheel.apply(this,arguments);
+            if(layout.scrollable&&enemyInfoHover(this)&&Math.abs(TouchInput.wheelY)>=20){
+                var limit=Math.max(0,this.contents.height-this.height+this.standardPadding()*2),speed=Math.max(this.lineHeight()*2,Number(this._windowSet.ScrollSpeed)*4||48);
+                this.origin.y=Math.max(0,Math.min(limit,this.origin.y+(TouchInput.wheelY>0?1:-1)*speed));
+            }
+        };
+        proto.update=function(){
+            var result=update.apply(this,arguments),layout=this._celesphoniaEnglishStateInfo;
+            if(layout){var limit=Math.max(0,this.contents.height-this.height+this.standardPadding()*2);this.upArrowVisible=this.origin.y>0;this.downArrowVisible=this.origin.y<limit;}
+            return result;
+        };
+        // Install after plugin loading, when the private native window is first
+        // constructed, so mouse plugins cannot consume the wheel underneath it.
+        if(global.Window_Selectable&&!Window_Selectable.prototype.processWheel._celesphoniaEnglishStateInfo){
+            var nativeSelectableWheel=Window_Selectable.prototype.processWheel;
+            Window_Selectable.prototype.processWheel=function(){
+                var scene=global.SceneManager&&SceneManager._scene,info=scene&&scene._objInfoWindow,layout=info&&info._celesphoniaEnglishStateInfo;
+                if(layout&&layout.scrollable&&enemyInfoHover(info))return;
+                return nativeSelectableWheel.apply(this,arguments);
+            };
+            Window_Selectable.prototype.processWheel._celesphoniaEnglishStateInfo=true;
+        }
     }
     function installImprintExplain(proto) {
         if(!proto||typeof proto.drawDescription!=='function'||!proto.refresh||proto.refresh._celesphoniaEnglishImprint)return;
@@ -1219,6 +1368,9 @@
             Window_Base.prototype.initialize=function(){
                 if(this.constructor&&this.constructor.name==='Window_SoloStatus')installSoloFieldWidth(Object.getPrototypeOf(this));
                 if(this.constructor&&this.constructor.name==='Window_MagicExplain')installImprintExplain(Object.getPrototypeOf(this));
+                if(this.constructor&&this.constructor.name==='Window_HypObjInfo')installEnemyInfoStats(Object.getPrototypeOf(this));
+                if(this.constructor&&this.constructor.name==='Window_HypObjState')installEnemyInfoStates(Object.getPrototypeOf(this));
+                if(this.constructor&&this.constructor.name==='Window_ObjectInfo')installStateObjectInfo(Object.getPrototypeOf(this));
                 return nativeWindowInitialize.apply(this,arguments);
             };
             wrapConverter(Window_Base.prototype);

@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.33 — Readable enemy information
+
+Three-in-One's battle inspector now separates stat labels from values and state names from their duration captions. Long state names wrap, while oversized resistance/trait tables use readable abbreviations, fewer columns and hover-wheel scrolling. The full native values remain available. Matching before/after pictures are in **Help → Notes & changelogs → Launcher updates**, with a linked full trait gallery. Maple's different native tooltip is preserved and checked for compatibility.
+
 ## Launcher 1.0.32 — Imprint fix and reliable English refresh
 
 Includes the imprint-menu correction below and fixes a stale imported-translation counter that could make automatic English refresh report failure after an update. Custom translations and saves are preserved.
