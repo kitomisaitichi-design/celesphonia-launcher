@@ -2,6 +2,18 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.35 — Recover upgrades blocked by an older source map
+
+Fixes both source-method choices getting stuck on **Source creator file changed or missing: data/Map027.json** in an older installed game, even when the original inputs already supply every correct file for Ver1.061.
+
+**Before:** the creator-bundle path verified the complete new target, then rejected the older game again while carrying its saves. Conversion auto-selection could stop at the same old-source error before reaching a valid original-file reconstruction.
+
+**After:** when every final target file passes the authoritative native inventory, either source method can build that independent target and carry backed-up, compatible saves. The old game's native tree is not blindly copied or marked intact. Each selected input file is still rechecked during recovery. Without complete originals, conversions retain their existing strict source checks; missing target bytes, unknown versions, cross-branch saves and downgrades remain rejected.
+
+The source game/map and saves stay untouched. Normal saves, optional runtime-control progress and custom control preferences keep their existing verified migration behavior. No translation dictionary, game mechanic or native-map edit is part of this update.
+
+Verified against the reproduced shared older-game failure, a full **11,738-file** Ver1.061 reconstruction and focused branch/running-game/destination checks. The private source fixture is Ver1.053, which shares the reported Ver1.052 guard and Map027 hash; this is not an exact replay of the reporter's files. [Before/after diagnostic evidence and limits](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.35/docs/map027-upgrade-1.0.35-trace.md).
+
 ## 1.0.34 — Readable magic-skill tooltip details
 
 - Translates the lower skill-tooltip labels and element fragments in Three-in-One Ver1.061 and Maple 1.7.2. Ice is now shown as **HP Damage / Ice**, the formula caption is English, and **Usable: In Battle** replaces **Usable:Fight**. Labels and values have readable spacing.

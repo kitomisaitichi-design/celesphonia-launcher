@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.35 — Recover an upgrade despite an older source-file mismatch
+
+When original inputs supply every exact file for the new version, both installation source methods now reconstruct that verified target and carry compatible, backed-up saves independently of an old map mismatch. This fixes the reported `data/Map027.json` upgrade dead end. Old files and saves remain untouched; incomplete targets and conversions requiring damaged source bytes stay rejected. [Cause, before/after evidence and verification limits](docs/map027-upgrade-1.0.35-trace.md).
+
 ## Launcher 1.0.34 — Readable magic-skill tooltip details
 
 The lower skill details in Maple and Three-in-One now use English labels/elements, natural **Usable: In Battle** wording and clear spacing. Native formulas, chances, costs, spell names and variant differences remain exact. Oversized panels wrap and scroll; missing optional custom costs no longer print `undefined`. English-enabled launches refresh the overlay automatically, with runtime controls off. Before/after comparisons are in **Help → Notes & changelogs → Launcher updates** and the [native screenshot gallery](docs/skill-tooltip-1.0.34-gallery.md).

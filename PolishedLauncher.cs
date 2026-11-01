@@ -1053,7 +1053,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             if(route==1&&recipe.Id=="three-in-one-3-3-4"){
                 await Install334(recipe,location);return;
             }
-            if(UpgradeSupport.IsUpgrade(recipe.Id)&&HasNativeInventory(recipe.Id)&&route!=2&&(route==1||originalInputs.Count>0)){
+            if(UpgradeSupport.IsUpgrade(recipe.Id)&&HasNativeInventory(recipe.Id)&&route!=2){
                 var already=Installed(recipe.Id);
                 if(already!=null){settings.SelectedId=already.Id;RefreshProfiles();ShowPage("Play");return;}
                 status.Text="Checking source folders for "+recipe.Name+" before installing…";
@@ -1062,14 +1062,19 @@ public class PolishedLauncher : ReplacementAwareForm {
                 var targetSources=await Task.Run(()=>FileDiscovery.FindTargetArchives(FileDiscovery.NativeRoots(sourceSettings),recipe.Id,CancellationToken.None));
                 discovered=targetSources.Concat(discovered).GroupBy(x=>x.Path+"|"+x.Kind+"|"+x.RecipeId,StringComparer.OrdinalIgnoreCase).Select(x=>x.First()).ToList();
                 string[] sources=NativeRecoveryInputs(recipe.Id);
-                if(sources.Length==0){var first=PickBundle(recipe);if(first==null)return;sources=NativeRecoveryInputs(recipe.Id,first);}
-                bool english=englishOnInstall.Checked;
-                Profile carry=startingSource!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(startingSource.Root),recipe.Id)
-                    ?startingSource:UpgradeSupport.StartingProfile(settings,recipe.Id);
-                var verifiedSource=carry;
-                if(!PrepareInstallLocation(ref location,sources.Concat(carry==null?new string[0]:new[]{carry.Root})))return;
-                await RunInstall(()=>{var game=UpgradeSupport.InstallFromOriginalFiles(sources,location,recipe.Id,verifiedSource,CancellationToken.None);
-                    SetInstalledEnglish(game,english);return game;});return;
+                if(sources.Length==0&&route==1){var first=PickBundle(recipe);if(first==null)return;sources=NativeRecoveryInputs(recipe.Id,first);}
+                MixedRecoveryReport nativePlan=null;
+                if(sources.Length>0)nativePlan=await Task.Run(()=>MixedSourceRecovery.Probe(MixedSourceRecovery.LoadEmbeddedReference(recipe.Id),sources,CancellationToken.None,true));
+                if(UpgradeSupport.UseOriginalTargetRecovery(route,originalInputs.Count>0,nativePlan)){
+                    bool english=englishOnInstall.Checked;
+                    Profile carry=startingSource!=null&&UpgradeSupport.MayUpgrade(UniversalSupport.Identify(startingSource.Root),recipe.Id)
+                        ?startingSource:UpgradeSupport.StartingProfile(settings,recipe.Id);
+                    var saveDonor=carry;var verifiedPlan=nativePlan;
+                    if(!PrepareInstallLocation(ref location,sources.Concat(carry==null?new string[0]:new[]{carry.Root})))return;
+                    status.Text="Reconstructing verified "+recipe.Name+(carry==null?" with new saves…":" and backing up compatible saves…");
+                    await RunInstall(()=>{var game=UpgradeSupport.InstallVerifiedOriginalFiles(verifiedPlan,location,recipe.Id,saveDonor,CancellationToken.None);
+                        SetInstalledEnglish(game,english);return game;});return;
+                }
             }
             if(route==1&&HasNativeInventory(recipe.Id)){
                 var already=Installed(recipe.Id);

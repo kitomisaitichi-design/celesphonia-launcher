@@ -74,17 +74,38 @@ public static class UpgradeSupport {
             throw new IOException("Choose a registered complete creator target.");
         var reference=MixedSourceRecovery.LoadEmbeddedReference(targetId);
         var report=MixedSourceRecovery.Probe(reference,inputs,cancellation,true);
+        return InstallVerifiedOriginalFiles(report,installRoot,targetId,carrySource,cancellation);
+    }
+    // Both source-method buttons can recover an independently verified target.
+    // Without complete originals, the conversion path retains its strict source
+    // validation. Explicit original-file requests retain precise missing reports.
+    internal static bool UseOriginalTargetRecovery(int method,bool explicitOriginals,MixedRecoveryReport report){
+        return (method==0||method==1)&&(method==1||explicitOriginals||report!=null&&report.Complete);
+    }
+    internal static Profile InstallVerifiedOriginalFiles(MixedRecoveryReport report,string installRoot,
+                                  string targetId,Profile carrySource,CancellationToken cancellation){
+        var recipe=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==targetId);
+        if(recipe==null||recipe.Family!="combined-story"||!recipe.CompleteOverlay)
+            throw new IOException("Choose a registered complete creator target.");
+        var reference=MixedSourceRecovery.LoadEmbeddedReference(targetId);
+        if(report==null)throw new IOException("Add original game files and the matching creator archive before reconstructing this version.");
         if(!report.Complete)throw new IOException("Found "+report.FoundCount+"/"+report.RequiredCount+
             " exact files for "+recipe.Name+". Missing "+report.Missing.Count+": "+
             string.Join(", ",report.Missing.Take(8).ToArray())+
             ". Add original archives, folders or the missing individual files. Intermediate versions are not required.");
+        // A cached UI plan is not authority on its own. Require the complete
+        // embedded target inventory; Recover rechecks the actual copied bytes.
+        var expected=reference.Files.ToDictionary(x=>x.Path,StringComparer.OrdinalIgnoreCase);
+        if(report.VersionId!=targetId||report.RequiredCount!=expected.Count||report.Expected==null||report.Expected.Count!=expected.Count||
+           report.Selections.Count!=expected.Count||report.Expected.Select(x=>x.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=expected.Count||
+           report.Selections.Select(x=>x.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=expected.Count||
+           report.Expected.Any(x=>!expected.ContainsKey(x.Path)||x.Hash!=expected[x.Path].Hash||x.Size!=expected[x.Path].Size)||
+           report.Selections.Any(x=>!expected.ContainsKey(x.Path)||x.Hash!=expected[x.Path].Hash||x.Size!=expected[x.Path].Size))
+            throw new IOException("Complete authoritative native target verification is required before carrying saves.");
         string sourceId=null,backup=null,full=Path.GetFullPath(installRoot);
         InstallDestination.RequireSafe(full,report.Selections.Select(x=>x.Source).Concat(carrySource==null?new string[0]:new[]{carrySource.Root}));
         if(carrySource!=null){
-            sourceId=UniversalSupport.Identify(carrySource.Root);RequireTransfer(sourceId,targetId);
-            if(Store.Running(new Settings{Profiles=new List<Profile>{carrySource}}))
-                throw new IOException("Save and close the source game before upgrading.");
-            VerifyKnownCreatorSource(carrySource,sourceId,cancellation);
+            sourceId=VerifySaveDonor(carrySource,targetId,cancellation);
             string prefix=Path.GetFullPath(carrySource.Root).TrimEnd('\\')+"\\";
             if((full.TrimEnd('\\')+"\\").StartsWith(prefix,StringComparison.OrdinalIgnoreCase))
                 throw new IOException("Install outside the source game folder.");
@@ -105,7 +126,8 @@ public static class UpgradeSupport {
             }
             File.WriteAllText(Path.Combine(root,"launcher-upgrade.json"),Store.Json.Serialize(new{
                 sourceVersion=sourceId,targetVersion=targetId,sourceBackup=backup,carriedSaves=backup!=null,
-                reverseAllowed=false,verifiedOriginalFiles=report.RequiredCount,sourceKind="pooled original files"}),new UTF8Encoding(false));
+                reverseAllowed=false,verifiedOriginalFiles=report.RequiredCount,sourceKind="pooled original files",
+                saveDonorOnly=carrySource!=null,wholeSourceTreeCopied=false}),new UTF8Encoding(false));
             if(carrySource!=null){game.RuntimeControls=carrySource.RuntimeControls;RuntimeSupport.CarryForward(carrySource,game,true);}
             game.Note="Independent "+recipe.Name+" from "+report.RequiredCount+" exact original file hashes; "+
                 (backup==null?"empty saves":"compatible saves backed up and verified")+"; sources retained";
@@ -115,6 +137,21 @@ public static class UpgradeSupport {
                 ExtendedSafeCleanup.RemoveTreeSafely(root);
             throw;
         }
+    }
+    // Used only after all target bytes have independent authoritative proof.
+    // The donor's native files are neither copied wholesale nor treated as
+    // verified. Its recognized branch/generation and save safety still apply.
+    static string VerifySaveDonor(Profile source,string targetId,CancellationToken cancellation){
+        cancellation.ThrowIfCancellationRequested();
+        if(source==null||string.IsNullOrWhiteSpace(source.Root)||!Directory.Exists(source.Root)||
+           (File.GetAttributes(source.Root)&FileAttributes.ReparsePoint)!=0)
+            throw new IOException("Choose an existing, unlinked compatible source game for save carryover.");
+        string id=UniversalSupport.Identify(source.Root);RequireTransfer(id,targetId);
+        if(Store.Running(new Settings{Profiles=new List<Profile>{source}}))
+            throw new IOException("Save and close the source game before upgrading.");
+        if(string.IsNullOrWhiteSpace(source.SavePath))throw new IOException("The source save folder is not configured.");
+        if(Directory.Exists(source.SavePath))Store.CheckLinks(source.SavePath);
+        return id;
     }
     public static bool MayUpgrade(string source,string target){
         var recipe=RecipeSupport.Catalog().Recipes.FirstOrDefault(x=>x.Id==target);

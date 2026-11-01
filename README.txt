@@ -1,10 +1,15 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.34
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.35
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Fixes upgrades blocked by an older installed game's Map027 mismatch when
+the original inputs already contain every exact file for the new target.
+Both source methods can reconstruct the verified target and carry compatible,
+backed-up saves. Old maps/saves stay untouched. Required conversion-source
+checks and final target hashes remain strict. See Help -> Notes & changelogs.
 Magic-skill tooltip details now use English labels/elements, readable spacing
 and "Usable: In Battle" in Maple and Three-in-One. Missing optional custom
 costs no longer display undefined. Native formulas, chances and MP costs
