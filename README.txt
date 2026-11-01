@@ -1,10 +1,15 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.33
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.34
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Magic-skill tooltip details now use English labels/elements, readable spacing
+and "Usable: In Battle" in Maple and Three-in-One. Missing optional custom
+costs no longer display undefined. Native formulas, chances and MP costs
+are preserved. Oversized details wrap and scroll. English overlays refresh
+normally without runtime controls. Illustrated notes: Help -> Notes & changelogs.
 Enemy-inspector stat values and state durations have their own space.
 Long state names wrap. Oversized trait tables fit the screen and retain
 their full text with hover-wheel scrolling. Maple compatibility is checked.

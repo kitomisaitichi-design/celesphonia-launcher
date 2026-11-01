@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.34 — Readable magic-skill tooltip details
+
+The lower skill details in Maple and Three-in-One now use English labels/elements, natural **Usable: In Battle** wording and clear spacing. Native formulas, chances, costs, spell names and variant differences remain exact. Oversized panels wrap and scroll; missing optional custom costs no longer print `undefined`. English-enabled launches refresh the overlay automatically, with runtime controls off. Before/after comparisons are in **Help → Notes & changelogs → Launcher updates** and the [native screenshot gallery](docs/skill-tooltip-1.0.34-gallery.md).
+
 ## Launcher 1.0.33 — Readable enemy information
 
 Three-in-One's battle inspector now separates stat labels from values and state names from their duration captions. Long state names wrap, while oversized resistance/trait tables use readable abbreviations, fewer columns and hover-wheel scrolling. The full native values remain available. Matching before/after pictures are in **Help → Notes & changelogs → Launcher updates**, with a linked full trait gallery. Maple's different native tooltip is preserved and checked for compatibility.

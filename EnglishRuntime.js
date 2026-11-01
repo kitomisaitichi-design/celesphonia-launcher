@@ -296,7 +296,7 @@
                 if(args[1]===170){args[1]=148;args[3]=Math.max(1,this.contentsWidth()-148);}
             }
             if(method==='drawTextEx'&&name==='Window_Custom'&&args[1]<this.contentsWidth()) fit=fitSingleLine(this,args[0],this.contentsWidth()-args[1]);
-            if(method==='drawTextEx'&&name==='Window_ObjectInfo'&&this._celesphoniaEnglishStateInfo&&args[1]<this.contentsWidth())fit=fitSingleLine(this,args[0],this.contentsWidth()-args[1]);
+            if(method==='drawTextEx'&&name==='Window_ObjectInfo'&&(this._celesphoniaEnglishStateInfo||this._celesphoniaEnglishSkillInfo)&&args[1]<this.contentsWidth())fit=fitSingleLine(this,args[0],this.contentsWidth()-args[1]);
             if(method==='drawTextEx'&&name==='Window_SoloStatus'){
                 installSoloFieldWidth(Object.getPrototypeOf(this));
                 if(args[1]<this.contentsWidth())fit=fitSingleLine(this,args[0],Math.min(this._celesphoniaEnglishFieldWidth||this.contentsWidth()-args[1],this.contentsWidth()-args[1]));
@@ -676,11 +676,94 @@
         if(global.Window_Selectable&&!Window_Selectable.prototype.processWheel._celesphoniaEnglishStateInfo){
             var nativeSelectableWheel=Window_Selectable.prototype.processWheel;
             Window_Selectable.prototype.processWheel=function(){
-                var scene=global.SceneManager&&SceneManager._scene,info=scene&&scene._objInfoWindow,layout=info&&info._celesphoniaEnglishStateInfo;
+                var scene=global.SceneManager&&SceneManager._scene,info=scene&&scene._objInfoWindow,layout=info&&(info._celesphoniaEnglishStateInfo||info._celesphoniaEnglishSkillInfo);
                 if(layout&&layout.scrollable&&enemyInfoHover(info))return;
                 return nativeSelectableWheel.apply(this,arguments);
             };
             Window_Selectable.prototype.processWheel._celesphoniaEnglishStateInfo=true;
+        }
+    }
+    function installSkillObjectInfo(proto) {
+        if(!proto||!proto.makeObjInfo||!proto.getObjText||!proto.getObjDamageEle||!proto.calculateWindowSize||proto.makeObjInfo._celesphoniaEnglishSkillInfo)return;
+        var make=proto.makeObjInfo,getText=proto.getObjText,occasion=proto.getObjOccasion,element=proto.getObjDamageEle,colon=proto.textColon;
+        var calculate=proto.calculateWindowSize,cols=proto.maxCols,wheel=proto.processWheel,update=proto.update,customCost=proto.getObjCustomDisplayCost;
+        var fields=['_data','_textTop','_textBottom','_damageData','_costData','_requireData','_lastData'];
+        var captions={OIWMainText:{Scope:'Targets',Occasion:'Usable'},OIWActionText:{Speed:'Speed Modifier',SuccessRate:'Success Rate',Repeats:'Hits',TpGain:'TP Gain',HitType:'Hit Type'},
+            OIWDamageText:{Type:'Damage Type',Critical:'Critical',Element:'Element',Formula:'Formula',Variance:'Variance'},
+            OIWStateBuffText:{AddState:'Inflicts',RemoveState:'Removes',AddBuff:'Buff',AddDebuff:'Debuff',RemoveBuff:'Remove Buff',RemoveDebuff:'Remove Debuff'}};
+        function skill(win){return win._item&&global.DataManager&&DataManager.isSkill(win._item);}
+        proto.getObjText=function(category,code,noColor){
+            var names=skill(this)&&captions[category],name=names&&names[code];
+            return name?(noColor?name:this.addSystemColor(name)):getText.apply(this,arguments);
+        };
+        proto.textColon=function(){return skill(this)?': ':colon.apply(this,arguments);};
+        if(typeof customCost==='function')proto.getObjCustomDisplayCost=function(item){
+            // Maple's optional custom-cost field is absent on ordinary spells.
+            // Absence means no custom caption, not the literal word undefined.
+            if(skill(this)&&item&&item.customCostText==null)return;
+            return customCost.apply(this,arguments);
+        };
+        proto.getObjOccasion=function(){
+            if(!skill(this))return occasion.apply(this,arguments);
+            var item=this._item;if(!this.getObjTextShow('OIWMainText','Occasion')||item.passiveStates&&item.passiveStates.length&&item.occasion===3)return;
+            var names=['Anytime','In Battle','Outside Battle','Never'];
+            if(names[item.occasion]===undefined)return occasion.apply(this,arguments);
+            this._data.push(this.getObjText('OIWMainText','Occasion')+this.textColon()+this.addBasicColor(names[item.occasion]));
+        };
+        proto.getObjDamageEle=function(text,damage){
+            if(!skill(this))return element.apply(this,arguments);
+            if(this.getObjTextShow('OIWDamageText','Element')&&damage.elementId>0){
+                // Localize the native element field, not the executable formula
+                // or a similarly named database entry used by game scripts.
+                var raw=$dataSystem.elements[damage.elementId],names={'炎':'Fire','火':'Fire','冰':'Ice','氷':'Ice','雷':'Lightning','风':'Wind','風':'Wind','土':'Earth','水':'Water','光':'Light','暗':'Dark'};
+                text+=this.addBasicColor(' / '+(own.call(names,raw)?names[raw]:translate(raw)));
+            }
+            return text;
+        };
+        proto.makeObjInfo=function(){
+            this._celesphoniaEnglishSkillInfo=null;
+            var result=make.apply(this,arguments);if(!skill(this))return result;
+            fields.forEach(function(key){if(this[key])this[key]=this[key].map(function(text){return typeof text==='string'?translate(text):text;});},this);
+            this._category=translate(this._category);
+            this._celesphoniaEnglishSkillInfo={itemId:this._item.id,sourceDamage:this._damageData.slice(),wrapped:false};
+            return result;
+        };
+        proto.makeObjInfo._celesphoniaEnglishSkillInfo=true;
+        proto.maxCols=function(){var layout=this._celesphoniaEnglishSkillInfo;return layout&&layout.columns||cols.apply(this,arguments);};
+        proto.calculateWindowSize=function(){
+            var result=calculate.apply(this,arguments),layout=this._celesphoniaEnglishSkillInfo;if(!layout||!this.dataLength())return result;
+            var win=this,padding=this.standardPadding(),gap=this.textPadding()*2,maxWidth=Graphics.boxWidth-16,maxHeight=Graphics.boxHeight-16;
+            if(this.width>maxWidth||this.calAllDataWidth(0)>(maxWidth-padding*2)/this.maxCols()-gap){
+                layout.columns=1;var width=maxWidth-padding*2-gap;
+                fields.forEach(function(key){var rows=[];(win[key]||[]).forEach(function(text){
+                    if(typeof text!=='string'){rows.push(text);return;}
+                    var fit=fitPanelText(win,text,width,Infinity,win.standardFontSize(),win.standardFontSize()),color='';
+                    fit.text.split('\n').forEach(function(line){var codes=line.match(/(?:\\|\x1b)C\[\d+\]/gi);rows.push(color+line);if(codes)color=codes[codes.length-1];});
+                });win[key]=rows;});layout.wrapped=true;calculate.apply(this,arguments);
+            }
+            this.width=Math.max(1,Math.min(this.width,maxWidth));this.height=Math.max(1,Math.min(this.height,maxHeight));
+            layout.scrollable=this.contentsHeight()>this.height-padding*2+1;return result;
+        };
+        proto.processWheel=function(){
+            var layout=this._celesphoniaEnglishSkillInfo;if(!layout)return wheel.apply(this,arguments);
+            if(layout.scrollable&&enemyInfoHover(this)&&Math.abs(TouchInput.wheelY)>=20){
+                var limit=Math.max(0,this.contents.height-this.height+this.standardPadding()*2),speed=Math.max(this.lineHeight()*2,Number(this._windowSet.ScrollSpeed)*4||48);
+                this.origin.y=Math.max(0,Math.min(limit,this.origin.y+(TouchInput.wheelY>0?1:-1)*speed));
+            }
+        };
+        proto.update=function(){
+            var result=update.apply(this,arguments),layout=this._celesphoniaEnglishSkillInfo;
+            if(layout){var limit=Math.max(0,this.contents.height-this.height+this.standardPadding()*2);this.upArrowVisible=this.origin.y>0;this.downArrowVisible=this.origin.y<limit;}
+            return result;
+        };
+        if(global.Window_Selectable&&!Window_Selectable.prototype.processWheel._celesphoniaEnglishSkillInfo){
+            var selectableWheel=Window_Selectable.prototype.processWheel;
+            Window_Selectable.prototype.processWheel=function(){
+                var scene=global.SceneManager&&SceneManager._scene,info=scene&&scene._objInfoWindow,layout=info&&info._celesphoniaEnglishSkillInfo;
+                if(layout&&layout.scrollable&&enemyInfoHover(info))return;
+                return selectableWheel.apply(this,arguments);
+            };
+            Window_Selectable.prototype.processWheel._celesphoniaEnglishSkillInfo=true;
         }
     }
     function installImprintExplain(proto) {
@@ -1370,7 +1453,7 @@
                 if(this.constructor&&this.constructor.name==='Window_MagicExplain')installImprintExplain(Object.getPrototypeOf(this));
                 if(this.constructor&&this.constructor.name==='Window_HypObjInfo')installEnemyInfoStats(Object.getPrototypeOf(this));
                 if(this.constructor&&this.constructor.name==='Window_HypObjState')installEnemyInfoStates(Object.getPrototypeOf(this));
-                if(this.constructor&&this.constructor.name==='Window_ObjectInfo')installStateObjectInfo(Object.getPrototypeOf(this));
+                if(this.constructor&&this.constructor.name==='Window_ObjectInfo'){installStateObjectInfo(Object.getPrototypeOf(this));installSkillObjectInfo(Object.getPrototypeOf(this));}
                 return nativeWindowInitialize.apply(this,arguments);
             };
             wrapConverter(Window_Base.prototype);

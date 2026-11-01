@@ -2,6 +2,24 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.34 — Readable magic-skill tooltip details
+
+- Translates the lower skill-tooltip labels and element fragments in Three-in-One Ver1.061 and Maple 1.7.2. Ice is now shown as **HP Damage / Ice**, the formula caption is English, and **Usable: In Battle** replaces **Usable:Fight**. Labels and values have readable spacing.
+- Keeps native damage formulas, targets, percentages, MP costs, spell names and variant-specific effects exact. For example, Gefrier retains Three-in-One's 40% freeze chance and Maple's 20% chance. The existing German-style spell names are intentional and remain.
+- Measures translated tooltip text before sizing the panel. Oversized skill details wrap at their native readable font size and retain the full text with hover-wheel scrolling. Ordinary state/equipment tooltips retain their previous behavior.
+- Fixes Maple displaying **Additional Cost: undefined** when an ordinary skill has no optional custom-cost field. Real custom costs and native visibility settings are respected.
+- Works with English enabled and runtime controls off. Existing enabled English overlays refresh through the normal launcher path; no manual remove/reapply is needed.
+
+**Before — native formula caption**
+
+![Formula caption before](docs/images/skill-tooltip-formula-before.png)
+
+**After — English formula caption**
+
+![Formula caption after](docs/images/skill-tooltip-formula-after.png)
+
+These are native text-layer detail crops at the original font size. [Full native Three-in-One and Maple before/after screenshots](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.34/docs/skill-tooltip-1.0.34-gallery.md) · [Source trace and verification limits](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.34/docs/skill-tooltip-1.0.34-trace.md)
+
 ## 1.0.33 — Readable enemy stats, states and traits
 
 - Gives stat labels and values separate space in Three-in-One's battle inspector, fixing overlapping evasion, reflection, attack-speed and recovery captions. Native HP, MP, percentages and other values stay exact.

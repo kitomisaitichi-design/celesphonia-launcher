@@ -1,0 +1,17 @@
+# Skill-tooltip localization trace — launcher 1.0.34
+
+Frozen source baseline: d80c5fbe8706a8120213b455f90ff09b96c99193 (launcher 1.0.33). Actual native resources are resolved through each package.json main entry; Maple has encrypted database resources and a root-level web app, unlike Three-in-One's www directory.
+
+Both registered GT_ObjectInfoWindow forks construct scope/occasion/action/damage/effect fields in Window_ObjectInfo. getObjDamage concatenates the configured Formula label with damage.formula; getObjDamageEle joins the native element and 属性 suffix. Existing generic label translation missed these assembled fields and translated the isolated 战斗 value to Fight. Native measurement occurred before complete display localization.
+
+EnglishRuntime.js now installs a skill-only presentation adapter at native window initialization. It localizes known field captions and the native element field, renders occasion enums naturally, and translates private window row copies before measuring them. No plugin parameters, database fields, formula expressions, native names or saved variables are written. Non-skill calls delegate to the original methods. Wrapping retains every text fragment/color and formula character; hover scrolling affects the tooltip rather than the list beneath it.
+
+Maple's getObjCustomDisplayCost only rejected an empty string; an absent customCostText field was concatenated as undefined. The display adapter rejects only null/undefined optional fields, preserving nonempty custom text and native visibility predicates. It does not change cost evaluation or enable a hidden native feature.
+
+Native focused checks: **43 Three-in-One, 42 Maple**. Cases cover skills 64/65 (reported ice spells), 54 (fire), 1 (physical), 15 (healing) and 47 (dense effects), exact formula/effect/target data and displayed numeric parity, lower English captions, absent/real custom costs, unchanged state/equipment tooltips, 320×300 wrapping/hover-wheel bounds, empty selection and reopening. Source-file hashes and in-memory database/battle snapshots are unchanged after rendering. English is active and runtime controls are absent.
+
+Limits: this is a tooltip/UI regression check, not a full gameplay replay or a claim of complete translation. Native dense skill 47 contains pre-existing corrupt/unknown state and special metadata names; they are retained without guessing their intended wording. Its field labels, numeric values and layout are checked. The five ordinary magic/physical/healing cases have no Chinese remaining in their detail rows. German-style spell names such as Gefrier and Schneetreiben remain intentional names.
+
+Failed fixture attempts were recorded: an early snapshot preceded native skill-learning cache initialization; a broad dense-case assertion included pre-existing corrupt names; a custom-cost assertion initially assumed a feature enabled in both variants. Preparation boundaries and actual native visibility/capabilities were corrected without changing game data. The native full screenshot and text-layer pairs exceeded the updater's remaining image budget, so offline notes use small native caption crops and link the full gallery. Existing updater limits and dependency set remain unchanged.
+
+Runtime/dictionary consistency, notes-reader behavior, install/restore round trips, installed payload and public release verification are recorded by the release-specific local reports. No broad historical test result is presented as fresh gameplay evidence.
