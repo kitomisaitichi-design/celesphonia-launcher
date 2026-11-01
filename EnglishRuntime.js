@@ -534,6 +534,65 @@
         return win&&win.visible&&win.openness===255&&win._celesphoniaEnglishEquipmentLayout&&win._celesphoniaEnglishEquipmentLayout.scrollable&&
             TouchInput.x>=win.x&&TouchInput.x<win.x+win.width&&TouchInput.y>=win.y&&TouchInput.y<win.y+win.height;
     }
+    function installImprintExplain(proto) {
+        if(!proto||typeof proto.drawDescription!=='function'||!proto.refresh||proto.refresh._celesphoniaEnglishImprint)return;
+        var update=proto.update;
+        proto.refresh=function(){
+            var win=this,item=this.item,width=this.contentsWidth()-10,height=this.contentsHeight(),rows=[],total=0;
+            this.origin.y=0;this.upArrowVisible=false;this.downArrowVisible=false;
+            if(item&&item.traits)item.traits.forEach(function(trait){
+                if(trait.code!==Game_BattlerBase.TRAIT_SKILL_ADD)return;
+                var skill=$dataSkills[trait.dataId];if(!skill)return;
+                var name=translate(skill.name),description=translate(skill.description||''),title=fitSingleLine(win,name,width);
+                if(title.fontSize<20){title=fitPanelText(win,name,width,Infinity,20,20);title.wrapped=true;}
+                else title.height=win.lineHeight()-5;
+                var font=TMPlugin.MagicSlot.ExplainFontSize||14,body=fitPanelText(win,description,width,Infinity,font,font);
+                rows.push({id:skill.id,name:name,description:description,title:title,body:body,skill:skill});
+                total+=title.height+body.height+TMPlugin.MagicSlot.ExplainSkillMargin;
+            });
+            // Full reviewed fields are translated before wrapping. Only use
+            // conventional stat abbreviations if this complete panel overflows.
+            if(total>height){total=0;rows.forEach(function(row){
+                var compact=compactEquipment(row.description).replace(/\bphysical accuracy\b/gi,'PHYS-HIT').replace(/\bSP gain(?: rate)?\b/gi,'SP Gain');
+                row.body=fitPanelText(win,compact,width,Infinity,TMPlugin.MagicSlot.ExplainFontSize||14,TMPlugin.MagicSlot.ExplainFontSize||14);
+                row.abbreviated=compact!==row.description;total+=row.title.height+row.body.height+TMPlugin.MagicSlot.ExplainSkillMargin;
+            });}
+            var bitmapHeight=Math.max(height,Math.ceil(total));
+            if(this.contents.height!==bitmapHeight)this.contents=new Bitmap(this.contentsWidth(),bitmapHeight);
+            this.contents.clear();var y=0;
+            function paint(text,x,top,size){
+                var prior=win.standardFontSize,had=own.call(win,'standardFontSize'),color=win.contents.textColor,reset=win.resetFontSettings,hadReset=own.call(win,'resetFontSettings');win.standardFontSize=function(){return size;};
+                win.resetFontSettings=function(){reset.call(this);this.contents.textColor=color;};
+                try{win.drawTextEx(text,x,top);}finally{if(had)win.standardFontSize=prior;else delete win.standardFontSize;if(hadReset)win.resetFontSettings=reset;else delete win.resetFontSettings;}
+            }
+            rows.forEach(function(row){
+                win.resetFontSettings();var skill=row.skill;
+                if(skill.meta.instant)win.changeTextColor(win.textColor(4));
+                else if(skill.meta.FirstMove)win.changeTextColor(win.textColor(17));
+                else if(skill.meta.ContinuousSection)win.changeTextColor(win.textColor(23));
+                else if(skill.meta.final)win.changeTextColor(win.textColor(2));
+                else if(skill.stypeId===4)win.changeTextColor(win.textColor(TMPlugin.MagicSlot.ExplainPassiveColor));
+                row.y=y;win.contents.fontSize=row.title.fontSize;
+                if(row.title.wrapped)paint(row.title.text,0,y,row.title.fontSize);
+                else win.drawText(row.name,0,y,width);
+                y+=row.title.height;
+                paint(row.body.text,10,y,row.body.fontSize);
+                y+=row.body.height+TMPlugin.MagicSlot.ExplainSkillMargin;delete row.skill;
+            });
+            this._celesphoniaEnglishImprintLayout={itemId:item&&item.id,rows:rows,height:total,viewportHeight:height,scrollable:total>height};
+            this.downArrowVisible=total>height;
+        };
+        proto.refresh._celesphoniaEnglishImprint=true;
+        proto.update=function(){
+            var result=update.apply(this,arguments),layout=this._celesphoniaEnglishImprintLayout;
+            if(layout&&layout.scrollable){
+                var limit=Math.max(0,this.contents.height-this.contentsHeight());
+                if(this.visible&&this.openness===255&&TouchInput.x>=this.x&&TouchInput.x<this.x+this.width&&TouchInput.y>=this.y&&TouchInput.y<this.y+this.height&&Math.abs(TouchInput.wheelY)>=20)this.origin.y=Math.max(0,Math.min(limit,this.origin.y+(TouchInput.wheelY>0?1:-1)*48));
+                this.upArrowVisible=this.origin.y>0;this.downArrowVisible=this.origin.y<limit;
+            }
+            return result;
+        };
+    }
     function installEquipmentHelp() {
         if(!global.Window_Help||Window_Help.prototype.refresh._celesphoniaEnglishEquipment)return;
         var proto=Window_Help.prototype,setItem=proto.setItem,refresh=proto.refresh,update=proto.update;
@@ -1159,6 +1218,7 @@
             var nativeWindowInitialize=Window_Base.prototype.initialize;
             Window_Base.prototype.initialize=function(){
                 if(this.constructor&&this.constructor.name==='Window_SoloStatus')installSoloFieldWidth(Object.getPrototypeOf(this));
+                if(this.constructor&&this.constructor.name==='Window_MagicExplain')installImprintExplain(Object.getPrototypeOf(this));
                 return nativeWindowInitialize.apply(this,arguments);
             };
             wrapConverter(Window_Base.prototype);

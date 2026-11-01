@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.31 — Readable imprint descriptions
+
+The **Memory Slots / Equip Imprints** menu now translates complete skill descriptions before wrapping them, fixing mixed Chinese/English and clipped titles in Maple and Three-in-One. Long descriptions use readable wrapping, familiar stat abbreviations when needed, and hover-wheel scrolling with native arrows. Native skill colors, imprint actions and game effects are preserved.
+
+Four inherited ATK/Max HP percentage translations now match their original source text. See **Help → Notes & changelogs → Launcher updates** for native before/after pictures and the [verification trace](docs/imprint-1.0.31-trace.md). Enabled English overlays refresh automatically; runtime controls are not required.
+
 ## Launcher 1.0.30 — Safe install destinations
 
 Fixes **“Select a destination outside original source folders”** when the launcher was extracted inside GoRPG or another source game. Automatic and previously saved automatic destinations now move outside the selected source folders before installation. Custom conflicting locations open a validated folder picker that can create a separate folder. Existing games, save paths and valid custom destinations stay unchanged.

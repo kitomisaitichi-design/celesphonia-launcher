@@ -4,6 +4,8 @@ import argparse,hashlib,json,re,shutil,subprocess
 p=argparse.ArgumentParser()
 for name in ('game','output','runtime'):p.add_argument('--'+name,type=Path,required=True)
 p.add_argument('--fixture',type=Path,default=Path(__file__).parent/'NativeTextMemoryFixture.js')
+p.add_argument('--dictionary',type=Path)
+p.add_argument('--capture-only',action='store_true')
 p.add_argument('--fixed',action='store_true');args=p.parse_args()
 args.output=args.output.resolve()
 root=args.game.resolve();manifest=json.loads((root/'package.json').read_text('utf-8-sig'));entry=root/manifest['main'];web=entry.parent
@@ -20,7 +22,9 @@ for name in ('locales','swiftshader'):
 html=entry.read_text('utf-8-sig');assert 'celesphonia-english/runtime.js' in html
 html=re.sub(r'<head\b[^>]*>',lambda m:m[0]+'\n<base href="'+web.as_uri()+'/">',html,count=1,flags=re.I)
 html=html.replace('celesphonia-english/runtime.js',args.runtime.resolve().as_uri())
+if args.dictionary:html=html.replace('celesphonia-english/dictionary.js',args.dictionary.resolve().as_uri())
 source=args.fixture.read_text('utf8').replace('__OUTPUT__',json.dumps(str(args.output.resolve()))).replace('__FIXED__',str(args.fixed).lower())
+source=source.replace('__CAPTURE_ONLY__',str(args.capture_only).lower())
 (app/'text-memory-probe.js').write_text(source,encoding='utf8')
 main=re.search(r'<script\b[^>]*src=["\']js/main\.js["\'][^>]*>',html,re.I);assert main
 html=html[:main.start()]+'<script src="'+(app/'text-memory-probe.js').as_uri()+'"></script>\n'+html[main.start():]
