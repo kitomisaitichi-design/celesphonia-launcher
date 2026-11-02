@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.37 — Read split ZIP volumes correctly
+
+Fixes `.zip.001` being read as a complete single ZIP even with `.002` present. Keep all volumes together with their original names, then select the first `.001` file; later parts are read automatically. Missing or corrupt parts still fail verification. Ordinary/mislabelled ZIPs, split 7z, RAR and mixed native-file inputs retain their existing checks. [Before/after evidence and limits](docs/split-archive-1.0.37-trace.md).
+
 ## Launcher 1.0.36 — Include manually selected originals in upgrade recovery
 
 Includes the 1.0.35 Map027 recovery fix below and handles a creator archive first chosen through the file picker after initial discovery. The chosen originals receive fresh byte checks before the older source can block recovery, including a download replaced under the same filename. Exact target hashes, compatible save backup/copy and strict conversion-source checks remain in force.

@@ -31,7 +31,7 @@ public static class RarSupport {
             var error=p.StandardError.ReadToEndAsync();
             string output=p.StandardOutput.ReadToEnd();
             p.WaitForExit();
-            if(p.ExitCode!=0)throw new IOException("RAR extraction/listing failed: "+error.Result+" "+output.Substring(Math.Max(0,output.Length-3000)));
+            if(p.ExitCode!=0)throw new IOException("Archive extraction/listing failed: "+error.Result+" "+output.Substring(Math.Max(0,output.Length-3000))+" For split archives, keep every volume together and select the first .001 file.");
             return output;
         }
     }
@@ -47,7 +47,9 @@ public static class RarSupport {
                ||(row.StartsWith("Hard Link = ",StringComparison.Ordinal)
                 && row.Substring("Hard Link = ".Length).Trim().Length>0)
                ||(row.StartsWith("Copy Link = ",StringComparison.Ordinal)
-                && row.Substring("Copy Link = ".Length).Trim().Length>0))
+                && row.Substring("Copy Link = ".Length).Trim().Length>0)
+               ||(row.StartsWith("Attributes = ",StringComparison.Ordinal)
+                && row.Substring(13).Split(' ').Any(x=>x.Length==10&&x[0]=='l')))
                 throw new IOException("RAR archive links are not supported.");
             if(!row.StartsWith("Path = ",StringComparison.Ordinal))continue;
             string name=row.Substring(7).Replace('/','\\').TrimEnd('\\');

@@ -2,6 +2,14 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.37 — Read split ZIP volumes correctly
+
+**Before:** a valid `.zip.001` plus `.002` could fail with **End of Central Directory record could not be found** because ZIP header detection selected the single-file reader. **After:** first volumes use the existing volume-capable reader; the verified sample restores all 6,000 bytes exactly. No new archive dependency is required.
+
+Keep every volume together with its original matching name, then select the first `.001`. The continuation `.002` is read automatically; do not extract it separately. Incomplete, corrupt, unsafe or duplicate entries still fail, and final game-file sizes/hashes remain required. Ordinary/mislabelled ZIPs, split 7z, RAR and individual native fragments remain supported.
+
+Grenim's reported 4,455 missing files include creator-mod media. Their exact archive format is unconfirmed: this fixes a reproduced split-ZIP defect, not every missing-source report. An incomplete extracted folder still needs the complete original volumes. Existing games, saves and English overlays are unchanged. [Diagnostic trace](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.37/docs/split-archive-1.0.37-trace.md).
+
 ## 1.0.36 — Cover the manual creator-archive picker too
 
 Completes the Map027 upgrade recovery below when the creator bundle is first selected manually after the initial source scan. The chosen archive receives fresh exact-target checks before the older source audit can block recovery, including a download replaced under the same filename. Full target verification, compatible save backup/copy, strict source checks when conversion needs them, and original-file preservation remain unchanged.

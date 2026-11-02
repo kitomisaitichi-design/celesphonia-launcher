@@ -124,7 +124,7 @@ public static class FileDiscovery {
         catch(ArgumentException){}catch(IOException){}catch(UnauthorizedAccessException){}return false;
     }
     public static string ArchiveFormat(string file){
-        try{using(var s=File.OpenRead(file)){var b=new byte[8];int n=s.Read(b,0,b.Length);if(n>=4&&b[0]==0x50&&b[1]==0x4b&&((b[2]==3&&b[3]==4)||(b[2]==5&&b[3]==6)||(b[2]==7&&b[3]==8)))return "zip";if(n>=7&&b[0]==0x52&&b[1]==0x61&&b[2]==0x72&&b[3]==0x21&&b[4]==0x1a&&b[5]==0x07)return "rar";if(n>=6&&b[0]==0x37&&b[1]==0x7a&&b[2]==0xbc&&b[3]==0xaf&&b[4]==0x27&&b[5]==0x1c)return "7z";}}catch(IOException){}catch(UnauthorizedAccessException){}return null;
+        try{using(var s=File.OpenRead(file)){var b=new byte[8];int n=s.Read(b,0,b.Length);if(file.EndsWith(".001",StringComparison.OrdinalIgnoreCase))return "7z";if(n>=4&&b[0]==0x50&&b[1]==0x4b&&((b[2]==3&&b[3]==4)||(b[2]==5&&b[3]==6)||(b[2]==7&&b[3]==8)))return "zip";if(n>=7&&b[0]==0x52&&b[1]==0x61&&b[2]==0x72&&b[3]==0x21&&b[4]==0x1a&&b[5]==0x07)return "rar";if(n>=6&&b[0]==0x37&&b[1]==0x7a&&b[2]==0xbc&&b[3]==0xaf&&b[4]==0x27&&b[5]==0x1c)return "7z";}}catch(IOException){}catch(UnauthorizedAccessException){}return null;
     }
     class ScanBudget{
         public int Remaining=3500,Visited;

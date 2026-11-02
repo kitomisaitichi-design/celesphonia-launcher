@@ -288,11 +288,12 @@ public static class MixedSourceRecovery {
     static string ArchiveFormat(string file) {
         byte[] bytes=new byte[8];int n;
         using(var s=File.OpenRead(file))n=s.Read(bytes,0,bytes.Length);
+        // A first ZIP volume has ZIP magic but its directory is in a later volume.
+        if(file.EndsWith(".001",StringComparison.OrdinalIgnoreCase))return "7z";
         if(n>=4&&bytes[0]==0x50&&bytes[1]==0x4b &&
            ((bytes[2]==3&&bytes[3]==4)||(bytes[2]==5&&bytes[3]==6)||(bytes[2]==7&&bytes[3]==8)))return "zip";
         if(n>=6&&bytes[0]==0x37&&bytes[1]==0x7a&&bytes[2]==0xbc&&bytes[3]==0xaf&&bytes[4]==0x27&&bytes[5]==0x1c)return "7z";
         if(n>=7&&bytes[0]==0x52&&bytes[1]==0x61&&bytes[2]==0x72&&bytes[3]==0x21&&bytes[4]==0x1a&&bytes[5]==0x07)return "7z";
-        if(file.EndsWith(".001",StringComparison.OrdinalIgnoreCase))return "7z";
         return null;
     }
     static void ProbeZip(string source,Dictionary<string,MixedNativeFile> remaining,
@@ -540,7 +541,7 @@ public static class MixedSourceRecovery {
                 }
             }
             cancellation.ThrowIfCancellationRequested();
-            if(process.ExitCode!=0)throw new IOException("Original archive entry is unavailable or archive validation failed (7z exit "+process.ExitCode+").");
+            if(process.ExitCode!=0)throw new IOException("Original archive entry is unavailable or archive validation failed (7z exit "+process.ExitCode+"). For split archives, keep every volume together and select the first .001 file.");
         }
         public List<Tuple<string,long>> List(string source,CancellationToken cancellation) {
             using(var process=Start("l -slt",source,null)) {
@@ -557,6 +558,7 @@ public static class MixedSourceRecovery {
                         if(row.StartsWith("Path = ",StringComparison.Ordinal))path=row.Substring(7).Replace('\\','/');
                         else if(row.StartsWith("Size = ",StringComparison.Ordinal))size=row.Substring(7);
                         else if(row=="Folder = +")folder=true;
+                        else if(row.StartsWith("Attributes = ",StringComparison.Ordinal)&&row.Substring(13).Split(' ').Any(x=>x.Length==10&&x[0]=='l'))link=true;
                         else if(new[]{"Symbolic Link = ","Hard Link = ","Copy Link = "}.Any(key=>
                             row.StartsWith(key,StringComparison.Ordinal)&&row.Substring(key.Length).Trim().Length>0))link=true;
                     }
