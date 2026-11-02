@@ -55,7 +55,7 @@
     check('direct and variable-derived IDs match',direct===variable&&direct===report.nestedVariable,report.variableParity);
     check('invalid IDs preserve native failure behavior',JSON.stringify(report.invalid)===JSON.stringify(before.invalid));
     check('eligibility matrix unchanged',JSON.stringify(report.eligibility)===JSON.stringify(before.eligibility));
-    check('level, repair and currency branch numbers preserved',JSON.stringify(report.branches.map(function(r){return plain(r.text).match(/\d+(?:\.\d+)?/g);}))===JSON.stringify(before.branches.map(function(r){return plain(r.text).match(/\d+(?:\.\d+)?/g);}))); 
+    check('level, repair and currency branch numbers preserved',JSON.stringify(report.branches.map(function(r){return plain(r.text).match(/\d+(?:\.\d+)?/g);}))===JSON.stringify(before.branches.map(function(r){return plain(r.text).match(/\d+(?:\.\d+)?/g);})));
     check('available/unavailable source color escapes preserved',JSON.stringify(report.branches.map(function(r){return String(r.value).match(/\x1b[cC]\[\d+\]/g);}))===JSON.stringify(before.branches.map(function(r){return String(r.value).match(/\x1b[cC]\[\d+\]/g);})));
    }
    finish();
