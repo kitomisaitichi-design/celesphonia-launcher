@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Drawing;
@@ -43,6 +44,8 @@ public sealed class NotesReader : Form {
     static string Embedded(string name){
         using(var stream=typeof(NotesReader).Assembly.GetManifestResourceStream("Celesphonia."+name)){
             if(stream==null)throw new IOException("Bundled notes missing: "+name);
+            bool packed=stream.ReadByte()==0x1f&&stream.ReadByte()==0x8b;stream.Position=0;
+            if(packed)using(var gzip=new GZipStream(stream,CompressionMode.Decompress))using(var text=new StreamReader(gzip,Encoding.UTF8,true))return text.ReadToEnd();
             using(var text=new StreamReader(stream,Encoding.UTF8,true))return text.ReadToEnd();
         }
     }
@@ -57,7 +60,7 @@ public sealed class NotesReader : Form {
     }
     static string Html(string text){return System.Net.WebUtility.HtmlEncode(text);}
     static string Image(string path,string alt){
-        var match=Regex.Match(path,@"^(?:docs/)?images/((?:stat-layout-(?:maple|creator)|text-memory-(?:names|locked|creator|maple)|notification-(?:names|blank|title)|equipment-(?:creator|maple|weapon|dense|dense-end|terms)|imprint-(?:creator|maple)|enemy-info-stats|skill-tooltip-formula|destination)-(?:before|after)\.png)$");
+        var match=Regex.Match(path,@"^(?:docs/)?images/((?:stat-layout-(?:maple|creator)|text-memory-(?:names|locked|creator|maple)|notification-(?:names|blank|title)|equipment-(?:creator|maple|weapon|dense|dense-end|terms)|imprint-(?:creator|maple)|skill-fields-(?:creator|maple)|enemy-info-stats|skill-tooltip-formula|destination)-(?:before|after)\.png)$");
         if(!match.Success)return "<p>"+Html(alt)+"</p>";
         using(var stream=typeof(NotesReader).Assembly.GetManifestResourceStream("Celesphonia.Notes."+match.Groups[1].Value)){
             if(stream==null)throw new IOException("Bundled notes image missing: "+path);

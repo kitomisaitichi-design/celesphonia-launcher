@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.38 — Skill buff and special-effect names
+
+Fixes untranslated buff/debuff names and common-event labels in skill tooltips, including Force Barrier II. The follow-up sweeps every native skill record in Three-in-One Ver1.061 and Maple 1.7.2: **2,800 records, including 1,874 named skills**. Existing formulas, chances, costs, spell names and each variant's native effects remain exact. [Native before/after gallery and coverage](docs/skill-fields-1.0.38-trace.md).
+
 ## Launcher 1.0.37 — Read split ZIP volumes correctly
 
 Fixes `.zip.001` being read as a complete single ZIP even with `.002` present. Keep all volumes together with their original names, then select the first `.001` file; later parts are read automatically. Missing or corrupt parts still fail verification. Ordinary/mislabelled ZIPs, split 7z, RAR and mixed native-file inputs retain their existing checks. [Before/after evidence and limits](docs/split-archive-1.0.37-trace.md).

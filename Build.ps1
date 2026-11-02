@@ -7,6 +7,8 @@ if (!(Test-Path -LiteralPath $taskCompiler)) { $taskCompiler = Join-Path $env:WI
 $taskFiles = @('PortableLauncher.cs', 'RarSupport.cs', 'ExtendedSafeCleanup.cs', 'DeltaSupport.cs', 'RecipeSupport.cs', 'PolishedLauncher.cs', 'FileDiscovery.cs', 'UniversalSupport.cs', 'EnglishSupport.cs', 'EnglishRelease.cs', 'EnglishTests.cs', 'LauncherShell.cs', 'UpgradeSupport.cs', 'UpgradeTests.cs', 'MixedSourceRecovery.cs', 'InstallationRemoval.cs', 'LauncherLayoutTests.cs', 'RuntimeSupport.cs', 'LauncherUpdate.cs') | ForEach-Object { Join-Path $taskSource $_ }
 & $Python (Join-Path $taskRoot 'Tests/CompactCatalogs.py')
 if ($LASTEXITCODE -ne 0) { throw 'Lossless catalog compression failed.' }
+& $Python (Join-Path $taskRoot 'Tests/CompactNotes.py')
+if ($LASTEXITCODE -ne 0) { throw 'Lossless notes compression failed.' }
 if (!$EnglishSnapshot) {
     & $Python (Join-Path $taskRoot 'Tests/BuildEmbeddedEnglish.py')
     if ($LASTEXITCODE -ne 0) { throw 'English release snapshot failed.' }
@@ -21,8 +23,8 @@ $taskNativeReferences = @(Get-ChildItem -LiteralPath $taskRoot -Filter 'NativeRe
 })
 $taskFiles += $taskNativeReferences
 $taskFiles += Join-Path $taskSource 'NotesReader.cs'
-$taskFiles += '/resource:' + (Join-Path $taskRoot 'README.md') + ',Celesphonia.QuickStart.md'
-$taskFiles += '/resource:' + (Join-Path $taskRoot 'LAUNCHER CHANGELOG.md') + ',Celesphonia.LauncherChangelog.md'
-$taskFiles += @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'docs/images') -Filter '*.png' -File | Where-Object { $_.Name -match '^(stat-layout|text-memory|notification|equipment|destination|imprint|enemy-info-stats|skill-tooltip-formula)-' } | ForEach-Object { '/resource:' + $_.FullName + ',Celesphonia.Notes.' + $_.Name })
+$taskFiles += '/resource:' + (Join-Path $taskRoot 'Staging/note-resources/README.md.gz') + ',Celesphonia.QuickStart.md'
+$taskFiles += '/resource:' + (Join-Path $taskRoot 'Staging/note-resources/LAUNCHER CHANGELOG.md.gz') + ',Celesphonia.LauncherChangelog.md'
+$taskFiles += @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'docs/images') -Filter '*.png' -File | Where-Object { $_.Name -match '^(stat-layout|text-memory|notification|equipment|destination|imprint|enemy-info-stats|skill-tooltip-formula|skill-fields)-' } | ForEach-Object { '/resource:' + $_.FullName + ',Celesphonia.Notes.' + $_.Name })
 & $taskCompiler /nologo /target:winexe /main:PortableMain /optimize+ /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll /r:System.Core.dll /r:System.Management.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll ('/resource:' + $EnglishSnapshot + ',Celesphonia.EnglishRelease.zip') ('/resource:' + (Join-Path $taskRoot 'RuntimePanel.js') + ',Celesphonia.RuntimePanel.js') ('/resource:' + (Join-Path $taskRoot 'RuntimeOfflineLabels.js') + ',Celesphonia.RuntimeOfflineLabels.js') ('/resource:' + (Join-Path $taskRoot 'StreamRepeatChoiceRescue.js') + ',Celesphonia.StreamRepeatChoiceRescue.js') ('/resource:' + (Join-Path $taskRoot 'GAME MOD CHANGELOG.md') + ',Celesphonia.GameModChangelog.md') ('/resource:' + (Join-Path $taskRoot 'Vendor\SevenZip\7z.exe') + ',Celesphonia.Rar7z.exe') ('/resource:' + (Join-Path $taskRoot 'Vendor\SevenZip\7z.dll') + ',Celesphonia.Rar7z.dll') ('/out:' + $(if ($Output) { $Output } else { Join-Path $taskRoot 'Celesphonia Portable Switcher.exe' })) $taskFiles
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }

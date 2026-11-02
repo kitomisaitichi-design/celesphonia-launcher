@@ -2,6 +2,36 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.38 — Translate skill effect names before assembling the tooltip
+
+**Before:** Force Barrier II showed Chinese DEF/MDF buff names and an internal instant-skill event name even though its main description was English. The earlier fix checked six skills per variant; its 85 assertions were not a full skill census.
+
+**After:** native referenced names are localized before color formatting, percentages and layout. This also covers other skills using the same state, removal, passive, learned-skill and special-effect fields. Formulas, costs, effect chances, spell names and native identifiers remain exact. Maple's native Resistance Up effect remains distinct from Three-in-One's MDF Boost.
+
+The native generator now visits all **1,300 Three-in-One** and **1,500 Maple** records, including **1,874 named skills**, with no unexplained CJK text in the generated detail fields. Blank/reserved records are counted separately. This is display-field coverage, not a full gameplay replay or a claim that every game text is translated.
+
+### Three-in-One — native buff-name crop
+
+Before:
+
+![Three-in-One buff name before](images/skill-fields-creator-before.png)
+
+After:
+
+![Three-in-One buff name after](images/skill-fields-creator-after.png)
+
+### Maple — native buff-name crop
+
+Before:
+
+![Maple buff name before](images/skill-fields-maple-before.png)
+
+After:
+
+![Maple buff name after](images/skill-fields-maple-after.png)
+
+[Full native tooltip comparisons, coverage and limits](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.38/docs/skill-fields-1.0.38-trace.md). Enabled English overlays refresh normally; runtime controls are not required. Bundled notes are losslessly compressed to retain the unchanged updater size limit and offline before/after images.
+
 ## 1.0.37 — Read split ZIP volumes correctly
 
 **Before:** a valid `.zip.001` plus `.002` could fail with **End of Central Directory record could not be found** because ZIP header detection selected the single-file reader. **After:** first volumes use the existing volume-capable reader; the verified sample restores all 6,000 bytes exactly. No new archive dependency is required.

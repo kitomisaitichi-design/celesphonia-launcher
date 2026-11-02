@@ -692,6 +692,52 @@
             OIWDamageText:{Type:'Damage Type',Critical:'Critical',Element:'Element',Formula:'Formula',Variance:'Variance'},
             OIWStateBuffText:{AddState:'Inflicts',RemoveState:'Removes',AddBuff:'Buff',AddDebuff:'Debuff',RemoveBuff:'Remove Buff',RemoveDebuff:'Remove Debuff'}};
         function skill(win){return win._item&&global.DataManager&&DataManager.isSkill(win._item);}
+        var fieldNames={
+            'One-Time Boost':'1-Time Boost',
+            '先手技介绍说明':'Opening Skill Guide','玩家攻击追加效果':'Player Attack Additional Effects',
+            '背景变色处理':'Background Color Update','共通:スーツ修復':'Outfit Repair','テレポート':'Teleport','连段必杀介绍说明':'Combo Finisher Guide','瞬发技介绍说明':'Instant Skill Guide',
+            '敵行動再設定':'Reset Enemy Actions','Soul Corruption(界限)':'Soul Corruption (Limit)','BS:スーツ破損v610':'Outfit Damage Effect v610','溜め攻撃解除':'Cancel Charged Attack',
+            '→拘束準備解除':'Cancel Restraint Preparation','→拘束準備':'Restraint Preparation','BS:拘束スキル':'Restraint Skill Effect','バッドステート効果v240':'Status Effect v240',
+            '敵攻撃追加効果':'Enemy Attack Additional Effects','BS:催淫攻撃v611':'Arousal Attack Effect v611','需要判定的BS':'Conditional Status Effect','敵エロ技能':'Enemy Erotic Skill',
+            '人质盾':'Hostage Shield','人间 Succubus 隶魔技能':'Human Succubus Servant Skill','Charged Attack（无法中断）':'Charged Attack (Uninterruptible)',
+            'Magic DrainCD(敌)':'Magic Drain CD (Enemy)','骚扰乱数(人间)':'Harassment Random Roll (Human)','敌特殊技能AI':'Enemy Special-Skill AI','丸吞系AI':'Swallowing AI',
+            'Tentacle Swallow 树怪技能':'Tentacle Swallow (Tree Monster)','BS:丸吞拘束スキル':'Swallow Restraint Skill Effect','土下座技能':'Grovel Skill',
+            '战斗変身解除':'End Battle Transformation','战斗変身':'Battle Transformation','战斗员AI':'Combatant AI','假苍蓝星AI':'False Celesphonia AI','真白榨乳':'Mashiro Milking',
+            '探知技能':'Detection Skill','（消去済み）':'(Removed)','淫乐园变色处理':'Pleasure Garden Color Update','魔法棒控制':'Magic Wand Control','淫魔领域':'Succubus Domain',
+            'セクハラテスト':'Harassment Test','特殊効果':'Special Effect','人间 技能':'Human Skill','触手系AI':'Tentacle AI','Tentacle 技能':'Tentacle Skill',
+            '大量射精(群体)':'Mass Ejaculation (Group)','大量射精':'Mass Ejaculation'
+        };
+        function fieldName(text){var display=translate(text);return own.call(fieldNames,display)?fieldNames[display]:display;}
+        // These native builders pass names and numeric suffixes to their color
+        // formatter. Translate that field before it becomes an unmatched row;
+        // damage/formula builders never enter this scope.
+        ['getObjEffectState','getObjEffectBuff','getObjEffectOther','getObjTraitResist','getObjTraitAttack','getObjTraitSkill','getPassiveAuras','getEquipSkillRequirements','getObjSoloItemCost'].forEach(function(method){
+            var native=proto[method];if(typeof native!=='function')return;
+            proto[method]=function(){
+                if(!skill(this))return native.apply(this,arguments);
+                var color=this.addBasicColor,owned=own.call(this,'addBasicColor');
+                this.addBasicColor=function(text){
+                    if(typeof text==='string'){
+                        var suffix=/^([\s\S]*?)(\s+[+-]?\d+(?:\.\d+)?%?)$/.exec(text);
+                        text=suffix?fieldName(suffix[1])+suffix[2]:fieldName(text);
+                    }
+                    return color.call(this,text);
+                };
+                try{return native.apply(this,arguments);}
+                finally{if(owned)this.addBasicColor=color;else delete this.addBasicColor;}
+            };
+        });
+        if(typeof proto.getStateTitle==='function'){
+            var stateTitle=proto.getStateTitle;
+            proto.getStateTitle=function(state){
+                var result=stateTitle.apply(this,arguments);
+                if(skill(this)&&state&&this._stateTitle&&this._stateTitle.length){
+                    var at=this._stateTitle.length-1,name=fieldName(state.name);
+                    if(name!==state.name)this._stateTitle[at]=this._stateTitle[at].replace(state.name,function(){return name;});
+                }
+                return result;
+            };
+        }
         proto.getObjText=function(category,code,noColor){
             var names=skill(this)&&captions[category],name=names&&names[code];
             return name?(noColor?name:this.addSystemColor(name)):getText.apply(this,arguments);
