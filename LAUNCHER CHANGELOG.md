@@ -2,6 +2,16 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.39 — Translate Memory Library prerequisite names
+
+**Before:** Lightning Magic III displayed its prerequisite as **电击魔法Ⅱ restored**, despite the tier-II name already having an English dictionary entry. The name was expanded after the surrounding sentence had translated.
+
+**After:** the same native row displays **Lightning Magic II restored**. The shared icon/name helper now translates the resolved display name for item, weapon, armor, skill and state references, including variable-derived IDs. Stored names, IDs, icons, costs, required levels, repair progress and eligibility checks remain unchanged.
+
+Native checks cover both full prerequisite catalogs: **46 Three-in-One records and 47 Maple records**, including **92 prior-engram rows**, both availability colors and level/repair/cost fields. **4,575 named icon references** are checked, with existing item-reference output preserved. Runtime controls are not required.
+
+[View matching before/after pictures for both variants](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.39/docs/memory-library-1.0.39-trace.md). Enabled English overlays refresh normally. This corrects event-picture prerequisite text; the previous skill-tooltip census covered a different renderer.
+
 ## 1.0.38 — Translate skill effect names before assembling the tooltip
 
 **Before:** Force Barrier II showed Chinese DEF/MDF buff names and an internal instant-skill event name even though its main description was English. The earlier fix checked six skills per variant; its 85 assertions were not a full skill census.

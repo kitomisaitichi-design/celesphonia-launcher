@@ -1,10 +1,14 @@
-CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.38
+CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.39
 
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
 
 WHAT CHANGED
+Memory Library prerequisite names now use their existing English translations
+after native icon/name expansion. Both variants are checked; native costs,
+required levels, repair progress, icons and eligibility are preserved.
+Before/after pictures: Help -> Notes & changelogs -> Launcher updates.
 Skill buff/debuff and special-effect fields now use English display names.
 Full native sweeps cover 2,800 records across Maple and Three-in-One,
 including Force Barrier II. Native effects, formulas and values stay exact.

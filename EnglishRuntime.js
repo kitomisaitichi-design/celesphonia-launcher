@@ -1491,6 +1491,18 @@
             };
         }
         if (global.Window_Base) {
+            var nativeIconName=Window_Base.prototype.escapeIconItem;
+            if(typeof nativeIconName==='function'&&!nativeIconName._celesphoniaEnglishIconName){
+                var iconName=function(id,database){
+                    // Let the native converter resolve variable IDs and retain
+                    // its invalid-ID behavior; localize only the returned name.
+                    var rendered=nativeIconName.apply(this,arguments),item=database[id];
+                    if(item&&typeof item.name==='string'&&item.name&&typeof rendered==='string'&&rendered.slice(-item.name.length)===item.name)
+                        return rendered.slice(0,-item.name.length)+translate(item.name);
+                    return rendered;
+                };
+                iconName._celesphoniaEnglishIconName=true;Window_Base.prototype.escapeIconItem=iconName;
+            }
             wrap(Window_Base.prototype, 'drawText');
             wrap(Window_Base.prototype, 'drawTextEx');
             var nativeWindowInitialize=Window_Base.prototype.initialize;

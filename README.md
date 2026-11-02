@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.39 — Memory Library prerequisites
+
+Prerequisite engram names now display in English after native icon/name expansion, including Lightning Magic II. Both variants' full prerequisite catalogs and item/weapon/armor/skill/state references are checked; icons, costs, levels, repair progress and eligibility remain native. [Before/after pictures and coverage](docs/memory-library-1.0.39-trace.md). English refreshes normally without runtime controls.
+
 ## Launcher 1.0.38 — Skill buff and special-effect names
 
 Fixes untranslated buff/debuff names and common-event labels in skill tooltips, including Force Barrier II. The follow-up sweeps every native skill record in Three-in-One Ver1.061 and Maple 1.7.2: **2,800 records, including 1,874 named skills**. Existing formulas, chances, costs, spell names and each variant's native effects remain exact. [Native before/after gallery and coverage](docs/skill-fields-1.0.38-trace.md).
