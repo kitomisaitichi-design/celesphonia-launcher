@@ -88,12 +88,33 @@ oldest to newest; same-day releases follow their version order.
 
 The supplied 1.061 archive contains a folder named 1.062; its bundled creator changelog ends at Ver1.061. The launcher identifies verified contents rather than using that folder label.
 
+### Ver1.07 — supplied November 6, 2026
+
+1. Increased the chance of the Renegade attaching locked cursed underwear when transformation ends.
+2. Strengthened Vitality Potions (formerly Life Potions), Power Potions and Power Apples. The current item database calls the revised power items **Power Sigils**.
+3. Added a changing point beneath the club, limited to switching between bunny suits.
+4. Adjusted succubus ears to better fit different hairstyles.
+5. Clarified that Abyssphonia deals reduced damage with certain weapon/equipment skills.
+6. Reduced the SP cost of some Abyssphonia skills and removed Gathering Darkness's inability to land critical hits.
+7. Changed slimes from Poison immunity to high Poison resistance.
+8. Military Gloves now increase restraint resistance.
+9. Miasma Adaptation now also raises the Miasma tolerance cap.
+10. Added a scar/mark visibility option to Ahoge Abu at home and the portable Ahoge Abu.
+11. Reduced the mana recovered by nonhuman enemies when draining mana during the player's climax.
+12. Increased Half-Succubus drain damage after entering Lustful Paradise.
+
+**Synchronized with the full release — change #208**
+
+208. Warding Talisman now activates instantly, is battle-only and costs 1 MP. First Aid Kits are menu-only. Clarity Eye Drops, Antidotes and similar remedies are now talismans.
+
+The date above records when these notes/files were supplied locally, not an independently verified creator publication date.
+
 ## Source and terminology
 
-Translated from the author's Telegram messages supplied October 10, 16, 18 and 23, 2026,
+Translated from the author's Telegram messages supplied October 10, 16, 18 and 23, 2026, and November 6, 2026,
 and cross-checked against the original Chinese `三合一体验版修复日志.txt`
 included in the creator archives. The developer's original numbering
-**#200**, **#201** and **#203–207** denotes changes inherited from the full release; these
+**#200**, **#201** and **#203–208** denotes changes inherited from the full release; these
 are not extra game-mod versions.
 
 Game terms follow the existing English translation where available:

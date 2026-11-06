@@ -180,13 +180,13 @@ public static class UpgradeTests {
             int directRoutes=ForwardCreatorRoutes();
             Assert(directRoutes==36,"Expected all 36 ordered creator version upgrades");
             checks.Add("All 36 creator forward routes verified through v1.061; reverse, unknown and cross-branch saves rejected");
-            Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-061","The latest developer release must be v1.061");
+            Assert(UpgradeSupport.Latest=="three-in-one-3-3-5-v1-07","The latest developer release must be v1.07");
             var catalog=RecipeSupport.Catalog();
             var newest=catalog.Recipes.First(x=>x.Id==UpgradeSupport.Latest);
-            Assert(newest.SaveGeneration==1061&&newest.Files.Count==5171&&newest.ArchiveBytes==547640202,
-                "v1.061 complete creator recipe missing");
-            Assert(MixedSourceRecovery.LoadEmbeddedReference(newest.Id).Files.Count==11738,
-                "v1.061 full original-file target inventory missing");
+            Assert(newest.SaveGeneration==1070&&newest.Files.Count==5165&&newest.ArchiveBytes==548495499,
+                "v1.07 complete creator recipe missing");
+            Assert(MixedSourceRecovery.LoadEmbeddedReference(newest.Id).Files.Count==11732,
+                "v1.07 full original-file target inventory missing");
             var latest=catalog.Recipes.First(x=>x.Id=="three-in-one-3-3-5-v1-052");
             var previous=catalog.Recipes.First(x=>x.Id=="three-in-one-3-3-5-v1-051");
             Assert(latest.Files.Count==5163 && latest.SaveGeneration==1052 &&

@@ -2,6 +2,10 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.40 — Three-in-One Ver1.07
+
+Install 1.07 directly with GoRPG 1.23 plus the creator bundle, or pool exact originals from archives, folders and individual files. All supported earlier 3.3.5 versions can upgrade with backed-up save carryover; no intermediate installation is required. Separate CH/Maple/3.3.4 saves keep their existing compatibility boundaries. The new/changed display material is translated in a version-matched partial English overlay, without runtime controls. [Pictures, changes and verification limits](docs/v107-1.0.40-trace.md).
+
 ## Launcher 1.0.39 — Memory Library prerequisites
 
 Prerequisite engram names now display in English after native icon/name expansion, including Lightning Magic II. Both variants' full prerequisite catalogs and item/weapon/armor/skill/state references are checked; icons, costs, levels, repair progress and eligibility remain native. [Before/after pictures and coverage](docs/memory-library-1.0.39-trace.md). English refreshes normally without runtime controls.

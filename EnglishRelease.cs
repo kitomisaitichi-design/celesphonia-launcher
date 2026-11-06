@@ -22,6 +22,20 @@ public static class EnglishRelease {
         var manifest=Store.Json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(result["release.json"]));
         var files=manifest["files"] as Dictionary<string,object>;
         if(Convert.ToInt32(manifest["format"])!=1||files==null||!files.ContainsKey("EnglishRuntime.js"))throw new IOException("Invalid bundled English release.");
+        // Identical pack files share one embedded byte array. Public packs keep
+        // their complete historical layout and every logical hash stays strict.
+        object aliasObject;
+        if(manifest.TryGetValue("aliases",out aliasObject)){
+            var aliases=aliasObject as Dictionary<string,object>;
+            if(aliases==null)throw new IOException("Invalid bundled English aliases.");
+            foreach(var alias in aliases){
+                string source=Convert.ToString(alias.Value);
+                if(result.ContainsKey(alias.Key)||!files.ContainsKey(alias.Key)||!files.ContainsKey(source)||
+                   aliases.ContainsKey(source)||!result.ContainsKey(source)||!Object.Equals(files[alias.Key],files[source]))
+                    throw new IOException("Invalid bundled English alias: "+alias.Key);
+                result.Add(alias.Key,result[source]);
+            }
+        }
         var packs=files.Keys.Where(x=>x.StartsWith("English/")&&x.EndsWith("/manifest.json")&&
             !x.StartsWith("English/ImageLocalization/",StringComparison.Ordinal))
             .Select(x=>x.Split('/')[1]).ToArray();

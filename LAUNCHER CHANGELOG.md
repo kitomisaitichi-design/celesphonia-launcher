@@ -2,6 +2,56 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.40 — Three-in-One Ver1.07
+
+- Adds content-hash detection and the complete 1.07 target: **5,165 creator-overlay files / 11,732 native files**. Install directly from **GoRPG 1.23 + the 1.07 creator bundle**, or combine original archives, extracted folders and individual exact files. Misleading archive extensions remain supported; intermediate versions are not required.
+- Carries backed-up saves forward from all ten supported earlier Three-in-One 3.3.5 releases, including the trial. CH, Maple and 3.3.4 remain separate save families; their exact shared files can still contribute to reconstruction.
+- Translates all **56 newly indexed display fields** and two derived scar-choice captions. Includes revised potions/talismans, Miasma Adaptation, Abyssphonia damage warnings, slime resistance help, the club changing point and gamepad mode labels. Existing English remains partial.
+- Adds the creator's 1.07 notes and official change **208** in chronological order. Retains existing streaming, skill-tooltip, Memory Library and bedroom-display fixes. English works without runtime controls.
+- Stores byte-identical embedded pack files once while retaining every logical SHA-256 check and complete public pack. This keeps the executable within older launchers' update size limit; no game files are merged or deduplicated.
+
+### Vitality Potion I
+
+Before:
+
+![Before](images/v107-vitality-potion-i-before.png)
+
+After:
+
+![After](images/v107-vitality-potion-i-after.png)
+
+### Power Sigil I
+
+Before:
+
+![Before](images/v107-power-sigil-i-before.png)
+
+After:
+
+![After](images/v107-power-sigil-i-after.png)
+
+### Miasma Adaptation
+
+Before:
+
+![Before](images/v107-miasma-adaptation-before.png)
+
+After:
+
+![After](images/v107-miasma-adaptation-after.png)
+
+### Storm Pierce
+
+Before:
+
+![Before](images/v107-storm-pierce-before.png)
+
+After:
+
+![After](images/v107-storm-pierce-after.png)
+
+[Native before/after pictures, source delta and verification limits](https://github.com/kitomisaitichi-design/celesphonia-launcher/blob/launcher-v1.0.40/docs/v107-1.0.40-trace.md).
+
 ## 1.0.39 — Translate Memory Library prerequisite names
 
 **Before:** Lightning Magic III displayed its prerequisite as **电击魔法Ⅱ restored**, despite the tier-II name already having an English dictionary entry. The name was expanded after the surrounding sentence had translated.

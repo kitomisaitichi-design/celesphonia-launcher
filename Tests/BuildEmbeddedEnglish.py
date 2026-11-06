@@ -19,11 +19,22 @@ for ident in ids:
         payload['English/'+ident+'/'+name]=(HOME/'English'/ident/name).read_bytes()
     for name,key in [('dictionary.json','DictionaryHash'),('catalog.json','CatalogHash')]:
         assert sha(payload['English/'+ident+'/'+name])==m[key],(ident,name)
-report={'format':1,'files':{name:sha(b) for name,b in sorted(payload.items())}}
+canonical={};aliases={}
+for name,b in sorted(payload.items()):
+    digest=sha(b)
+    if digest in canonical:
+        prior=canonical[digest];assert payload[prior]==b
+        aliases[name]=prior
+    else:canonical[digest]=name
+report={'format':1,'files':{name:sha(b) for name,b in sorted(payload.items())},'aliases':aliases}
 payload['release.json']=json.dumps(report,sort_keys=True,separators=(',',':')).encode()
 dest=HOME/'Tests/embedded-english-release.zip'
 with zipfile.ZipFile(dest,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
     for name,b in sorted(payload.items()):
+        if name in aliases:continue
         info=zipfile.ZipInfo(name,(2000,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED
         z.writestr(info,b,compresslevel=9)
-print('Verified embedded English snapshot:',len(report['files']),'files;',dest.stat().st_size,'bytes')
+with zipfile.ZipFile(dest) as z:
+    recovered={name:z.read(aliases.get(name,name)) for name in report['files']}
+    assert all(recovered[name]==b for name,b in payload.items() if name!='release.json')
+print('Verified embedded English snapshot:',len(report['files']),'files;',len(aliases),'byte-identical aliases;',dest.stat().st_size,'bytes')

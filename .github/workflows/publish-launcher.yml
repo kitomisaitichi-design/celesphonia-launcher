@@ -56,7 +56,7 @@ jobs:
             'three-in-one-3-3-5-v1-02','three-in-one-3-3-5-v1-03',
             'three-in-one-3-3-5-v1-04','three-in-one-3-3-5-v1-051',
             'three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053',
-            'three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061',
+            'three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061','three-in-one-3-3-5-v1-07',
           )
           allowed.update('English/'+v+'/'+item for v in versions for item in ('manifest.json','dictionary.json','catalog.json'))
           with zipfile.ZipFile(archive) as bundle:
@@ -67,7 +67,7 @@ jobs:
             # Existing updaters allow these five root files and versioned packs.
             # The five English
             # pictures are embedded inside the EXE, never separate ZIP files.
-            assert len(allowed) == 44
+            assert len(allowed) == 47
             executable = bundle.read('Celesphonia Portable Switcher.exe')
             rescue = pathlib.Path('StreamRepeatChoiceRescue.js').read_bytes()
             assert rescue in executable, 'Missing verified repeat-stream choice rescue in EXE'
@@ -88,6 +88,7 @@ jobs:
               'NativeReferenceFiles-three-in-one-3-3-5-v1-053.json': ('three-in-one-3-3-5-v1-053', 11730),
               'NativeReferenceFiles-three-in-one-3-3-5-v1-06.json': ('three-in-one-3-3-5-v1-06', 11738),
               'NativeReferenceFiles-three-in-one-3-3-5-v1-061.json': ('three-in-one-3-3-5-v1-061', 11738),
+              'NativeReferenceFiles-three-in-one-3-3-5-v1-07.json': ('three-in-one-3-3-5-v1-07', 11732),
             }
             for name, (ident, expected_count) in native_refs.items():
               content = pathlib.Path(name).read_bytes()
@@ -106,7 +107,7 @@ jobs:
             assert b'celesphonia-english/images/' in runtime, 'Help image redirection missing'
             assert b'English/ImageLocalization/manifest.json' in executable, 'Embedded localized artwork missing'
             artwork = json.loads(pathlib.Path('English/ImageLocalization/manifest.json').read_text('utf-8'))
-            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053','three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061'}
+            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053','three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061','three-in-one-3-3-5-v1-07'}
             assert len(artwork['images']) == 5
             for name, info in artwork['images'].items():
               data = pathlib.Path('English/ImageLocalization',name).read_bytes()
@@ -216,6 +217,19 @@ jobs:
               assert manifest['CatalogHash']==hashlib.sha256(bundle.read(folder+'catalog.json')).hexdigest()
               assert len(dictionary)==manifest['TranslatedTexts'] and len(catalog)==manifest['TotalTexts']
               assert all(dictionary.get(k)==v for k,v in new_approved.items())
+            recipe=next(x for x in recipes if x['Id']=='three-in-one-3-3-5-v1-07')
+            assert recipe['ArchiveHash']=='f14e704c5f4badb0ec95bdcc510f2ff31627ee3d0437f0dab9fe97df3ee7a8e8'
+            assert recipe['SaveGeneration']==1070 and recipe['ArchiveBytes']==548495499 and len(recipe['Files'])==5165
+            assert len(recipe['UpgradeFrom'])==10 and 'three-in-one-3-3-5-trial' in recipe['UpgradeFrom']
+            folder='English/'+recipe['Id']+'/'
+            manifest=json.loads(bundle.read(folder+'manifest.json'));dictionary=json.loads(bundle.read(folder+'dictionary.json'));catalog=read_catalog(bundle.read(folder+'catalog.json'))
+            assert manifest['Fingerprints']==recipe['Fingerprints']
+            assert manifest['DictionaryHash']==hashlib.sha256(bundle.read(folder+'dictionary.json')).hexdigest()
+            assert manifest['CatalogHash']==hashlib.sha256(bundle.read(folder+'catalog.json')).hexdigest()
+            assert len(dictionary)==manifest['TranslatedTexts']==35014 and len(catalog)==manifest['TotalTexts']==56097
+            reviewed=json.loads(pathlib.Path('English/v107-reviewed-overrides.json').read_text('utf8'))
+            assert len(reviewed)==56 and all(dictionary.get(k)==v for k,v in reviewed.items())
+            assert dictionary['伤痕:开']=='Scars: On' and dictionary['伤痕:关']=='Scars: Off'
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 

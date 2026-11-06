@@ -322,3 +322,12 @@ three version markers. File inventory completeness, source byte hashes,
 and final target verification are separate required checks. Source discovery
 checks nearby launcher/game/download locations including five parent levels,
 with an eight-level child scan and a global folder budget.
+
+
+## Ver1.07 — direct originals and every supported earlier 3.3.5 release
+
+Choose **Three-in-one 3.3.5 Ver1.07**. A clean GoRPG 1.23 plus the 1.07 creator bundle is sufficient; exact matching files may instead be pooled from extracted folders, archives or individual files. Archive signatures identify mislabelled ZIP/RAR files. For split downloads keep all parts together and select the first volume.
+
+The trial and versions 1.01, 1.02, 1.03, 1.04, 1.051, 1.052, 1.053, 1.06 and 1.061 are registered forward save sources. Saves are backed up/copied into an independent 1.07 installation. Original profiles remain available. 3.3.4, CH and Maple are separate save families; do not infer cross-family save compatibility from shared file hashes.
+
+The exact target contains 11,732 files. The creator supplies 5,165 overlay files, with seven old ear/tail images and the old #207 text log absent, and a gamepad-mode plugin plus #208 log added. The 1.07 reference is constructed from the verified GoRPG base and the actual new overlay, so an older bundle's obsolete entries are not demanded for a fresh install. Existing unknown files are never silently removed.

@@ -1,5 +1,8 @@
 CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.39
 
+Launcher 1.0.40 — Three-in-One Ver1.07
+Direct GoRPG + 1.07 and mixed-original installation; backed-up forward saves from supported earlier 3.3.5 versions. New display text is translated; English remains partial. Separate mod branches retain their own saves. Read the chronological game developer notes and launcher notes in Help.
+
 START HERE
 Extract the ZIP and run Celesphonia Portable Switcher.exe.
 Keep the program and included English folder together.
