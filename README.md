@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.42 — Shared adapters, safer local dictionaries
+
+**Local TL reuses the complete Celesphonia English renderer and custom dictionary adapters.** PLaMo produces a separate target-language dictionary only for sources already covered by our English translation. Unknown or technical strings stay original; local mode does not scan/replace arbitrary game strings. Old cached work is preserved, with unsafe/out-of-coverage entries kept inactive.
+
+Use **Settings** to choose CPU/GPU/hybrid, device, threads and covered categories. **Resume pending** continues the saved queue; **Retry failures** is optional. **Translations** opens the searchable manual editor. Progress includes an estimated remaining time. Partial/paused caches stay usable; model processing and the use-in-game toggle remain separate. Restart the game after updating from 1.0.41 so the repaired renderer is loaded. [Pictures and changes](LAUNCHER%20CHANGELOG.md) · [Repair and migration details](docs/local-translation-repair-1.0.42.md).
+
 ## Launcher 1.0.41 — Optional local translation
 
 Open **Local TL → Manage models** to install PLaMo 3 Translate 0.8B or 2B. Choose **New run**, a target language and the text categories to translate. Start processing, then enable **Use this run in game**; partial caches work while processing or paused. Restart the game when changing between curated English and local translation. Your curated English setting is saved separately.

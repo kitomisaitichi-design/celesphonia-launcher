@@ -1,35 +1,20 @@
 /* Celesphonia English overlay: render-time replacements only, ES5 for older NW.js. */
 (function (global) {
     'use strict';
-    if (global.CelesphoniaLocalMode) return;
+    var local = global.CelesphoniaLocalProvider || null, displayDepth = 0;
+    if (global.CelesphoniaLocalMode && !local) return;
     if (global.CelesphoniaEnglish && global.CelesphoniaEnglish._runtimeLoaded) return;
-    var dict = global.CelesphoniaEnglishDictionary || {}, labels = global.CelesphoniaEnglishLabels || {}, own = Object.prototype.hasOwnProperty;
-    var humanLabels = global.CelesphoniaEnglishHumanLabels || {};
-    var enemyPrefixes = global.CelesphoniaEnglishEnemyPrefixes || {}, enemyNames = global.CelesphoniaEnglishEnemyNames || {};
+    var dict = local ? local.dictionary : global.CelesphoniaEnglishDictionary || {}, labels = local ? local.labels : global.CelesphoniaEnglishLabels || {}, own = Object.prototype.hasOwnProperty;
+    var humanLabels = local ? local.humanLabels : global.CelesphoniaEnglishHumanLabels || {};
+    var enemyPrefixes = local ? local.enemyPrefixes : global.CelesphoniaEnglishEnemyPrefixes || {}, enemyNames = local ? local.enemyNames : global.CelesphoniaEnglishEnemyNames || {};
     var enemyPrefixKeys = Object.keys(enemyPrefixes).sort(function (a, b) { return b.length - a.length; });
-    var descriptions = global.CelesphoniaEnglishDescriptions || {}, descriptionKeys = Object.keys(descriptions).sort(function (a, b) { return b.length - a.length; });
+    var descriptions = local ? local.descriptions : global.CelesphoniaEnglishDescriptions || {}, descriptionKeys = Object.keys(descriptions).sort(function (a, b) { return b.length - a.length; });
     var pending = {}, seenCount = 0, installed = false;
     var cache = Object.create(null), cacheKeys = [], cacheCursor = 0, cacheLimit = 2048;
     var templateBuckets = {}, fallbackTemplates = [];
     function normalizeCodes(text) { return text.replace(/\x1b/g, '\\').replace(/\\\\(?=[Nn]\[\d+\])/g, '\\'); }
     // Named plugin placeholders are opaque slots, never JavaScript expressions.
     var templateSlot = /%[1-9]|\\[NnVv]\[\d+\]|\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\}/g;
-    var templates = Object.keys(dict).filter(function (key) { return /%[1-9]|\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\}/.test(key); }).map(function (key) {
-        var slots = [], parts = normalizeCodes(key).split(/(%[1-9]|\\[NnVv]\[\d+\]|\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\})/g), pattern = '^';
-        parts.forEach(function (part) {
-            if (/^%[1-9]$/.test(part)) { slots.push(part); pattern += '([^\\r\\n]+?)'; }
-            else if (/^\\[NnVv]\[\d+\]$/.test(part)) { slots.push(part.toUpperCase());pattern += /^\\v/i.test(part)?'([+-]?\\d+(?:\\.\\d+)?)':'([^\\r\\n<>]*?)'; }
-            else if (/^(?:\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\})$/.test(part)) { slots.push(part);pattern += '([^\\r\\n]+?)'; }
-            else pattern += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        });
-        return {source:key, regex: new RegExp(pattern + '$'), slots: slots, target: normalizeCodes(dict[key]), specificity:normalizeCodes(key).replace(templateSlot,'').length, anchor: /[\u3040-\u30ff\u3400-\u9fff]{2}/.exec(key)};
-    });
-    templates.forEach(function (item, index) {
-        item.id = index;
-        var anchor = item.anchor;
-        if (anchor) (templateBuckets[anchor[0]] || (templateBuckets[anchor[0]] = [])).push(item);
-        else fallbackTemplates.push(item);
-    });
     function candidatesFor(text, buckets, fallback) {
         var candidates = fallback ? fallback.slice() : [], checked = {}, runs = text.match(/[\u3040-\u30ff\u3400-\u9fff]+/g) || [];
         runs.forEach(function (run) { for (var i = 0; i < run.length - 1; i++) {
@@ -40,23 +25,6 @@
         return candidates;
     }
     var actorBuckets = {}, actorSerial = 0, unterminatedNameTargets = Object.create(null);
-    Object.keys(dict).forEach(function (key) {
-        var target = normalizeCodes(dict[key]);key = normalizeCodes(key);
-        if (/^\\[Nn]<\\[Nn]\[\d+\]/.test(key) && key.split('\n')[0].indexOf('>') < 0) unterminatedNameTargets[target] = true;
-        if (!/\\[Nn]\[\d+\]/.test(key) || /%[1-9]/.test(key)) return;
-        var slots = [], anchor = null, pattern = '^';
-        key.split(/(\\[Nn]\[\d+\])/g).forEach(function (part) {
-            var actor = /^\\[Nn]\[(\d+)\]$/.exec(part);
-            if (actor) { slots.push(actor[1]); pattern += '([^\r\n<>]*?)'; }
-            else {
-                if (!anchor) { var chinese = /[\u3040-\u30ff\u3400-\u9fff]{2}/.exec(part); if (chinese) anchor = chinese[0]; }
-                pattern += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            }
-        });
-        if (!anchor) return;
-        var item = {id: actorSerial++, regex: new RegExp(pattern + '$'), slots: slots, target: target, size: key.length};
-        (actorBuckets[anchor] || (actorBuckets[anchor] = [])).push(item);
-    });
     function expandedActors(text) {
         var candidates = candidatesFor(text, actorBuckets);
         candidates.sort(function (a, b) { return b.size - a.size; });
@@ -75,7 +43,7 @@
         }
         return text;
     }
-    function exact(text) { return own.call(dict, text) ? dict[text] : text; }
+    function exact(text) { return local ? local.translate(text) : own.call(dict, text) ? dict[text] : text; }
     function reviewedLine(text) {
         if (own.call(dict,text)) return dict[text];
         var frame=/^((?:(?:\\|\x1b)>)*)([\s\S]*?)(\s*)$/.exec(text),body=frame?normalizeCodes(frame[2]):normalizeCodes(text);
@@ -91,19 +59,6 @@
     // Recognize complete cataloged numeric/named-variable grammars; never substitute
     // prose fragments or write the value back into a game variable.
     var variableBuckets = {}, variableSerial = 0;
-    Object.keys(dict).forEach(function (source) {
-        var key = normalizeCodes(source), target = normalizeCodes(dict[source]);
-        if (!/\\(?:[Vv]\[\d+\]|cm\[[^\]\r\n]+\])/i.test(key) || /%[1-9]/.test(key)) return;
-        var slots = [], anchor = null, pattern = '^';
-        key.split(/(\\[VvNn]\[\d+\]|\\cm\[[^\]\r\n]+\])/gi).forEach(function (part) {
-            var slot = /^\\(?:([VvNn])\[(\d+)\]|cm\[([^\]\r\n]+)\])$/i.exec(part);
-            if (slot) { slots.push(slot[3] ? 'CM:'+slot[3] : slot[1].toUpperCase() + slot[2]);pattern += slot[1] && /v/i.test(slot[1]) ? '([+-]?\\d+(?:\\.\\d+)?)' : '([^\\r\\n<>]*?)'; }
-            else { if (!anchor) { var hit = /[\u3040-\u30ff\u3400-\u9fff]{2}/.exec(part);if (hit) anchor = hit[0]; }pattern += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-        });
-        if (!anchor) return;
-        var item = {id:variableSerial++,regex:new RegExp(pattern + '$'),slots:slots,target:target,size:key.length};
-        (variableBuckets[anchor] || (variableBuckets[anchor] = [])).push(item);
-    });
     function expandedVariables(text) {
         var selected = candidatesFor(text, variableBuckets).sort(function (a,b) { return b.size-a.size; });
         for (var i=0;i<selected.length;i++) {
@@ -247,8 +202,61 @@
         if (lines !== text) return segments(lines);
         return segments(text);
     }
+    var templates=[],localRevision=-1;
+    function refreshDictionaryIndexes(){
+        templateBuckets={};fallbackTemplates=[];actorBuckets={};actorSerial=0;unterminatedNameTargets=Object.create(null);variableBuckets={};variableSerial=0;
+    templates = Object.keys(dict).filter(function (key) { return /%[1-9]|\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\}/.test(key); }).map(function (key) {
+        var slots = [], parts = normalizeCodes(key).split(/(%[1-9]|\\[NnVv]\[\d+\]|\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\})/g), pattern = '^';
+        parts.forEach(function (part) {
+            if (/^%[1-9]$/.test(part)) { slots.push(part); pattern += '([^\\r\\n]+?)'; }
+            else if (/^\\[NnVv]\[\d+\]$/.test(part)) { slots.push(part.toUpperCase());pattern += /^\\v/i.test(part)?'([+-]?\\d+(?:\\.\\d+)?)':'([^\\r\\n<>]*?)'; }
+            else if (/^(?:\$\{[A-Za-z_$][A-Za-z0-9_$]*\}|\{(?:attacker|target)\})$/.test(part)) { slots.push(part);pattern += '([^\\r\\n]+?)'; }
+            else pattern += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        });
+        return {source:key, regex: new RegExp(pattern + '$'), slots: slots, target: normalizeCodes(dict[key]), specificity:normalizeCodes(key).replace(templateSlot,'').length, anchor: /[\u3040-\u30ff\u3400-\u9fff]{2}/.exec(key)};
+    });
+    templates.forEach(function (item, index) {
+        item.id = index;
+        var anchor = item.anchor;
+        if (anchor) (templateBuckets[anchor[0]] || (templateBuckets[anchor[0]] = [])).push(item);
+        else fallbackTemplates.push(item);
+    });
+    Object.keys(dict).forEach(function (key) {
+        var target = normalizeCodes(dict[key]);key = normalizeCodes(key);
+        if (/^\\[Nn]<\\[Nn]\[\d+\]/.test(key) && key.split('\n')[0].indexOf('>') < 0) unterminatedNameTargets[target] = true;
+        if (!/\\[Nn]\[\d+\]/.test(key) || /%[1-9]/.test(key)) return;
+        var slots = [], anchor = null, pattern = '^';
+        key.split(/(\\[Nn]\[\d+\])/g).forEach(function (part) {
+            var actor = /^\\[Nn]\[(\d+)\]$/.exec(part);
+            if (actor) { slots.push(actor[1]); pattern += '([^\r\n<>]*?)'; }
+            else {
+                if (!anchor) { var chinese = /[\u3040-\u30ff\u3400-\u9fff]{2}/.exec(part); if (chinese) anchor = chinese[0]; }
+                pattern += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+        });
+        if (!anchor) return;
+        var item = {id: actorSerial++, regex: new RegExp(pattern + '$'), slots: slots, target: target, size: key.length};
+        (actorBuckets[anchor] || (actorBuckets[anchor] = [])).push(item);
+    });
+    Object.keys(dict).forEach(function (source) {
+        var key = normalizeCodes(source), target = normalizeCodes(dict[source]);
+        if (!/\\(?:[Vv]\[\d+\]|cm\[[^\]\r\n]+\])/i.test(key) || /%[1-9]/.test(key)) return;
+        var slots = [], anchor = null, pattern = '^';
+        key.split(/(\\[VvNn]\[\d+\]|\\cm\[[^\]\r\n]+\])/gi).forEach(function (part) {
+            var slot = /^\\(?:([VvNn])\[(\d+)\]|cm\[([^\]\r\n]+)\])$/i.exec(part);
+            if (slot) { slots.push(slot[3] ? 'CM:'+slot[3] : slot[1].toUpperCase() + slot[2]);pattern += slot[1] && /v/i.test(slot[1]) ? '([+-]?\\d+(?:\\.\\d+)?)' : '([^\\r\\n<>]*?)'; }
+            else { if (!anchor) { var hit = /[\u3040-\u30ff\u3400-\u9fff]{2}/.exec(part);if (hit) anchor = hit[0]; }pattern += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+        });
+        if (!anchor) return;
+        var item = {id:variableSerial++,regex:new RegExp(pattern + '$'),slots:slots,target:target,size:key.length};
+        (variableBuckets[anchor] || (variableBuckets[anchor] = [])).push(item);
+    });
+        enemyPrefixKeys=Object.keys(enemyPrefixes).sort(function(a,b){return b.length-a.length;});descriptionKeys=Object.keys(descriptions).sort(function(a,b){return b.length-a.length;});
+    }
+    refreshDictionaryIndexes();
     function translate(text) {
         if (typeof text !== 'string') return text;
+        if (local) {if(localRevision!==local.revision()){localRevision=local.revision();refreshDictionaryIndexes();}var direct=local.translate(text);return direct!==text?direct:translateUncached(text);}
         if (own.call(dict, text)) return correctedTerms(dict[text]);
         // English text and rendered Latin glyphs need no pattern searches.
         if (!/[\u3040-\u30ff\u3400-\u9fff]/.test(text)) return correctedTerms(text);
@@ -262,12 +270,14 @@
         return result;
     }
     function correctedTerms(text) {
+        if(local)return text;
         // Skill 955 tags 110/95 map to anal cap and anal EXP variables.
         // Correct the two reviewed English labels, not arbitrary anatomy text.
         return text.replace(/Extreme Sensitivity \(Intestines\)/g,'Extreme Sensitivity (Anal)')
             .replace(/\[Intestinal development EXP modifier\]/g,'[Anal development EXP modifier]');
     }
     function observe(text) {
+        if(local)return text;
         if(global.CelesphoniaEnglish&&global.CelesphoniaEnglish.captureSeen===false)return text;
         if (typeof text === 'string' && text.length > 1 && /[\u3040-\u30ff\u3400-\u9fff]/.test(text.replace(/(?:\\|\x1b)[A-Za-z]+(?:\[[^\]]*\]|<[^>]*>)?/g, '')) && text.length < 6000 && !own.call(pending, text) && seenCount < 10000) {
             pending[text] = text; seenCount++;
@@ -339,8 +349,10 @@
             }
             var hadFlag = own.call(this, '_celesphoniaEnglishRendering'), prior = this._celesphoniaEnglishRendering;
             if (args[0] !== text) this._celesphoniaEnglishRendering = true;
+            displayDepth++;
             try { return previous.apply(this, args); }
             finally {
+                displayDepth--;
                 if (hadFlag) this._celesphoniaEnglishRendering = prior; else delete this._celesphoniaEnglishRendering;
                 if (fit) { if (hadReset) this.resetFontSettings = reset;else delete this.resetFontSettings;if (hadCalc) this.calcTextHeight = calc;else delete this.calcTextHeight;if (this.contents) this.contents.fontSize = font; }
                 if (fitCaption) this.contents.fontSize = font;
@@ -368,7 +380,7 @@
             }
             var plain=chars.map(function(c){return c.text;}).join(''),tail=/(-?\d+(?:\.\d+)?\s*%|\d+\s*\/\s*\d+|-\s*\/\s*-)\s*$/.exec(plain);
             if(!tail)return false;
-            rows.push({label:names[i],value:tail[1],chars:chars.slice(tail.index,tail.index+tail[1].length)});
+            rows.push({label:local?translate(source[i].replace(/^\\c\[16\]/i,'').split(/\s/)[0]):names[i],value:tail[1],chars:chars.slice(tail.index,tail.index+tail[1].length)});
         }
         var hidden=SceneManager.getHiddenWindow(),nativeBitmap=sprite.bitmap;
         if(!nativeBitmap)return false;
@@ -1144,6 +1156,8 @@
         var convert = proto && proto.convertEscapeCharacters;
         if (typeof convert !== 'function' || convert._celesphoniaEnglishConvert) return;
         var wrapped = function (text) {
+            // The native converter also parses technical plugin arguments.
+            if(local && displayDepth===0)return convert.apply(this,arguments);
             // CE97 expands a numeric streak and a nested message variable in one
             // native field. Preserve that precise grammar until expansion so
             // the complete notification wins over the isolated "times" label.
@@ -1531,8 +1545,11 @@
             ['actorName', 'partyMemberName'].forEach(function (method) {
                 if (typeof Window_Base.prototype[method] !== 'function') return;
                 var previous = Window_Base.prototype[method];
-                Window_Base.prototype[method] = function () { return translate(previous.apply(this, arguments)); };
+                Window_Base.prototype[method] = function () { var text=previous.apply(this, arguments);return local&&displayDepth===0?text:translate(text); };
             });
+        }
+        if(local&&global.Window_Message&&typeof Window_Message.prototype.startMessage==='function'){
+            var messageStart=Window_Message.prototype.startMessage;Window_Message.prototype.startMessage=function(){displayDepth++;try{return messageStart.apply(this,arguments);}finally{displayDepth--;}};
         }
         if (global.Sprite_Picture && typeof Sprite_Picture.prototype.makeDynamicBitmap === 'function') {
             var makePicture = Sprite_Picture.prototype.makeDynamicBitmap;
@@ -1634,6 +1651,14 @@
                 return title&&this.bitmap ? fitTitleColumn(this,info,makePicture,arguments,result) : result;
             };
         }
+        if(local&&global.Sprite_Picture&&typeof Sprite_Picture.prototype.makeDynamicBitmap==='function'){
+            var sharedPicture=Sprite_Picture.prototype.makeDynamicBitmap;
+            Sprite_Picture.prototype.makeDynamicBitmap=function(){
+                var source=this.dTextInfo,copy;
+                if(source){copy={};Object.keys(source).forEach(function(k){copy[k]=source[k];});copy.color=local.recoverColor(copy.color);copy.value=translate(copy.value);this.dTextInfo=copy;}
+                displayDepth++;try{return sharedPicture.apply(this,arguments);}finally{displayDepth--;this.dTextInfo=source;}
+            };
+        }
         installObjectiveLedger();
         installReinforcementBatch();
         installSaveTitles();
@@ -1644,7 +1669,7 @@
     }
     function flushSeen() {
         try {
-            if (!global.require || !global.CelesphoniaEnglishMeta || !seenCount) return;
+            if (local || !global.require || !global.CelesphoniaEnglishMeta || !seenCount) return;
             var fs = require('fs'), path = require('path');
             var web = path.dirname(decodeURIComponent(global.location.pathname).replace(/^\/(?:([A-Za-z]:))/, '$1'));
             // NW.js can expose a chrome-extension URL rather than a file URL.

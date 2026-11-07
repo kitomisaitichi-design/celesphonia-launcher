@@ -49,6 +49,7 @@ public static class EnglishRelease {
     }
     public static byte[] Read(string id,string name){return bundled.Value["English/"+id+"/"+name];}
     public static byte[] Runtime(){return bundled.Value["EnglishRuntime.js"];}
+    public static List<string> VersionIds(){return bundled.Value.Keys.Where(x=>x.StartsWith("English/")&&x.EndsWith("/manifest.json")).Select(x=>x.Split('/')[1]).ToList();}
     public static byte[] ArtManifest(){byte[] result;return bundled.Value.TryGetValue("English/ImageLocalization/manifest.json",out result)?result:null;}
     public static byte[] Art(string name){
         if(!System.Text.RegularExpressions.Regex.IsMatch(name,@"^[\p{L}\p{N}_-]+\.png$"))

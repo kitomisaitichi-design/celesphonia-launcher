@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -19,12 +19,14 @@ public class LocalModel {
  public override string ToString(){return Label;}
 }
 public class LocalUnit {public string Key,Source,Category,Context;}
-public class LocalResult:LocalUnit {public string Target;}
+public class LocalResult:LocalUnit {public string Target;public EnglishDisplay Fields;}
 public class LocalRun {
  public int Format=1;public string Id,Name,Root,GameKey,Model,Language,State="Ready",Error="",Updated,Owner,SourceDigest,SourceStamp,ModelHash;public int PromptVersion=1;
- public string[] Scope;public int Total,Done,Failed,Reused,Excluded;public double Seconds;public long LiveBytes;
+ public string[] Scope;public int Total,Done,Failed,Reused,Excluded,Deferred,Processed,OptionsRevision,LastRetryGeneration;public double Seconds,RecentRate;public long LiveBytes;public string ActiveBackend;
  public override string ToString(){return Name+"  ·  "+State;}
 }
+public class LocalRunOptions {public int Format=2,Revision=1,RetryGeneration=0,GpuLayers=8,Threads=Math.Max(1,Math.Min(8,Environment.ProcessorCount/2));public string Backend="cpu",Device="";public string[] Scope;}
+public class LocalEdit:LocalUnit {public EnglishDisplay Fields;public string Target,Updated;public bool LeaveOriginal,Deferred;}
 public class LocalBinding {public int Format=1;public bool Enabled;public string RunId;}
 public class LocalEntry {public int Format=1;public string Entry,BaseHash,PatchedHash;}
 public class LocalInstall {public string State,Detail;public long Received,Total;}
@@ -40,9 +42,13 @@ public static class LocalTranslation {
  public static string Hash(byte[] bytes){using(var h=SHA256.Create())return BitConverter.ToString(h.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();}
  public static string TextHash(string s){return Hash(Encoding.UTF8.GetBytes(s));}
  public static string Child(string root,string rel){return Store.Child(root,rel.Replace('/',Path.DirectorySeparatorChar));}
- public static T Read<T>(string file) where T:new(){try{using(var input=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new StreamReader(input,Encoding.UTF8))return Json.Deserialize<T>(reader.ReadToEnd());}catch(FileNotFoundException){return new T();}catch(DirectoryNotFoundException){return new T();}}
+ public static T Read<T>(string file) where T:new(){for(int attempt=0;;attempt++)try{using(var input=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new StreamReader(input,Encoding.UTF8))return Json.Deserialize<T>(reader.ReadToEnd());}catch(FileNotFoundException){return new T();}catch(DirectoryNotFoundException){return new T();}catch(IOException){if(attempt>=7)throw;Thread.Sleep(25*(attempt+1));}}
  public static void Write(string file,object value){Atomic(file,Encoding.UTF8.GetBytes(Json.Serialize(value)));}
- public static void Atomic(string file,byte[] bytes){Directory.CreateDirectory(Path.GetDirectoryName(file));string tmp=file+"."+Guid.NewGuid().ToString("N")+".new";File.WriteAllBytes(tmp,bytes);try{if(File.Exists(file))File.Replace(tmp,file,null);else File.Move(tmp,file);}finally{if(File.Exists(tmp))File.Delete(tmp);}}
+ public static void Atomic(string file,byte[] bytes){Directory.CreateDirectory(Path.GetDirectoryName(file));string tmp=file+"."+Guid.NewGuid().ToString("N")+".new";File.WriteAllBytes(tmp,bytes);try{for(int attempt=0;;attempt++)try{if(File.Exists(file))File.Replace(tmp,file,null);else File.Move(tmp,file);break;}catch(IOException){if(attempt>=7)throw;Thread.Sleep(25*(attempt+1));}}finally{if(File.Exists(tmp))File.Delete(tmp);}}
+ public static LocalRunOptions Options(LocalRun run){var value=Read<LocalRunOptions>(RunFile(run.Id,"options.json"));if(value.Scope==null)value.Scope=run.Scope;return value;}
+ public static void SetOptions(string id,LocalRunOptions options){if(options.Scope==null||options.Scope.Length==0||options.Scope.Any(x=>!Categories.Contains(x)))throw new IOException("Select at least one covered category.");if(!new[]{"cpu","gpu","hybrid"}.Contains(options.Backend))throw new IOException("Unknown backend.");options.Threads=Math.Max(1,Math.Min(Environment.ProcessorCount,options.Threads));options.GpuLayers=Math.Max(1,Math.Min(200,options.GpuLayers));options.Revision++;Write(RunFile(id,"options.json"),options);}
+ public static Dictionary<string,LocalEdit> Edits(string id){return Read<Dictionary<string,LocalEdit>>(RunFile(id,"overrides.json"));}
+ public static void Edit(string id,LocalEdit edit){if(edit.Source==null||edit.Key==null)throw new IOException("Choose an indexed entry.");if(edit.Target!=null&&(!EnglishSupport.Compatible(edit.Source,edit.Target)||!System.Text.RegularExpressions.Regex.Matches(edit.Source,@"\d+(?:\.\d+)?").Cast<System.Text.RegularExpressions.Match>().Select(x=>x.Value).SequenceEqual(System.Text.RegularExpressions.Regex.Matches(edit.Target,@"\d+(?:\.\d+)?").Cast<System.Text.RegularExpressions.Match>().Select(x=>x.Value))))throw new IOException("Keep the source control codes, numbers and line breaks unchanged.");var run=Run(id);if(!EnglishSupport.CoveredLocalSources(run.Root).ContainsKey(edit.Source))throw new IOException("This source is outside the existing English coverage. It stays inactive.");using(var lease=new FileStream(RunFile(id,"edit.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){var edits=Edits(id);edit.Fields=edit.Target==null?null:EnglishSupport.PrepareLocalField(run.Root,edit.Source,edit.Target);edit.Updated=DateTimeOffset.Now.ToString("o");edits[edit.Key]=edit;Write(RunFile(id,"overrides.json"),edits);}var options=Options(run);SetOptions(id,options);}
  public static string GameKey(string root){return TextHash(Path.GetFullPath(root).TrimEnd('\\').ToUpperInvariant()).Substring(0,24);}
  public static string BindingPath(string root){return Child(Home,"Bindings/"+GameKey(root)+".json");}
  public static LocalBinding Binding(string root){return Read<LocalBinding>(BindingPath(root));}
@@ -52,6 +58,16 @@ public static class LocalTranslation {
  public static LocalRun Run(string id){return Read<LocalRun>(RunFile(id,"run.json"));}
  public static List<LocalRun> Runs(string root){string folder=Path.Combine(Home,"Runs");if(!Directory.Exists(folder))return new List<LocalRun>();return Directory.GetDirectories(folder).Select(x=>Read<LocalRun>(Path.Combine(x,"run.json"))).Where(x=>x.Id!=null&&(root==null||x.GameKey==GameKey(root))).OrderByDescending(x=>x.Updated).ToList();}
  public static void Save(LocalRun run){run.Updated=DateTimeOffset.Now.ToString("o");Write(RunFile(run.Id,"run.json"),run);}
+ public static void Migrate(LocalRun run){
+  string file=RunFile(run.Id,"migration.json");if(!File.Exists(RunFile(run.Id,"technical-colors.json"))){var recovery=new Dictionary<string,string>();foreach(var row in Results(run.Id).Values)if(System.Text.RegularExpressions.Regex.IsMatch(row.Source,@"^(?:black|white|red|green|blue|yellow|cyan|magenta|gray|grey|transparent|#[0-9a-fA-F]{3,8}|rgba?\([\d\s.,%]+\))$"))recovery[row.Target]=row.Source;Write(RunFile(run.Id,"technical-colors.json"),recovery);}if(Read<Dictionary<string,object>>(file).ContainsKey("coveredOnly"))return;
+  var covered=EnglishSupport.CoveredLocalSources(run.Root);var fields=new Dictionary<string,EnglishDisplay>();int inactive=0;var results=Results(run.Id);
+  foreach(var row in results.Values){if(covered.ContainsKey(row.Source))fields[row.Key]=EnglishSupport.PrepareLocalField(run.Root,row.Source,row.Target);else inactive++;}
+  var oldIndex=Read<List<LocalUnit>>(RunFile(run.Id,"index.json"));var oldFailures=Read<Dictionary<string,string>>(RunFile(run.Id,"failures.json"));var failures=new Dictionary<string,string>(oldFailures);
+  foreach(var row in oldIndex){string error,kind;if(oldFailures.TryGetValue(row.Key,out error)&&covered.TryGetValue(row.Source,out kind)){string key=TextHash(kind+"\u001fEnglishCoverage\u001f"+row.Source);failures[key]=error;}}
+  Write(RunFile(run.Id,"failures.json"),failures);var options=Options(run);var completed=new HashSet<string>(results.Values.Where(x=>covered.ContainsKey(x.Source)).Select(x=>x.Source));var active=covered.Where(x=>options.Scope.Contains(x.Value)).ToList();run.Total=active.Count;run.Excluded=covered.Count-active.Count;run.Done=active.Count(x=>completed.Contains(x.Key));run.Failed=active.Count(x=>!completed.Contains(x.Key)&&failures.ContainsKey(TextHash(x.Value+"\u001fEnglishCoverage\u001f"+x.Key)));run.State="Paused";run.Error="Upgraded to existing English coverage only. Successful work retained; resume pending entries when ready.";Save(run);
+  Write(RunFile(run.Id,"legacy-fields.json"),fields);if(!File.Exists(RunFile(run.Id,"options.json")))Write(RunFile(run.Id,"options.json"),Options(run));
+  Write(file,new{coveredOnly=true,retainedGeneratedEntries=fields.Count,inactiveLegacyEntries=inactive,originalJournalPreserved=true});
+ }
  public static LocalInstall InstallStatus(string id){return Read<LocalInstall>(Child(Home,"Status/install-"+id+".json"));}
  static void InstallProgress(string id,string state,long got,long total,string detail){Write(Child(Home,"Status/install-"+id+".json"),new LocalInstall{State=state,Received=got,Total=total,Detail=detail});}
  public static bool ModelInstalled(string id){var m=Model(id);return File.Exists(m.PathName)&&new FileInfo(m.PathName).Length==m.Bytes;}
@@ -101,7 +117,7 @@ public static class LocalTranslation {
   var run=Run(id);Control(id,"pause");var clock=Stopwatch.StartNew();while(clock.ElapsedMilliseconds<12000){run=Run(id);if(run.State!="Running"&&run.State!="Starting model"&&run.State!="Indexing")break;Thread.Sleep(100);}
   if(run.State=="Running"||run.State=="Starting model"||run.State=="Indexing")throw new IOException("This run is still stopping. Retry deletion shortly.");
   bool released=false;while(clock.ElapsedMilliseconds<12000){try{using(var lease=new FileStream(RunFile(id,"worker.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){released=true;}break;}catch(IOException){Thread.Sleep(100);}}if(!released)throw new IOException("This run is still releasing its files. Retry shortly.");
-  string[] ownedFiles={"run.json","control.json","results.jsonl","index.json","index-status.json","failures.json","worker.lock","display.json","interrupted-tail.txt"};if(Directory.GetDirectories(RunFolder(id)).Length>0||Directory.GetFiles(RunFolder(id)).Any(x=>!ownedFiles.Contains(Path.GetFileName(x))))throw new IOException("This run contains unknown user files. They were preserved.");
+  string[] ownedFiles={"run.json","control.json","results.jsonl","index.json","index-status.json","failures.json","worker.lock","display.json","interrupted-tail.txt","options.json","overrides.json","edit.lock","migration.json","legacy-fields.json","technical-colors.json"};if(Directory.GetDirectories(RunFolder(id)).Length>0||Directory.GetFiles(RunFolder(id)).Any(x=>!ownedFiles.Contains(Path.GetFileName(x))))throw new IOException("This run contains unknown user files. They were preserved.");
   var binding=Binding(run.Root);if(binding.RunId==id){binding.Enabled=false;binding.RunId=null;Write(BindingPath(run.Root),binding);}RecycleOwned(RunFolder(id));
  }
  public static void StartWorker(){var info=new ProcessStartInfo(Path.Combine(Store.Home,"Celesphonia Portable Switcher.exe"),"--local-tl-worker"){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Store.Home};Process.Start(info);}
@@ -120,10 +136,10 @@ public static class LocalTranslation {
   if(!binding.Enabled){if(File.Exists(record)){Atomic(Path.Combine(folder,"base-entry.bin"),baseEntry);Write(record,new LocalEntry{Entry=entry.Substring(profile.Root.TrimEnd('\\').Length+1),BaseHash=Hash(baseEntry),PatchedHash=Hash(baseEntry)});}return baseEntry;}
   string anchor="<script src=\"celesphonia-english/dictionary.js\"></script>";int at=html.IndexOf(anchor,StringComparison.Ordinal);
   if(at<0){var m=System.Text.RegularExpressions.Regex.Match(html,@"<script\b[^>]*\bsrc\s*=\s*['""]js/main\.js['""][^>]*>",System.Text.RegularExpressions.RegexOptions.IgnoreCase);if(!m.Success)throw new IOException("This game entry has no supported RPG Maker main script.");at=m.Index;}
-  Directory.CreateDirectory(folder);Atomic(Path.Combine(folder,"base-entry.bin"),baseEntry);
+  Migrate(Run(binding.RunId));Directory.CreateDirectory(folder);Atomic(Path.Combine(folder,"base-entry.bin"),baseEntry);
   byte[] runtime;using(var source=typeof(LocalTranslation).Assembly.GetManifestResourceStream("Celesphonia.LocalTranslationRuntime.js"))using(var memory=new MemoryStream()){if(source==null)throw new IOException("Local translation adapter is missing.");source.CopyTo(memory);runtime=memory.ToArray();}
-  Atomic(Path.Combine(folder,"runtime.js"),runtime);Atomic(Path.Combine(folder,"config.js"),Encoding.UTF8.GetBytes("window.CelesphoniaLocalConfig="+Json.Serialize(new{binding=BindingPath(profile.Root),home=Home,gameKey=GameKey(profile.Root)})+";"));
-  string markup="<!-- Celesphonia local translator -->\n<script src=\"celesphonia-local/config.js\"></script>\n<script src=\"celesphonia-local/runtime.js\"></script>\n";
+  Atomic(Path.Combine(folder,"runtime.js"),runtime);Atomic(Path.Combine(folder,"shared-renderer.js"),EnglishRelease.Runtime());Write(Path.Combine(folder,"covered.json"),EnglishSupport.CoveredLocalSources(profile.Root));Atomic(Path.Combine(folder,"config.js"),Encoding.UTF8.GetBytes("window.CelesphoniaLocalConfig="+Json.Serialize(new{binding=BindingPath(profile.Root),home=Home,gameKey=GameKey(profile.Root),covered=Path.Combine(folder,"covered.json")})+";"));
+  string markup="<!-- Celesphonia local translator -->\n<script src=\"celesphonia-local/config.js\"></script>\n<script src=\"celesphonia-local/runtime.js\"></script>\n<script src=\"celesphonia-local/shared-renderer.js\"></script>\n";
   html=html.Insert(at,markup);
   // Select the rendering source at boot even when an older English runtime
   // remains installed. Its exact reversible base and saved toggle stay intact.

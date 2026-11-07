@@ -2,6 +2,35 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.42 — Local dictionaries use the established Celesphonia adapters
+
+Fixes the local-translation regression that could turn DTextPicture's engine color `black` into French `noir` and crash the game. Local mode now uses the **same renderer, custom adapters and dictionary preparation as curated English**. PLaMo only supplies a separate dictionary; it no longer scans arbitrary native JSON/plugin strings or automatically enrolls unknown live text.
+
+**Coverage is deliberately restricted to source strings already translated by our English overlay.** The model can translate those covered strings into the selected language; everything outside that set remains original. Technical argument parsing returns native colors, paths, identifiers and control values. Completed entries from old runs are retained; out-of-coverage entries become inactive and remain inspectable in the translation browser. Existing saves and dictionaries are preserved.
+
+- **Resume pending** continues the saved queue. **Retry failures** is separate and optional. Deferred/failed entries are retained; already completed entries are not translated again. Settings can add/remove covered categories and re-enable cached work without starting a new run.
+- **Settings** selects CPU, Vulkan GPU or hybrid GPU layers plus CPU remainder, with device, layer and thread controls. Set up the optional GPU backend there without redownloading model weights. The active run shows its backend, processed counts, percentage, speed and estimated time remaining.
+- **Translations** opens a separate searchable virtual grid with full source/target text, state and context. Save manual edits, leave an entry original, defer it, clear an override or refresh model results. User overrides take precedence and survive resume. Invalid control/number changes are rejected; inactive legacy rows cannot expand coverage.
+- Bounded retries and atomic snapshots address `run.json` sharing conflicts. Status refresh reports persistent I/O errors without throwing an unhandled UI-timer exception.
+
+Before: the old local path, reproduced with a copy of the existing French cache and save. The same session reproduced `addColorStop('noir')`; it is caught by the fixture to capture the menu below.
+
+![Old local renderer menu](docs/images/local-repair-menu-before.png)
+
+After: the same saved state and partial dictionary through the shared adapters. Uncached/out-of-scope material deliberately stays original; this does not claim complete French translation or reviewed model terminology. Native pictures are resized for these notes; full captures are retained with the trace.
+
+![Shared adapters with the partial French dictionary](docs/images/local-repair-menu-after.png)
+
+![Run controls and progress](docs/images/local-repair-controls-after.png)
+
+![Per-run CPU, GPU and hybrid settings](docs/images/local-repair-settings-after.png)
+
+![Searchable translation editor and durable manual override](docs/images/local-repair-editor-after.png)
+
+**Focused verification:** the reported color failure was reproduced before repair and resolved with local translation active. Three-in-One 1.07 and Maple native sessions passed the parser/shared-renderer/manual-override checks. Actual CPU, RTX 4070 Vulkan GPU and hybrid inference preserved the test HP value. The existing 3,007-entry journal was retained byte-for-byte in migration. Queue, lock-contention, editor and scope-retention checks accompany the release. Full gameplay, every target language/font, other GPU hardware and every historical adapter screen were not rerun.
+
+[Architecture, migration and verification trace](docs/local-translation-repair-1.0.42.md).
+
 ## 1.0.41 — Optional local PLaMo translation
 
 **Local TL** is a separate workspace for automatic translation. Install PLaMo 3 Translate **0.8B** (573 MB) or **2B** (1.81 GB), choose a target language and create named runs for any installed supported game. Matching curated English packs and manual review are not required. Model downloads are optional and are not bundled in the launcher ZIP.

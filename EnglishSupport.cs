@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
+public class EnglishDisplay {public Dictionary<string,string> Display=new Dictionary<string,string>(),Labels=new Dictionary<string,string>(),Descriptions=new Dictionary<string,string>(),HumanLabels=new Dictionary<string,string>(),EnemyPrefixes=new Dictionary<string,string>(),EnemyNames=new Dictionary<string,string>();}
 public class EnglishManifest {
     public int Format {get;set;} public string VersionId {get;set;} public string Name {get;set;}
     public string Mode {get;set;} public Dictionary<string,string> Fingerprints {get;set;}
@@ -203,6 +204,23 @@ public static class EnglishSupport {
         return data;
     }
     static void RequireClosed(Profile profile){var settings=Store.Read();if(!settings.Profiles.Any(x=>x.Root.Equals(profile.Root,StringComparison.OrdinalIgnoreCase)))settings.Profiles.Add(profile);if(Store.Running(settings))throw new IOException("Save and close the game before changing its English overlay.");}
+    // Authoritative local-model scope: only exact source keys already translated
+    // by our English overlay. An absent matching fingerprint does not open a scanner.
+    static readonly Dictionary<string,Dictionary<string,string>> coveredLocal=new Dictionary<string,Dictionary<string,string>>();
+    public static Dictionary<string,string> CoveredLocalSources(string root){lock(coveredLocal){Dictionary<string,string> cached;if(coveredLocal.TryGetValue(root,out cached))return cached;cached=BuildCoveredLocalSources(root);coveredLocal[root]=cached;return cached;}}
+    static Dictionary<string,string> BuildCoveredLocalSources(string root){
+        string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();
+        if(id!=null&&ids.Contains(id))ids=new List<string>{id};
+        var result=new Dictionary<string,string>();
+        foreach(string version in ids){var pack=ReadPack(version);var data=Dictionary(version,pack);var catalog=Catalog(version,pack);
+            foreach(var item in data){if(item.Key==item.Value||string.IsNullOrWhiteSpace(item.Key))continue;object record;catalog.TryGetValue(item.Key,out record);var row=record as Dictionary<string,object>;string contexts=row!=null&&row.ContainsKey("contexts")?Store.Json.Serialize(row["contexts"]):"";
+                string kinds=row!=null&&row.ContainsKey("kinds")?Store.Json.Serialize(row["kinds"]):"";
+                string category=(kinds.Contains("dialogue")||kinds.Contains("live-comment"))?"Dialogue":(kinds.Contains("choice")&&!kinds.Contains("choice-help"))?"Choices":(kinds.Contains("description")||kinds.Contains("equipment-option")||contexts.Contains("/description\"")||contexts.Contains("/profile\""))?"Descriptions":(kinds.Contains("menu")||kinds.Contains("ui-label")||kinds.Contains("plugin-ui")||kinds.Contains("display-table"))?"Interface":(kinds.Contains("character")||kinds.Contains("map-name")||contexts.Contains("/name\"")||contexts.Contains("/nickname\"")||contexts.Contains("/displayName\""))?"Names":"Interface";
+                result[item.Key]=category;
+            }
+        }
+        return result;
+    }
     public static bool RefreshEnabled(Profile profile,Action<string> progress){
         var status=Status(profile);
         if(status.Modified)throw new IOException("English overlay verification failed: "+status.Detail);
@@ -215,20 +233,7 @@ public static class EnglishSupport {
         return true;
     }
     public static void Apply(Profile profile){RequireClosed(profile);ApplyCore(profile,null);}
-    internal static void ApplyCore(Profile profile,string runtimeOverride){
-        string id=UniversalSupport.Identify(profile.Root);if(id==null||id=="ch-current")throw new IOException("Choose Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 trial. CH is an English reference only.");
-        var pack=ReadPack(id);if(pack==null||pack.Format!=1||pack.VersionId!=id||pack.Mode!="display-only")throw new IOException("This version's English overlay pack is missing or unsupported.");
-        string web=Store.WebRoot(profile.Root);foreach(var item in pack.Fingerprints)if(Store.Hash(Store.Child(web,item.Key))!=item.Value)throw new IOException("Game version does not match the English overlay.");
-        var data=Dictionary(id,pack);var old=ReadState(profile.Root);string folder=Folder(profile.Root),entry=Entry(profile.Root);byte[] original;
-        if(old!=null){ValidateState(profile.Root,old,true);original=File.ReadAllBytes(Path.Combine(folder,"original-entry.bin"));}
-        else{if(Directory.Exists(folder)&&Directory.EnumerateFileSystemEntries(folder).Any())throw new IOException("An unrecognized celesphonia-english folder already exists. Choose a clean game entry before applying this overlay.");original=File.ReadAllBytes(entry);}
-        string html=Encoding.UTF8.GetString(original);var main=Regex.Match(html,@"<script\b[^>]*\bsrc\s*=\s*['""]js/main\.js['""][^>]*>",RegexOptions.IgnoreCase);
-        if(!main.Success||html.Contains("celesphonia-english/"))throw new IOException("Unsupported or already modified game entry page.");
-        string markup=Injection;
-        byte[] patched=new UTF8Encoding(false).GetBytes(html.Insert(main.Index,markup));
-        byte[] runtimeBytes=runtimeOverride==null?EnglishRelease.Runtime():File.ReadAllBytes(runtimeOverride);
-        Directory.CreateDirectory(folder);if(old==null)Atomic(Path.Combine(folder,"original-entry.bin"),original);
-        // Import conditional-choice labels only for rendering; their original expression is preserved.
+    public static EnglishDisplay PrepareDisplay(Dictionary<string,string> data,Dictionary<string,object> catalog){
         var display=new Dictionary<string,string>(data);foreach(var item in data){var suffix=Regex.Match(item.Key,@"(?:if|en|cmpd|cmxs)\([^\r\n]*\)$");if(suffix.Success&&item.Value.EndsWith(suffix.Value,StringComparison.Ordinal)){string a=item.Key.Substring(0,suffix.Index).TrimEnd(),b=item.Value.Substring(0,item.Value.Length-suffix.Length).TrimEnd();if(a.Length>0&&!display.ContainsKey(a))display[a]=b;}}
         foreach(var item in data){var prefix=Regex.Match(item.Key,@"^\\[Nn]<[^\r\n]*?>");if(prefix.Success&&item.Value.StartsWith(prefix.Value,StringComparison.Ordinal)){string a=item.Key.Substring(prefix.Length),b=item.Value.Substring(prefix.Length);if(a.Length>0&&!display.ContainsKey(a))display[a]=b;}}
         // Notification plugins prepend their own icons/colors and sometimes spaces.
@@ -242,10 +247,9 @@ public static class EnglishSupport {
             string a=item.Key.Substring(prefix.Length,item.Key.Length-prefix.Length-suffix.Length).Trim(),b=item.Value.Substring(prefix.Length,item.Value.Length-prefix.Length-suffix.Length).Trim();
             if(a.Length>0&&Compatible(a,b)&&!display.ContainsKey(a))display[a]=b;
         }
-        string webPath=web.Equals(profile.Root.TrimEnd('\\'),StringComparison.OrdinalIgnoreCase)?"":web.Substring(profile.Root.TrimEnd('\\').Length+1).Replace('\\','/');
         // Only cataloged short UI/name labels participate in dynamic segment matching.
         // Full dialogue still requires an exact message or complete line match.
-        var labels=new Dictionary<string,string>();var descriptions=new Dictionary<string,string>();var humanLabels=new Dictionary<string,string>();var catalog=Catalog(id,pack);
+        var labels=new Dictionary<string,string>();var descriptions=new Dictionary<string,string>();var humanLabels=new Dictionary<string,string>();
         foreach(var item in data){var row=catalog[item.Key] as Dictionary<string,object>;if(row==null||!row.ContainsKey("kinds"))continue;var kinds=row["kinds"] as System.Collections.IEnumerable;if(kinds!=null&&kinds.Cast<object>().Select(Convert.ToString).Any(x=>x=="picture-label")&&Compatible(item.Key,item.Value))humanLabels[item.Key]=item.Value;}
         // Native state notifications concatenate an actor name and a suffix.
         // Build display templates from cataloged state messages, without changing
@@ -295,6 +299,29 @@ public static class EnglishSupport {
                 if(!display.ContainsKey(source)&&Compatible(source,target))display[source]=target;
             }
         }
+        return new EnglishDisplay{Display=display,Labels=labels,Descriptions=descriptions,HumanLabels=humanLabels,EnemyPrefixes=enemyPrefixes,EnemyNames=enemyNames};
+    }
+    static readonly Dictionary<string,Dictionary<string,object>> localCatalogs=new Dictionary<string,Dictionary<string,object>>();
+    public static EnglishDisplay PrepareLocalField(string root,string source,string target){
+        Dictionary<string,object> catalog;lock(localCatalogs){if(!localCatalogs.TryGetValue(root,out catalog)){string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();if(id!=null&&ids.Contains(id))ids=new List<string>{id};catalog=new Dictionary<string,object>();foreach(string version in ids)foreach(var pair in Catalog(version,ReadPack(version)))catalog[pair.Key]=pair.Value;localCatalogs[root]=catalog;}}
+        if(!catalog.ContainsKey(source))return new EnglishDisplay();return PrepareDisplay(new Dictionary<string,string>{{source,target}},catalog);
+    }
+    internal static void ApplyCore(Profile profile,string runtimeOverride){
+        string id=UniversalSupport.Identify(profile.Root);if(id==null||id=="ch-current")throw new IOException("Choose Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 trial. CH is an English reference only.");
+        var pack=ReadPack(id);if(pack==null||pack.Format!=1||pack.VersionId!=id||pack.Mode!="display-only")throw new IOException("This version's English overlay pack is missing or unsupported.");
+        string web=Store.WebRoot(profile.Root);foreach(var item in pack.Fingerprints)if(Store.Hash(Store.Child(web,item.Key))!=item.Value)throw new IOException("Game version does not match the English overlay.");
+        var data=Dictionary(id,pack);var old=ReadState(profile.Root);string folder=Folder(profile.Root),entry=Entry(profile.Root);byte[] original;
+        if(old!=null){ValidateState(profile.Root,old,true);original=File.ReadAllBytes(Path.Combine(folder,"original-entry.bin"));}
+        else{if(Directory.Exists(folder)&&Directory.EnumerateFileSystemEntries(folder).Any())throw new IOException("An unrecognized celesphonia-english folder already exists. Choose a clean game entry before applying this overlay.");original=File.ReadAllBytes(entry);}
+        string html=Encoding.UTF8.GetString(original);var main=Regex.Match(html,@"<script\b[^>]*\bsrc\s*=\s*['""]js/main\.js['""][^>]*>",RegexOptions.IgnoreCase);
+        if(!main.Success||html.Contains("celesphonia-english/"))throw new IOException("Unsupported or already modified game entry page.");
+        string markup=Injection;
+        byte[] patched=new UTF8Encoding(false).GetBytes(html.Insert(main.Index,markup));
+        byte[] runtimeBytes=runtimeOverride==null?EnglishRelease.Runtime():File.ReadAllBytes(runtimeOverride);
+        Directory.CreateDirectory(folder);if(old==null)Atomic(Path.Combine(folder,"original-entry.bin"),original);
+        // Import conditional-choice labels only for rendering; their original expression is preserved.
+        string webPath=web.Equals(profile.Root.TrimEnd('\\'),StringComparison.OrdinalIgnoreCase)?"":web.Substring(profile.Root.TrimEnd('\\').Length+1).Replace('\\','/');
+        var prepared=PrepareDisplay(data,Catalog(id,pack));var display=prepared.Display;var labels=prepared.Labels;var descriptions=prepared.Descriptions;var humanLabels=prepared.HumanLabels;var enemyPrefixes=prepared.EnemyPrefixes;var enemyNames=prepared.EnemyNames;
         var pictureRedirects=new Dictionary<string,string>();
         var animationRedirects=new Dictionary<string,string>();
         var artwork=ImagesFor(id);

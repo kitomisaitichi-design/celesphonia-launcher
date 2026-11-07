@@ -1,0 +1,107 @@
+{
+  "release": "1.0.42",
+  "native": {
+    "three-in-one-1.07": {
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "plugin color parsing stays native",
+          "pass": true,
+          "value": "black"
+        },
+        {
+          "name": "raw converter stays native",
+          "pass": true
+        },
+        {
+          "name": "shared adapters loaded",
+          "pass": true
+        },
+        {
+          "name": "manual dictionary edit reaches shared renderer",
+          "pass": true,
+          "value": "Objets (révisés)"
+        },
+        {
+          "name": "command names and symbols remain native",
+          "pass": true
+        },
+        {
+          "name": "native gameplay data unchanged",
+          "pass": true
+        }
+      ],
+      "runtimeHash": "dcd2d488a13b4438388acd05f7b0a541fad8f17f50ca0dd89e3a06c126a764ab",
+      "sourceNativeHashesUnchanged": true
+    },
+    "maple-1.7.2": {
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "plugin color parsing stays native",
+          "pass": true,
+          "value": "black"
+        },
+        {
+          "name": "raw converter stays native",
+          "pass": true
+        },
+        {
+          "name": "shared adapters loaded",
+          "pass": true
+        },
+        {
+          "name": "manual dictionary edit reaches shared renderer",
+          "pass": true,
+          "value": "Objets (révisés)"
+        },
+        {
+          "name": "command names and symbols remain native",
+          "pass": true
+        },
+        {
+          "name": "native gameplay data unchanged",
+          "pass": true
+        }
+      ],
+      "runtimeHash": "dcd2d488a13b4438388acd05f7b0a541fad8f17f50ca0dd89e3a06c126a764ab",
+      "sourceNativeHashesUnchanged": true
+    }
+  },
+  "gpuModes": [
+    {
+      "mode": "cpu",
+      "device": "",
+      "result": "Restores 50 HP."
+    },
+    {
+      "mode": "gpu",
+      "device": "Vulkan0",
+      "result": "Restores 50 HP."
+    },
+    {
+      "mode": "hybrid",
+      "device": "Vulkan0",
+      "result": "Restores 50 HP."
+    }
+  ],
+  "queue": {
+    "status": "PASS",
+    "completedEntriesRetained": 837,
+    "ordinaryResumeDefersFailures": true,
+    "explicitRetryOnlyOneEntry": true,
+    "deferredEntryKept": true,
+    "scopeRemoveReaddRetainsResults": true,
+    "retrySource": "[HELP]关于印迹"
+  },
+  "cacheMigration": {
+    "status": "PASS",
+    "successfulJournalHash": "ddb2e5d9ae34cd2554887363f3c4475af81fe2e11b0bf0d1d1e27e29b6014e3f",
+    "successfulEntries": 3007,
+    "coveredSources": 34902,
+    "indexed": 4541,
+    "technicalSourceExcluded": true,
+    "allIndexedSourcesAlreadyCovered": true
+  },
+  "fullGameplayVerified": false
+}
