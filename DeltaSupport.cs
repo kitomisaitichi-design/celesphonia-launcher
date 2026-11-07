@@ -241,6 +241,7 @@ public static class DeltaSupport {
 }
 public static class PortableMain {
     [STAThread] public static int Main(string[] args) {
+        if(args.Length==1&&args[0]=="--local-tl-worker")return LocalTranslationWorker.Main();
         try {
             Store.Json.MaxJsonLength=256*1024*1024;
             // The isolated helper runs from an EXE copy outside Store.Home;

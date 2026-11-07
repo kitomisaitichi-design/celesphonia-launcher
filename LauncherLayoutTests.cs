@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Drawing;
@@ -100,7 +100,7 @@ public static class LauncherLayoutTests {
         using(var form=new PolishedLauncher(true,settings)){
             form.ShowInTaskbar=false;form.StartPosition=FormStartPosition.Manual;form.Location=new Point(-10000,-10000);form.Show();form.ClientSize=new Size(1180,820);Application.DoEvents();
             if(!Descendants(form).OfType<RuntimeControlsToggle>().Single().Visible)throw new InvalidOperationException("Launcher did not open directly on Play.");
-            var sidebar=Descendants(form).OfType<ListBox>().Single();
+            var sidebar=Descendants(form).OfType<ListBox>().Single(c=>c.AccessibleName=="Installed game versions");
             // The same sidebar intentionally interleaves installed games and
             // currently available creator updates. Both are valid rows.
             var volumes=sidebar.Items.OfType<Profile>().ToList();

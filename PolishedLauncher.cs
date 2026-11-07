@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Drawing;
@@ -65,7 +65,8 @@ public class PolishedLauncher : ReplacementAwareForm {
     Color background=LauncherPaint.Ink,card=Color.FromArgb(17,29,38),muted=Color.FromArgb(153,174,182),accent=Color.FromArgb(29,91,99);
     CheckBox controlsToggle,englishOnInstall;ChoicePicker themePicker;bool settingControls;
     Dictionary<Control,Tuple<Color,Color>> originalColors=new Dictionary<Control,Tuple<Color,Color>>();
-    Settings settings;ListBox profiles=new ListBox();ContentScroller main=new ContentScroller();Panel sidebar,playPage,installPage,savePage,helpPage,filesPage,englishPage;
+    Settings settings;ListBox profiles=new ListBox();ContentScroller main=new ContentScroller();Panel sidebar,playPage,installPage,savePage,helpPage,filesPage,englishPage,localPage;
+    LocalTranslationPage localUi;
     Button addGame;Label sidebarNote;System.Threading.CancellationTokenSource scanCancellation;bool checkingRunning;
     Label playName,playInfo,saveCount,savePath,status,installNeed,installNote,installLocation,installNext,saveTitle,saveNote,saveFolder,saveGuide,filesGuide;
     Button controlsButton,playButton,installButton,copyButton,restoreButton,backupButton,openSaveButton,gameFolderButton,saveFolderButton,playManageButton,filesManageButton,installDetailsButton,installSourceButton,installFolderButton,installLayersButton,installStartingButton,installDetectedButton,installSearchButton;
@@ -89,7 +90,7 @@ public class PolishedLauncher : ReplacementAwareForm {
     ModRecipe Target{get{return targets.SelectedItem as ModRecipe;}}
     public PolishedLauncher(bool preview=false,Settings previewSettings=null){
         previewMode=preview;
-        settings=previewSettings??Store.Read();Text="Celesphonia · Mod Library";ClientSize=new Size(1180,820);MinimumSize=new Size(960,640);StartPosition=FormStartPosition.CenterScreen;
+        profiles.AccessibleName="Installed game versions";settings=previewSettings??Store.Read();Text="Celesphonia · Mod Library";ClientSize=new Size(1180,820);MinimumSize=new Size(960,640);StartPosition=FormStartPosition.CenterScreen;
         AutoScaleMode=AutoScaleMode.None;Font=new Font("Segoe UI",10);BackColor=background;ForeColor=Color.FromArgb(239,242,249);
         AutoScroll=true;AutoScrollMinSize=new Size(1180,0);
         var work=Screen.FromControl(this).WorkingArea;ClientSize=new Size(Math.Min(1180,Math.Max(944,work.Width-48)),Math.Min(820,Math.Max(601,work.Height-72)));
@@ -98,7 +99,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         Label title=LabelAt(this,"Celesphonia",70,23,202,38,22,false);title.Font=new Font("Segoe UI",22,FontStyle.Bold);title.ForeColor=LauncherPaint.Paper;
         LabelAt(this,"GAME LIBRARY",72,63,194,22,9,false,muted);
         var folders=ButtonAt(this,"Folders  ▾",380,30,144,42,()=>{},false);folders.Click+=delegate{ShowFolders(folders);};folders.AccessibleName="Open native folders for the selected version";
-        int nx=548;foreach(string name in new[]{"Play","Files","English","Install","Saves","Help"}){string page=name;var b=ButtonAt(this,name,nx,30,96,42,()=>ShowPage(page),false);((SleekButton)b).Navigation=true;navigation.Add(b);nx+=102;}
+        int nx=548;foreach(string name in new[]{"Play","Files","English","Local TL","Install","Saves","Help"}){string page=name;var b=ButtonAt(this,name,nx,30,96,42,()=>ShowPage(page),false);((SleekButton)b).Navigation=true;navigation.Add(b);nx+=102;}
         sidebar=new SleekCard{Location=new Point(24,111),Size=new Size(296,630),BackColor=card};Controls.Add(sidebar);
         LabelAt(sidebar,"YOUR LIBRARY",20,20,256,25,9,true,muted);
         profiles.Location=new Point(12,58);profiles.Size=new Size(272,470);profiles.BorderStyle=BorderStyle.None;profiles.BackColor=card;profiles.ForeColor=ForeColor;profiles.DrawMode=DrawMode.OwnerDrawFixed;profiles.ItemHeight=58;profiles.IntegralHeight=false;profiles.DrawItem+=DrawProfile;sidebar.Controls.Add(profiles);
@@ -111,6 +112,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         addGame=ButtonAt(sidebar,"+ Add an installed game",16,552,264,42,()=>Guard(AddProfile),false);sidebarNote=LabelAt(sidebar,"Each version keeps a separate save folder.",16,600,264,24,9,false,muted);
         main.Location=new Point(344,111);main.Size=new Size(832,630);main.BackColor=background;Controls.Add(main);
         BuildPlay();BuildInstall();BuildSaves();BuildHelp();BuildFiles();BuildEnglish();
+        localPage=Page();localUi=new LocalTranslationPage(()=>Selected,message=>{if(status!=null)status.Text=message;}){Dock=DockStyle.Fill};localPage.Controls.Add(localUi);
         foreach(var diagram in new[]{playDiagram,installDiagram,englishDiagram})diagram.BackColor=background;
         status=LabelAt(this,"Ready",26,764,1130,34,10,false,muted);progress=new ProgressBar{Location=new Point(26,745),Size=new Size(1130,5),Style=ProgressBarStyle.Marquee,MarqueeAnimationSpeed=28,Visible=false};Controls.Add(progress);RefreshProfiles();ShowPage("Play");
         if(!string.IsNullOrEmpty(SharedInstallationIndex.Problem))status.Text=SharedInstallationIndex.Problem+" · local discovery remains available";
@@ -131,7 +133,7 @@ public class PolishedLauncher : ReplacementAwareForm {
         Activated+=delegate{if(!previewMode&&!busy&&Selected!=null)LoadEnglishStatus(Selected);};
         timer.Interval=3500;timer.Tick+=async delegate{if(busy||checkingRunning||previewMode)return;checkingRunning=true;try{var snapshot=new Settings{Profiles=LibraryProfiles.ToList()};bool now=await Task.Run(()=>Store.Running(snapshot));if(!IsDisposed&&now!=running){running=now;UpdateActions();}}catch{}finally{checkingRunning=false;}};timer.Start();
         FormClosing+=delegate(object sender,FormClosingEventArgs e){if(busy){e.Cancel=true;if(!ReplacementPending)status.Text="Finishing the current operation · please close this window afterward.";}else{if(scanCancellation!=null)scanCancellation.Cancel();if(!preview)Store.Write(settings);}};
-        FormClosed+=delegate{timer.Stop();timer.Dispose();};
+        FormClosed+=delegate{timer.Stop();timer.Dispose();if(!previewMode)LocalTranslation.PauseOwned();};
         ApplyTheme(settings.LauncherTheme??"Midnight");
         Resize+=delegate{LayoutViewport();};LayoutViewport();
     }
@@ -149,7 +151,7 @@ public class PolishedLauncher : ReplacementAwareForm {
             var b=c as SleekButton;if(b!=null&&!b.Navigation)b.BackColor=b.Primary?accent:card;
             foreach(Control child in c.Controls)visit(child);c.Invalidate();};visit(this);
         if(availability!=null){availability.BackgroundColor=card;availability.DefaultCellStyle.BackColor=card;availability.DefaultCellStyle.ForeColor=p[2];availability.DefaultCellStyle.SelectionBackColor=accent;availability.DefaultCellStyle.SelectionForeColor=p[2];availability.ColumnHeadersDefaultCellStyle.BackColor=card;availability.ColumnHeadersDefaultCellStyle.ForeColor=p[2];availability.AlternatingRowsDefaultCellStyle.BackColor=background;availability.GridColor=LauncherPaint.Line;}
-        ShowPage(currentPage);Invalidate(true);
+        if(localUi!=null)localUi.Theme(background,card,ForeColor,muted,accent);ShowPage(currentPage);Invalidate(true);
     }
     protected override void OnPaintBackground(PaintEventArgs e){
         base.OnPaintBackground(e);var saved=e.Graphics.Save();e.Graphics.TranslateTransform(AutoScrollPosition.X,AutoScrollPosition.Y);
@@ -228,11 +230,13 @@ public class PolishedLauncher : ReplacementAwareForm {
         // beyond the right edge or requires horizontal page scrolling.
         bool compact=ClientSize.Width<1170;
         var folder=Controls.OfType<Button>().FirstOrDefault(b=>b.Text.StartsWith("Folders",StringComparison.Ordinal));
-        if(folder!=null){folder.Left=compact?288:380;folder.Width=compact?106:144;}
+        if(folder!=null){folder.Left=compact?288:380;folder.Width=compact?TextRenderer.MeasureText(folder.Text,folder.Font,new Size(10000,10000),TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width+20:144;}
+        int navStart=compact?(folder==null?400:folder.Right+8):548;
+        var captionWidths=navigation.Select(b=>TextRenderer.MeasureText(b.Text,b.Font,new Size(10000,10000),TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width+20).ToArray();
+        int extra=Math.Max(0,(ClientSize.Width-navStart-16-captionWidths.Sum()-5*(navigation.Count-1))/navigation.Count),navX=navStart;
         for(int i=0;i<navigation.Count;i++){
             var button=navigation[i];
-            button.Left=compact?400+i*92:548+i*102;
-            button.Width=compact?87:96;
+            button.Left=navX;button.Width=captionWidths[i]+extra;navX+=button.Width+5;
         }
         FitPage();
     }
@@ -450,13 +454,15 @@ public class PolishedLauncher : ReplacementAwareForm {
         }
     }
     void FitPage(){
-        var active=new[]{playPage,installPage,savePage,helpPage,filesPage,englishPage}.FirstOrDefault(p=>p!=null&&p.Visible);
+        var active=new[]{playPage,installPage,savePage,helpPage,filesPage,englishPage,localPage}.FirstOrDefault(p=>p!=null&&p.Visible);
+        if(active==localPage){AutoScrollMinSize=Size.Empty;AutoScrollPosition=Point.Empty;main.Width=Math.Max(400,ClientSize.Width-main.Left-24);main.Canvas.Width=main.ClientSize.Width;main.Canvas.Height=main.ClientSize.Height;main.RefreshRange();return;}
+        AutoScrollMinSize=new Size(1180,0);main.Width=832;main.Canvas.Width=812;
         if(active!=null)main.Canvas.Height=Math.Max(main.ClientSize.Height,active.Controls.Cast<Control>().Where(c=>c.Visible).Select(c=>c.Bottom+8).DefaultIfEmpty(0).Max());
         main.RefreshRange();
     }
     void ShowPage(string page){
         currentPage=page;
-        playPage.Visible=page=="Play";installPage.Visible=page=="Install";savePage.Visible=page=="Saves";helpPage.Visible=page=="Help";filesPage.Visible=page=="Files";englishPage.Visible=page=="English";
+        playPage.Visible=page=="Play";installPage.Visible=page=="Install";savePage.Visible=page=="Saves";helpPage.Visible=page=="Help";filesPage.Visible=page=="Files";englishPage.Visible=page=="English";localPage.Visible=page=="Local TL";if(localPage.Visible)localUi.RefreshState();
         foreach(var b in navigation){((SleekButton)b).Selected=b.Text==page;b.ForeColor=b.Text==page?LauncherPaint.Gold:ForeColor;b.BackColor=background;b.Invalidate();}
         if(page=="Install")UpdateInstall();if(page=="Files")UpdateAvailability();
         if(page=="English"){if(Selected!=null&&!busy){if(previewMode)englishCurrent=EnglishSupport.Status(Selected);else LoadEnglishStatus(Selected);}UpdateEnglish();}

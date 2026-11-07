@@ -2,6 +2,12 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.41 — Optional local translation
+
+Open **Local TL → Manage models** to install PLaMo 3 Translate 0.8B or 2B. Choose **New run**, a target language and the text categories to translate. Start processing, then enable **Use this run in game**; partial caches work while processing or paused. Restart the game when changing between curated English and local translation. Your curated English setting is saved separately.
+
+Models, run caches and captured display text stay in `%LOCALAPPDATA%\Celesphonia\LocalTranslation`, separate from curated English and saves. Downloads need internet once; translation uses the local backend. Remove a model to reclaim its weights while keeping caches, or delete a run to recycle that run alone. Optional model/runtime downloads are not inside this ZIP. [Full setup and limitations](docs/local-translation-1.0.41.md) · [Pictures and launcher notes](LAUNCHER%20CHANGELOG.md).
+
 ## Launcher 1.0.40 — Three-in-One Ver1.07
 
 Install 1.07 directly with GoRPG 1.23 plus the creator bundle, or pool exact originals from archives, folders and individual files. All supported earlier 3.3.5 versions can upgrade with backed-up save carryover; no intermediate installation is required. Separate CH/Maple/3.3.4 saves keep their existing compatibility boundaries. The new/changed display material is translated in a version-matched partial English overlay, without runtime controls. [Pictures, changes and verification limits](docs/v107-1.0.40-trace.md).

@@ -208,6 +208,7 @@ public static class Store {
         using(var binary=File.OpenRead(Child(p.Root,p.Exe)))if(binary.ReadByte()!='M'||binary.ReadByte()!='Z')throw new IOException("The selected game executable is not a Windows program.");
         report("Checking translation and game scripts…");
         EnglishSupport.RefreshEnabled(p,report);
+        LocalTranslation.Prepare(p);
         RecipeSupport.VerifyProfile(p,true);
         report("Backing up saves…");
         Backup(p);
@@ -232,7 +233,7 @@ public static class Store {
             var info = new DirectoryInfo(dir);
             if ((info.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Linked folders are not supported: " + dir);
             string n = info.Name.ToLowerInvariant();
-            if (gameCopy && (n == "save" || n == "output" || n == "decrypted" || n == "node_modules" || n == "runtime" || n == "cache" || n=="celesphonia-english")) continue;
+            if (gameCopy && (n == "save" || n == "output" || n == "decrypted" || n == "node_modules" || n == "runtime" || n == "cache" || n=="celesphonia-english" || n=="celesphonia-local")) continue;
             if (gameCopy && Directory.Exists(Path.Combine(dir, "www"))) continue;
             CopyTree(dir, Path.Combine(target, info.Name), gameCopy,gameRoot);
         }

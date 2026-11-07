@@ -1,6 +1,7 @@
 /* Celesphonia English overlay: render-time replacements only, ES5 for older NW.js. */
 (function (global) {
     'use strict';
+    if (global.CelesphoniaLocalMode) return;
     if (global.CelesphoniaEnglish && global.CelesphoniaEnglish._runtimeLoaded) return;
     var dict = global.CelesphoniaEnglishDictionary || {}, labels = global.CelesphoniaEnglishLabels || {}, own = Object.prototype.hasOwnProperty;
     var humanLabels = global.CelesphoniaEnglishHumanLabels || {};

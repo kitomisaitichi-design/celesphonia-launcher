@@ -88,7 +88,7 @@ public static class EnglishSupport {
         if(!actualEntry.Equals(recordedEntry,StringComparison.OrdinalIgnoreCase))throw new IOException("The game entry page changed since this overlay was applied.");
         string backup=Path.Combine(Folder(root),"original-entry.bin");
         if(!File.Exists(backup)||Store.Hash(backup)!=state.OriginalHash)throw new IOException("English overlay's original-entry backup is missing or changed. It cannot be safely restored.");
-        string hash=Store.Hash(actualEntry);
+        string hash=LocalTranslation.BaseHash(root,actualEntry,Store.Hash(actualEntry));
         if(hash!=state.OriginalHash&&hash!=state.PatchedHash)throw new IOException("The game entry page was changed by another tool. Restore that change first; the launcher will preserve it.");
         if(assets&&hash==state.PatchedHash)foreach(var item in state.Assets){string file=Store.Child(Folder(root),item.Key);if(!File.Exists(file)||Store.Hash(file)!=item.Value)throw new IOException("English overlay file is missing or changed: "+item.Key);}
     }
@@ -106,6 +106,7 @@ public static class EnglishSupport {
     public static string OriginalFile(string root,string file){
         if(!Path.GetExtension(file).Equals(".html",StringComparison.OrdinalIgnoreCase)||
             !file.Equals(Entry(root),StringComparison.OrdinalIgnoreCase))return file;
+        file=LocalTranslation.BaseFile(root,file);
         var state=ReadState(root);
         if(state!=null){
             ValidateState(root,state,false);
@@ -146,7 +147,7 @@ public static class EnglishSupport {
         if(result.VersionId==null){result.Detail="This installation does not match a supported version.";return result;}
         if(result.VersionId=="ch-current"){result.Detail="Existing English CH reference. Overlays apply only to Gorpg, Maple, 3.3.4 and 3.3.5 trial.";return result;}
         result.Supported=true;
-        try{result.Pack=ReadPack(result.VersionId);if(result.Pack!=null){result.AvailableTexts=result.Pack.TranslatedTexts;result.TotalTexts=result.Pack.TotalTexts;string statistics=Path.Combine(PackFolder(result.VersionId),"user-statistics.json");if(File.Exists(statistics)){var stats=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(statistics,Encoding.UTF8));if(Convert.ToString(stats["DictionaryHash"])==result.Pack.DictionaryHash){result.AvailableTexts+=Convert.ToInt32(stats["AdditionalTexts"]);result.TotalTexts+=Convert.ToInt32(stats["ExtraCatalogTexts"]);}}}var state=ReadState(profile.Root);if(state!=null){Verify(profile.Root);result.Enabled=Store.Hash(Entry(profile.Root))==state.PatchedHash;result.AppliedTexts=state.TranslatedTexts;if(result.Enabled)result.TotalTexts=state.TotalTexts;}result.Detail=result.Enabled?"English display overlay is enabled. Untranslated lines remain in their original language.":"Original text is active. Enable this version's English overlay to use the available translations.";}catch(Exception e){result.Modified=true;result.Detail=e.Message;}
+        try{result.Pack=ReadPack(result.VersionId);if(result.Pack!=null){result.AvailableTexts=result.Pack.TranslatedTexts;result.TotalTexts=result.Pack.TotalTexts;string statistics=Path.Combine(PackFolder(result.VersionId),"user-statistics.json");if(File.Exists(statistics)){var stats=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(statistics,Encoding.UTF8));if(Convert.ToString(stats["DictionaryHash"])==result.Pack.DictionaryHash){result.AvailableTexts+=Convert.ToInt32(stats["AdditionalTexts"]);result.TotalTexts+=Convert.ToInt32(stats["ExtraCatalogTexts"]);}}}var state=ReadState(profile.Root);if(state!=null){Verify(profile.Root);result.Enabled=LocalTranslation.BaseHash(profile.Root,Entry(profile.Root),Store.Hash(Entry(profile.Root)))==state.PatchedHash;result.AppliedTexts=state.TranslatedTexts;if(result.Enabled)result.TotalTexts=state.TotalTexts;}result.Detail=result.Enabled?"English display overlay is enabled. Untranslated lines remain in their original language.":"Original text is active. Enable this version's English overlay to use the available translations.";}catch(Exception e){result.Modified=true;result.Detail=e.Message;}
         if(result.Enabled&&result.Pack!=null&&!result.Modified){
             var state=ReadState(profile.Root);
             result.UpdateAvailable=state.DictionaryHash!=result.Pack.DictionaryHash||
@@ -333,14 +334,14 @@ public static class EnglishSupport {
             }
         }
         string digest;using(var sha=System.Security.Cryptography.SHA256.Create())digest=BitConverter.ToString(sha.ComputeHash(patched)).Replace("-","").ToLowerInvariant();state.PatchedHash=digest;
-        JsonWrite(Path.Combine(folder,"state.json"),state);Atomic(entry,patched);Verify(profile.Root);
+        JsonWrite(Path.Combine(folder,"state.json"),state);Atomic(entry,LocalTranslation.Compose(profile,patched));Verify(profile.Root);
         // A new bundled dictionary invalidates the old imported-text counters.
         // Rebuild only that derived cache from the validated merged dictionary.
         string statistics=Path.Combine(PackFolder(id),"user-statistics.json");
         if(File.Exists(statistics)||data.Count!=pack.TranslatedTexts)
             JsonWrite(statistics,new{DictionaryHash=pack.DictionaryHash,AdditionalTexts=Math.Max(0,data.Count-pack.TranslatedTexts),ExtraCatalogTexts=Math.Max(0,state.TotalTexts-pack.TotalTexts)});
     }
-    public static void Restore(Profile profile){RequireClosed(profile);var state=ReadState(profile.Root);if(state==null)return;ValidateState(profile.Root,state,false);Atomic(Entry(profile.Root),File.ReadAllBytes(Path.Combine(Folder(profile.Root),"original-entry.bin")));}
+    public static void Restore(Profile profile){RequireClosed(profile);var state=ReadState(profile.Root);if(state==null)return;ValidateState(profile.Root,state,false);Atomic(Entry(profile.Root),LocalTranslation.Compose(profile,File.ReadAllBytes(Path.Combine(Folder(profile.Root),"original-entry.bin"))));}
     public static string Import(Profile profile,string input){
         RequireClosed(profile);var status=Status(profile);if(!status.Supported||status.Pack==null||status.Modified)throw new IOException("Select an intact supported version with an English pack.");
         var catalog=Catalog(status.VersionId,status.Pack);var observed=new Dictionary<string,object>();string observedFile=Path.Combine(PackFolder(status.VersionId),"observed-catalog.json");if(File.Exists(observedFile))observed=Store.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(observedFile,Encoding.UTF8));

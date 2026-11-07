@@ -2,6 +2,34 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.41 — Optional local PLaMo translation
+
+**Local TL** is a separate workspace for automatic translation. Install PLaMo 3 Translate **0.8B** (573 MB) or **2B** (1.81 GB), choose a target language and create named runs for any installed supported game. Matching curated English packs and manual review are not required. Model downloads are optional and are not bundled in the launcher ZIP.
+
+- Choose dialogue, choices, descriptions, interface text and optional names. Unchecked or uncached text stays original.
+- Start, pause, resume/retry, select or delete runs. A partial or paused cache can be used immediately; completed batches are saved as they finish. Details shows coverage, unreadable files, errors and a measured speed estimate.
+- **Use this run in game** is independent of processing and the English checkbox. A selected local run takes precedence; the saved English setting is retained. Switching English/local rendering mode takes effect at the next game launch. Local run/language changes are picked up while running; descriptions refresh when cache changes.
+- Downloads resume and use pinned SHA-256 checks. CPU is the default; Vulkan is optional. Removing a model pauses its jobs and retains cached translations. Deleting a run detaches it and recycles only its generated data. Closing the launcher pauses its owned jobs.
+- The existing Celesphonia adapters provide display-only integration, including Maple data decoding, native choices and readable wrapping/scrolling for long help text. Original databases, conditions, formulas and saves remain unchanged. Text embedded in images is outside this feature.
+
+Before: the launcher offered the curated English workspace.
+
+![Previous English workspace](docs/images/local-ui-before.png)
+
+After: independent local runs, progress and display selection. This is a real paused two-entry French proof run, not a fully translated game.
+
+![Local translation workspace](docs/images/local-ui-after.png)
+
+![Managed optional models, real installed status](docs/images/local-models-after.png)
+
+Native French cache displayed with runtime controls off. This sample is raw model output; terminology/fluency may need improvement. The arrow makes the remainder of dense descriptions reachable.
+
+![Partial French cache in the native help window](docs/images/local-native-after.png)
+
+**Verification:** both model sizes completed real English/French inference; pause/resume/reuse/delete and real model removal/cache retention passed. Latest Three-in-One 1.07 and Maple 1.7.2 passed native partial-cache, unchanged-database, wrapping/scroll and English/local coexistence checks. The launcher was opened at 1180×820 and 960×640, including the model manager. CPU inference was tested. Vulkan, every language, every font/RTL case, all DPI settings and full-game translation quality were not verified. The interface offers the model's 53 target languages; that is not a quality guarantee.
+
+[Setup, architecture, source pins and verification trace](docs/local-translation-1.0.41.md). Existing creator notes remain chronological and separate.
+
 ## 1.0.40 — Three-in-One Ver1.07
 
 - Adds content-hash detection and the complete 1.07 target: **5,165 creator-overlay files / 11,732 native files**. Install directly from **GoRPG 1.23 + the 1.07 creator bundle**, or combine original archives, extracted folders and individual exact files. Misleading archive extensions remain supported; intermediate versions are not required.
