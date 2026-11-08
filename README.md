@@ -2,6 +2,9 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.46 — Preserve opaque actor/status syntax
+Extends the local-model repair to double-escaped actor commands and bracketed status payloads. Those parts remain exact while the surrounding text is translated. Completed work stays cached; no model reinstall or run reset is needed. [Cause and changes](LAUNCHER%20CHANGELOG.md).
+
 ## Launcher 1.0.45 — Local model formatting repair
 Fixes mass validation failures caused by CR-ended inputs becoming HTML line breaks. Native PLaMo glossary/context options now protect structure and numeric values without a generic instruction prompt. French indexed-placeholder order is supported by the existing display adapters. Completed work is retained; retry failed entries without restarting the run. [Cause, examples and limits](docs/model-format-repair-1.0.45.md).
 

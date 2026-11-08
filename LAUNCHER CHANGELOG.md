@@ -2,6 +2,11 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.46 — Opaque actor references and status markers
+The resumed run accepted 50 new entries after 1.0.45, then its safety checkpoint found a second structural cluster. This follow-up protects **double-escaped actor commands** and **angle-bracket status payloads, including CJK markers**, as complete opaque values before inference. The model cannot rewrite their internal spelling or turn a status marker into a new HTML-style tag. Original markers may remain untranslated rather than being changed unsafely.
+
+A non-explicit synthetic string with the same envelope is included in the model checks alongside the CR/numeric/format cases. The checkpoint and strict non-format control/value guards remain enabled. Completed entries are retained and only the affected failed records are retried. The 1.0.45 native-parameter and line-ending repair remains in place; this is not a reset or a switch to generic prompting.
+
 ## 1.0.45 — Native model options and lossless line formatting
 Fixes the large burst of Local TL failures after resuming a run. Requests were reaching PLaMo, but **carriage returns sent as source text were coming back as HTML `<br />` tags**, which correctly failed the display-safety validator. The model no longer receives outer line separators/indentation; the original whitespace is restored after translation. Blank lines and CR/LF layout stay exact.
 
