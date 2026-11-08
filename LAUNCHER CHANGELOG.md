@@ -2,6 +2,21 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.44 — Faster comparison editor, fixed popup error and full filter labels
+Fixes the reported **Cannot access a disposed object: ContextMenuStrip** exception when choosing Export or a selection action. The editor owns its menus for the lifetime of the window; dismissing a popup no longer disposes it while WinForms is still handling its click. Export cancellation, reopening and both selected/filtered exports now follow the same safe lifetime.
+
+The comparison window prepares row states in the background, reuses the imported-layer lookup, avoids hashing every pending row, and batches selection notifications. Drawing cells and selecting rows no longer reconstruct the whole dictionary or scan every visible ID. Warm comparison loading skips incompatible model journals and reuses the catalog/English reference already decoded for coverage. Refresh creates a new snapshot, so pack edits, new model results and authored corrections do not get hidden behind a stale lookup.
+
+Filter buttons use measured text plus padding, with row height/wrapping shared by the toolbar and grid layout. **Untranslated**, **Local model**, **User corrected** and **Imported** remain readable together. Empty results clear the stale text panes; an empty export does not fall back to an old hidden current row. Search/origin changes with identical results retain their row bindings and scroll position. Hidden explicit selections remain available and counted.
+
+![Before — reported clipped filter labels](docs/images/local-editor-before.png)
+
+![After — native toolbar and fully visible filter labels](docs/images/local-editor-after.png)
+
+One local 35,014-source diagnostic reduced 60 imported-layer lookups from about **1,280 ms to 16 ms**, and warm comparison preparation from **768 ms to 68 ms**. The measured coverage/comparison/window preparation phases together dropped from about **4.49 s to 2.91 s**. These are fixture timings on one PC, not a promise of that startup time on every system.
+
+The shared in-game renderer, dictionaries, models, saves and game paths are unchanged. All 16 origin combinations, actual popup clicks/cancel/export, source-bound edit saves, cache invalidation and scaled native layouts receive focused checks. Physical multi-monitor DPI changes and full gameplay are outside this UI repair. [Cause, checks and limits](docs/editor-repair-1.0.44.md).
+
 ## 1.0.43 — Glossaries, shared dictionaries and three-column comparison
 **Local TL → Translations** now compares **native source | current curated English | target text**. Browse model output, authored corrections, selected imports or an individual dictionary. **Use this layer** explicitly chooses the game's layer; browsing or filtering does not change it.
 

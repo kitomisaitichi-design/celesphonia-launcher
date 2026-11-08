@@ -2,6 +2,9 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.44 — Comparison editor repair
+Fixes the disposed-popup error during Export/selection actions, clipped origin-filter labels and unnecessary work during loading/drawing/selection. Refresh retains correct invalidation for model, imported and user-edited text; all four origin filters still combine with search. [Before/after and changes](LAUNCHER%20CHANGELOG.md) · [Repair trace and limits](docs/editor-repair-1.0.44.md).
+
 ## Launcher 1.0.43 — Glossary, comparison and portable dictionaries
 Open **Local TL → Translations** for **Source | curated English | target** comparison, optional glossary/context profiles, and dictionary **Import / Export**. Combine **Untranslated / Local model / User corrected / Imported** filters with search. Ctrl/Shift selects rows for bulk actions; browsing a layer does not change the game's layer until **Use this layer** is chosen.
 

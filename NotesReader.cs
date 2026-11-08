@@ -60,7 +60,7 @@ public sealed class NotesReader : Form {
     }
     static string Html(string text){return System.Net.WebUtility.HtmlEncode(text);}
     static string Image(string path,string alt){
-        var match=Regex.Match(path,@"^(?:docs/)?images/((?:stat-layout-(?:maple|creator)|text-memory-(?:names|locked|creator|maple)|notification-(?:names|blank|title)|equipment-(?:creator|maple|weapon|dense|dense-end|terms)|imprint-(?:creator|maple)|skill-fields-(?:creator|maple)|v107-(?:vitality-potion-i|power-sigil-i|miasma-adaptation|storm-pierce)|local-(?:ui|models|native|repair-(?:menu|controls|editor|settings)|glossary)|enemy-info-stats|skill-tooltip-formula|destination)-(?:before|after)\.png)$");
+        var match=Regex.Match(path,@"^(?:docs/)?images/((?:stat-layout-(?:maple|creator)|text-memory-(?:names|locked|creator|maple)|notification-(?:names|blank|title)|equipment-(?:creator|maple|weapon|dense|dense-end|terms)|imprint-(?:creator|maple)|skill-fields-(?:creator|maple)|v107-(?:vitality-potion-i|power-sigil-i|miasma-adaptation|storm-pierce)|local-(?:ui|models|native|repair-(?:menu|controls|editor|settings)|glossary|editor)|enemy-info-stats|skill-tooltip-formula|destination)-(?:before|after)\.png)$");
         if(!match.Success)return "<p>"+Html(alt)+"</p>";
         using(var stream=typeof(NotesReader).Assembly.GetManifestResourceStream("Celesphonia.Notes."+match.Groups[1].Value)){
             if(stream==null)throw new IOException("Bundled notes image missing: "+path);

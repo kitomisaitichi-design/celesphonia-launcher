@@ -195,9 +195,10 @@ public static class EnglishSupport {
                 else row["source"]=item.Key;}
         }
         return result;}
-    static Dictionary<string,string> Dictionary(string id,EnglishManifest pack){
+    static Dictionary<string,string> Dictionary(string id,EnglishManifest pack){return Dictionary(id,pack,Catalog(id,pack));}
+    static Dictionary<string,string> Dictionary(string id,EnglishManifest pack,Dictionary<string,object> catalog){
         byte[] bytes=EnglishRelease.Read(id,"dictionary.json");if(EnglishRelease.Hash(bytes)!=pack.DictionaryHash)throw new IOException("Bundled English dictionary does not match its manifest: "+id);
-        var catalog=Catalog(id,pack);var data=Store.Json.Deserialize<Dictionary<string,string>>(Encoding.UTF8.GetString(bytes));
+        var data=Store.Json.Deserialize<Dictionary<string,string>>(Encoding.UTF8.GetString(bytes));
         foreach(var item in data)if(!catalog.ContainsKey(item.Key)||item.Value==null||!Compatible(item.Key,item.Value))throw new IOException("Unsafe or unknown dictionary entry: "+item.Key.Substring(0,Math.Min(80,item.Key.Length)));
         string user=Path.Combine(PackFolder(id),"user-translations.json");
         if(File.Exists(user))foreach(var item in Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(user,Encoding.UTF8)))if(catalog.ContainsKey(item.Key)&&item.Value!=null&&item.Key!=item.Value&&Compatible(item.Key,item.Value))data[item.Key]=item.Value;
@@ -211,14 +212,15 @@ public static class EnglishSupport {
     static Dictionary<string,string> BuildCoveredLocalSources(string root){
         string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();
         if(id!=null&&ids.Contains(id))ids=new List<string>{id};
-        var result=new Dictionary<string,string>();
-        foreach(string version in ids){var pack=ReadPack(version);var data=Dictionary(version,pack);var catalog=Catalog(version,pack);
+        var result=new Dictionary<string,string>();var reference=new Dictionary<string,string>();var combined=new Dictionary<string,object>();
+        foreach(string version in ids){var pack=ReadPack(version);var catalog=Catalog(version,pack);var data=Dictionary(version,pack,catalog);foreach(var pair in data)reference[pair.Key]=pair.Value;foreach(var pair in catalog)combined[pair.Key]=pair.Value;
             foreach(var item in data){if(item.Key==item.Value||string.IsNullOrWhiteSpace(item.Key))continue;object record;catalog.TryGetValue(item.Key,out record);var row=record as Dictionary<string,object>;string contexts=row!=null&&row.ContainsKey("contexts")?Store.Json.Serialize(row["contexts"]):"";
                 string kinds=row!=null&&row.ContainsKey("kinds")?Store.Json.Serialize(row["kinds"]):"";
                 string category=(kinds.Contains("dialogue")||kinds.Contains("live-comment"))?"Dialogue":(kinds.Contains("choice")&&!kinds.Contains("choice-help"))?"Choices":(kinds.Contains("description")||kinds.Contains("equipment-option")||contexts.Contains("/description\"")||contexts.Contains("/profile\""))?"Descriptions":(kinds.Contains("menu")||kinds.Contains("ui-label")||kinds.Contains("plugin-ui")||kinds.Contains("display-table"))?"Interface":(kinds.Contains("character")||kinds.Contains("map-name")||contexts.Contains("/name\"")||contexts.Contains("/nickname\"")||contexts.Contains("/displayName\""))?"Names":"Interface";
                 result[item.Key]=category;
             }
         }
+        lock(localCatalogs)localCatalogs[root]=combined;lock(localReferences)localReferences[root]=Tuple.Create(LocalCoverageRevision(root),reference);
         return result;
     }
     static readonly Dictionary<string,Tuple<string,Dictionary<string,string>>> localReferences=new Dictionary<string,Tuple<string,Dictionary<string,string>>>();
