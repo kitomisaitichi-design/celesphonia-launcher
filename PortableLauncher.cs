@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Linq;
@@ -399,7 +399,7 @@ public class Launcher : Form {
         profiles.SelectedIndexChanged += delegate { UpdateDetails(); };
         DeltaSupport.Attach(this, settings, delegate(Profile p) { settings.Profiles.Add(p); settings.SelectedId = p.Id; Store.Write(settings); RefreshProfiles(); }, delegate(bool installing) { busy = installing; UpdateButtons(); });
         RecipeSupport.Attach(this, settings, delegate(Profile p) { settings.Profiles.Add(p); settings.SelectedId = p.Id; Store.Write(settings); RefreshProfiles(); }, delegate(bool installing) { busy = installing; UpdateButtons(); }); RefreshProfiles(); timer.Interval = 2500; timer.Tick += delegate { UpdateButtons(); }; timer.Start();
-        FormClosing += delegate(object sender, FormClosingEventArgs e) { if (busy) { e.Cancel = true; MessageBox.Show(this, "Wait for the current file operation to finish.", Text); } };
+        FormClosing += delegate(object sender, FormClosingEventArgs e) { if (busy) { e.Cancel = true; LauncherLanguage.Show(this, "Wait for the current file operation to finish.", Text); } };
     }
     Button Make(string text, int x, int y, int width, EventHandler click) {
         var b = new Button { Text = text, Location = new Point(x, y), Size = new Size(width, 40), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(43, 51, 71), ForeColor = ForeColor };
@@ -421,11 +421,11 @@ public class Launcher : Form {
         bool running = Store.Running(settings), selected = Selected != null;
         foreach (var b in new[] { play, open, backup, restore, copy, add, overlayFolder, overlayArchive }) if (b != null) b.Enabled = !busy && selected;
         if (running && !busy) { play.Enabled = false; backup.Enabled = false; restore.Enabled = false; copy.Enabled = false; overlayFolder.Enabled = false; overlayArchive.Enabled = false; status.Text = "A game is running. Save and close it before switching mods or changing saves."; }
-        else if (!busy && status.Text.StartsWith("A game is running.")) status.Text = "Ready. Each launch backs up the selected profile's saves.";
+        else if (!busy && LauncherLanguage.Source(status).StartsWith("A game is running.")) status.Text = "Ready. Each launch backs up the selected profile's saves.";
         else if (status.Text.Length == 0) status.Text = "Ready. Each launch backs up the selected profile's saves.";
     }
-    bool CheckClosed() { if (!Store.Running(settings)) return true; MessageBox.Show(this, "Save your progress and close the game before switching mods or changing saves.", Text); return false; }
-    void Guard(Action action) { try { action(); UpdateDetails(); } catch (Exception e) { MessageBox.Show(this, e.Message, "Celesphonia Launcher", MessageBoxButtons.OK, MessageBoxIcon.Error); } }
+    bool CheckClosed() { if (!Store.Running(settings)) return true; LauncherLanguage.Show(this, "Save your progress and close the game before switching mods or changing saves.", Text); return false; }
+    void Guard(Action action) { try { action(); UpdateDetails(); } catch (Exception e) { LauncherLanguage.Show(this, e.Message, "Celesphonia Launcher", MessageBoxButtons.OK, MessageBoxIcon.Error); } }
     void LaunchSelected() { Guard(delegate { if (!CheckClosed()) return; Store.Write(settings); Store.Launch(Selected); status.Text = "Starting " + Selected.Name + " with its own save set..."; }); }
     string Folder(string description, string initial) { using (var d = new FolderBrowserDialog { Description = description, SelectedPath = initial, ShowNewFolderButton = false }) return d.ShowDialog(this) == DialogResult.OK ? d.SelectedPath : null; }
     string NamePrompt(string initial) {
@@ -456,28 +456,28 @@ public class Launcher : Form {
         string root = Path.Combine(Store.Home, "Save Backups", Selected.Id); Directory.CreateDirectory(root);
         string source = Folder("Choose the timestamped backup folder to restore.", root); if (source == null) return;
         Store.VerifyBackup(source);
-        if (MessageBox.Show(this, "Restore this backup to " + Selected.Name + "? Current saves will be backed up first.", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+        if (LauncherLanguage.Show(this, "Restore this backup to " + Selected.Name + "? Current saves will be backed up first.", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
         Store.ReplaceSaves(source, Selected, true); status.Text = "Backup restored. Your previous saves were backed up first.";
     }); }
     void CopySaves() { Guard(delegate {
         if (!CheckClosed()) return;
         var source = ChooseSource("Copy saves from which profile?", settings.Profiles.Where(x => x.Id != Selected.Id)); if (source == null) return;
-        if (MessageBox.Show(this, "Replace " + Selected.Name + " saves with saves from " + source.Name + "?\r\n\r\n" + RecipeSupport.SaveWarning(source,Selected), Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+        if (LauncherLanguage.Show(this, "Replace " + Selected.Name + " saves with saves from " + source.Name + "?\r\n\r\n" + RecipeSupport.SaveWarning(source,Selected), Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
         Store.ReplaceSaves(source.SavePath, Selected); status.Text = "Saves copied. Original source saves and destination backup are preserved.";
     }); }
     async void Overlay(bool archive) {
         if (!CheckClosed()) return;
         string mod = null;
-        if (archive) { using (var d = new OpenFileDialog { Title = "Select the mod archive (choose .001 for split archives)", Filter = "Mod archives|*.zip;*.7z;*.rar;*.001;*.7删z|All files|*.*", InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads") }) if (d.ShowDialog(this) == DialogResult.OK) mod = d.FileName; }
+        if (archive) { using (var d = new OpenFileDialog { Title=LauncherLanguage.T("Select the mod archive (choose .001 for split archives)"), Filter=LauncherLanguage.Filter("Mod archives|*.zip;*.7z;*.rar;*.001;*.7删z|All files|*.*"), InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads") }) if (d.ShowDialog(this) == DialogResult.OK) mod = d.FileName; }
         else mod = Folder("Choose an overlay folder containing audio, data, img, and js.", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"));
         if (mod == null) return;
         var candidates = settings.Profiles.Where(x => RecipeSupport.IsCleanBase(x.Root));
-        if (!candidates.Any()) { MessageBox.Show(this,"Register clean Gorpg 1.23 or install its delta pack first. Overlays require the verified clean base."); return; }
+        if (!candidates.Any()) { LauncherLanguage.Show(this,"Register clean Gorpg 1.23 or install its delta pack first. Overlays require the verified clean base."); return; }
         Profile basis = ChooseSource("Choose the clean Gorpg 1.23 base for this overlay", candidates); if (basis == null) return;
         string name = NamePrompt(Path.GetFileNameWithoutExtension(mod)); if (name == null) return;
         busy = true; status.Text = "Installing " + name + "... The game files are being copied; this can take several minutes."; UpdateButtons();
         try { Profile p = await Task.Run(() => RecipeSupport.Install(basis.Root, settings.InstallRoot, name, new List<LayerInput> { new LayerInput { Source = mod } })); settings.Profiles.Add(p); settings.SelectedId = p.Id; Store.Write(settings); RefreshProfiles(); status.Text = "Installed " + p.Name + ". It has its own empty save set."; }
-        catch (Exception error) { MessageBox.Show(this, error.Message, "Installation failed", MessageBoxButtons.OK, MessageBoxIcon.Error); status.Text = "Installation failed. Existing profiles are unchanged; unfinished files remain for inspection."; }
+        catch (Exception error) { LauncherLanguage.Show(this, error.Message, "Installation failed", MessageBoxButtons.OK, MessageBoxIcon.Error); status.Text = "Installation failed. Existing profiles are unchanged; unfinished files remain for inspection."; }
         finally { busy = false; UpdateButtons(); }
     }
     [STAThread] public static int Main(string[] args) {
@@ -486,10 +486,10 @@ public class Launcher : Form {
             if (args.Contains("--self-test")) { Store.SelfTest(); return 0; }
             if (args.Contains("--render-preview")) { using (var form = new Launcher()) { form.Show(); Application.DoEvents(); using (var bitmap = new Bitmap(form.Width, form.Height)) { form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, form.Size)); bitmap.Save(Path.Combine(Store.Home, "launcher-preview.png")); } } return 0; }
             using (var mutex = new System.Threading.Mutex(false, "Local\\CelesphoniaModLauncher")) {
-                if (!mutex.WaitOne(0)) { MessageBox.Show("Celesphonia Mod Launcher is already open."); return 0; }
+                if (!mutex.WaitOne(0)) { LauncherLanguage.Show("Celesphonia Mod Launcher is already open."); return 0; }
                 try { Application.Run(new Launcher()); } finally { mutex.ReleaseMutex(); }
             }
             return 0;
-        } catch (Exception e) { File.WriteAllText(Path.Combine(Store.Home, "launcher-error.txt"), e.ToString(), Encoding.UTF8); MessageBox.Show(e.Message, "Celesphonia Launcher"); return 1; }
+        } catch (Exception e) { File.WriteAllText(Path.Combine(Store.Home, "launcher-error.txt"), e.ToString(), Encoding.UTF8); LauncherLanguage.Show(e.Message, "Celesphonia Launcher"); return 1; }
     }
 }

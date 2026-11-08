@@ -12,10 +12,12 @@ using System.Windows.Forms;
 public sealed class NotesReader : Form {
     readonly WebBrowser reader=new WebBrowser();
     readonly ComboBox chapters=new ComboBox();
+    int languageSource;
     readonly List<SleekButton> sources=new List<SleekButton>();
     readonly List<string> anchors=new List<string>();
     bool loading;
     public NotesReader(int source){
+        Action languageChanged=delegate{if(!IsDisposed)SelectSource(languageSource);};LauncherLanguage.Changed+=languageChanged;Disposed+=delegate{LauncherLanguage.Changed-=languageChanged;};
         Text="Celesphonia · Notes & changelogs";StartPosition=FormStartPosition.CenterParent;
         ClientSize=new Size(1000,760);MinimumSize=new Size(680,500);AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10);BackColor=LauncherPaint.Ink;ForeColor=LauncherPaint.Paper;
@@ -49,7 +51,9 @@ public sealed class NotesReader : Form {
             using(var text=new StreamReader(stream,Encoding.UTF8,true))return text.ReadToEnd();
         }
     }
+    public void RefreshLanguage(){SelectSource(languageSource);}
     public void SelectSource(int index){
+        languageSource=index;
         if(index<0||index>2)index=0;
         string text=index==0?Embedded("QuickStart.md"):index==1?Embedded("LauncherChangelog.md"):LauncherUpdate.ChangelogText();
         loading=true;chapters.Items.Clear();anchors.Clear();
@@ -81,7 +85,7 @@ public sealed class NotesReader : Form {
         var output=new StringBuilder();var paragraph=new StringBuilder();string list=null;int heading=0;
         Action flush=delegate{if(paragraph.Length>0){output.Append("<p>"+Inline(paragraph.ToString())+"</p>");paragraph.Length=0;}};
         foreach(string raw in text.Replace("\r","").Split('\n')){
-            string line=raw.Trim();var h=Regex.Match(line,@"^(#{1,4})\s+(.+)$");
+            string line=LauncherLanguage.T(raw.Trim());var h=Regex.Match(line,@"^(#{1,4})\s+(.+)$");
             var img=Regex.Match(line,@"^!\[([^\]]*)\]\(([^)]+)\)$");
             var numbered=Regex.Match(line,@"^(\d+)\.\s+");
             bool bullet=numbered.Success||Regex.IsMatch(line,@"^[-*]\s+");
@@ -98,10 +102,10 @@ public sealed class NotesReader : Form {
     }
     static string Css(Color color){return "#"+color.R.ToString("X2")+color.G.ToString("X2")+color.B.ToString("X2");}
     static string Document(string body){
-        return "<!doctype html><html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta charset=\"utf-8\"><style>"+
+        return "<!doctype html><html lang=\""+LauncherLanguage.Current+"\" dir=\""+(LauncherLanguage.Rtl?"rtl":"ltr")+"\"><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta charset=\"utf-8\"><style>"+
             "html{background:"+Css(LauncherPaint.Ink)+";color:"+Css(LauncherPaint.Paper)+";}body{font:16px/1.7 'Segoe UI',sans-serif;max-width:860px;margin:auto;padding:22px 36px 60px;word-wrap:break-word;}"+
             "h1{font-size:30px;line-height:1.3;margin:8px 0 24px;}h2{font-size:23px;margin:38px 0 14px;border-bottom:1px solid "+Css(LauncherPaint.Line)+";padding-bottom:10px;}h3{font-size:19px;color:"+Css(LauncherPaint.Gold)+";margin-top:28px;}h4{font-size:17px;}p{margin:12px 0;}li{margin:8px 0;}strong{color:"+Css(LauncherPaint.Gold)+";}a{color:"+Css(LauncherPaint.Gold)+";text-decoration:none;}a:hover{text-decoration:underline;text-shadow:0 0 8px "+Css(LauncherPaint.Gold)+";}"+
-            "code{font:14px Consolas,monospace;background:"+Css(LauncherPaint.Surface)+";padding:2px 5px;border-radius:4px;}figure{display:inline-block;vertical-align:top;max-width:100%;margin:12px 18px 16px 0;padding:12px;background:"+Css(LauncherPaint.Surface)+";border:1px solid "+Css(LauncherPaint.Line)+";border-radius:12px;}img{display:block;max-width:100%;height:auto;border-radius:5px;}figcaption{font-size:13px;color:"+Css(LauncherPaint.Muted)+";margin-top:8px;}@media(max-width:720px){body{padding:18px;}figure{margin-right:0;}}"+
+            "code{direction:ltr;unicode-bidi:embed;font:14px Consolas,monospace;background:"+Css(LauncherPaint.Surface)+";padding:2px 5px;border-radius:4px;}figure{display:inline-block;vertical-align:top;max-width:100%;margin:12px 18px 16px 0;padding:12px;background:"+Css(LauncherPaint.Surface)+";border:1px solid "+Css(LauncherPaint.Line)+";border-radius:12px;}img{display:block;max-width:100%;height:auto;border-radius:5px;}figcaption{font-size:13px;color:"+Css(LauncherPaint.Muted)+";margin-top:8px;}@media(max-width:720px){body{padding:18px;}figure{margin-right:0;}}"+
             "</style></head><body>"+body+"</body></html>";
     }
 }

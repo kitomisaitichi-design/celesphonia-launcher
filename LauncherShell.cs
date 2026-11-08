@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -42,9 +42,9 @@ public static class LauncherPaint {
         g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
         using(var format=new StringFormat{Alignment=left?StringAlignment.Near:StringAlignment.Center,LineAlignment=StringAlignment.Center,Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.NoWrap}){
             if(glow>.01)using(var light=new SolidBrush(Color.FromArgb((int)(38*glow),Gold))){
-                foreach(var offset in new[]{new Point(-1,0),new Point(1,0),new Point(0,-1),new Point(0,1)}){var halo=r;halo.Offset(offset);g.DrawString(text,font,light,halo,format);}
+                foreach(var offset in new[]{new Point(-1,0),new Point(1,0),new Point(0,-1),new Point(0,1)}){var halo=r;halo.Offset(offset);LauncherLanguage.DrawString(g,text,font,light,halo,format);}
             }
-            using(var brush=new SolidBrush(color))g.DrawString(text,font,brush,r,format);
+            using(var brush=new SolidBrush(color))LauncherLanguage.DrawString(g,text,font,brush,r,format);
         }
     }
 }
@@ -105,7 +105,7 @@ public class SleekButton : Button {
         Font fit=Font;
         if(TextRenderer.MeasureText(e.Graphics,Text,Font,new Size(int.MaxValue,Height),TextFormatFlags.SingleLine|TextFormatFlags.NoPadding).Width>label.Width&&Font.Size>8.5f)
             fit=new Font(Font.FontFamily,Math.Max(8.5f,Font.Size-1.2f),Font.Style);
-        try{TextRenderer.DrawText(e.Graphics,Text,fit,label,textColor,flags|TextFormatFlags.NoPadding);}
+        try{LauncherLanguage.DrawText(e.Graphics,Text,fit,label,textColor,flags|TextFormatFlags.NoPadding);}
         finally{if(!object.ReferenceEquals(fit,Font))fit.Dispose();}
         if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(6,6,Width-13,Height-13),LauncherPaint.Paper,c);
     }
@@ -426,7 +426,7 @@ public class LauncherMenuRenderer : ToolStripProfessionalRenderer {
 // checked states or callbacks are changed.
 public static class LauncherMenuStyle {
     public static ContextMenuStrip Create(){
-        var menu=new ContextMenuStrip();
+        var menu=new ContextMenuStrip();LauncherLanguage.Menu(menu);
         Apply(menu);
         return menu;
     }

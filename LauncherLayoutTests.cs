@@ -154,14 +154,15 @@ public static class LauncherLayoutTests {
             if(hovered.HoverAmount>.01)throw new InvalidOperationException("Hover highlight did not fade out.");
             form.TestPage("Help");Application.DoEvents();
             form.ClientSize=new Size(960,650);Application.DoEvents();
-            if(form.HorizontalScroll.Maximum<1179||scroller.Limit<=0||!scroller.Slider.Enabled)throw new InvalidOperationException("Small-screen content scrollbar is unavailable.");
-            form.AutoScrollPosition=new Point(1180,0);scroller.Position=scroller.Limit;Application.DoEvents();
+            if(form.HorizontalScroll.Visible||scroller.Limit<=0||!scroller.Slider.Enabled)throw new InvalidOperationException("Compact layout must use only the content scrollbar where needed.");
+            scroller.Position=scroller.Limit;Application.DoEvents();
             var guide=Descendants(form).OfType<Button>().First(b=>b.Text=="Quick start guide");Rectangle bounds=form.RectangleToClient(guide.RectangleToScreen(guide.ClientRectangle));
             if(!form.ClientRectangle.Contains(bounds))throw new InvalidOperationException("Bottom controls cannot be reached by scrolling.");
             var header=Descendants(form).OfType<Button>().First(b=>b.Parent==form&&b.Text=="Help");
-            if(header.Top<0||header.Bottom>111)throw new InvalidOperationException("Content scrolling moved the navigation.");
+            if(header.Top<0||header.Bottom>scroller.Top)throw new InvalidOperationException("Content scrolling moved the navigation.");
             foreach(string page in new[]{"Play","Files","English","Install","Saves","Help"}){
                 Descendants(form).OfType<Button>().First(b=>b.Parent==form&&b.Text==page).PerformClick();Application.DoEvents();
+                if(form.HorizontalScroll.Visible)throw new InvalidOperationException("A compact page introduced horizontal scrolling.");
                 if(scroller.Position!=0||scroller.Canvas.Top!=0)throw new InvalidOperationException("Switching pages retained an unrelated scroll offset.");
                 Check(form);
                 foreach(var button in Descendants(scroller.Canvas).OfType<Button>().Where(b=>b.Visible)){

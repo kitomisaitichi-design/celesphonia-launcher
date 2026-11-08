@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
@@ -227,14 +227,14 @@ public static class DeltaSupport {
         button.FlatAppearance.BorderSize=0;form.Controls.Add(button);
         form.Controls.Add(new Label {Text="Delta packs rebuild a separate version. Your CH game and saves stay in place.",Location=new Point(28,560),Size=new Size(820,25),ForeColor=Color.FromArgb(166,179,204)});
         button.Click+=async delegate {
-            if(Store.Running(settings)){MessageBox.Show(form,"Save and close the game first.");return;}
-            string pack;using(var d=new OpenFileDialog {Title="Select a portable delta pack",Filter="Celesphonia delta packs|*.cgdelta.zip",InitialDirectory=System.IO.Path.Combine(Store.Home,"Delta Packs")}){if(d.ShowDialog(form)!=DialogResult.OK)return;pack=d.FileName;}
-            string basis;using(var d=new FolderBrowserDialog {Description="Select the existing CH game folder containing package.json and Game.exe.",SelectedPath=settings.Profiles.First().Root,ShowNewFolderButton=false}){if(d.ShowDialog(form)!=DialogResult.OK)return;basis=d.SelectedPath;}
+            if(Store.Running(settings)){LauncherLanguage.Show(form,"Save and close the game first.");return;}
+            string pack;using(var d=new OpenFileDialog {Title=LauncherLanguage.T("Select a portable delta pack"),Filter=LauncherLanguage.Filter("Celesphonia delta packs|*.cgdelta.zip"),InitialDirectory=System.IO.Path.Combine(Store.Home,"Delta Packs")}){if(d.ShowDialog(form)!=DialogResult.OK)return;pack=d.FileName;}
+            string basis;using(var d=new FolderBrowserDialog {Description=LauncherLanguage.T("Select the existing CH game folder containing package.json and Game.exe."),SelectedPath=settings.Profiles.First().Root,ShowNewFolderButton=false}){if(d.ShowDialog(form)!=DialogResult.OK)return;basis=d.SelectedPath;}
             setBusy(true);foreach(Control c in form.Controls)c.Enabled=false;
             bool installing=true;FormClosingEventHandler prevent=delegate(object sender,FormClosingEventArgs e){if(installing)e.Cancel=true;};form.FormClosing+=prevent;
             string originalTitle=form.Text;form.Text="Installing delta pack - validating and reconstructing game files...";
-            try {var p=await Task.Run(()=>Install(pack,basis,settings.InstallRoot));added(p);MessageBox.Show(form,"Installed "+p.Name+". Select it and press Switch & Play. It has its own empty save set.");}
-            catch(Exception e){MessageBox.Show(form,e.Message,"Delta install",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+            try {var p=await Task.Run(()=>Install(pack,basis,settings.InstallRoot));added(p);LauncherLanguage.Show(form,"Installed "+p.Name+". Select it and press Switch & Play. It has its own empty save set.");}
+            catch(Exception e){LauncherLanguage.Show(form,e.Message,"Delta install",MessageBoxButtons.OK,MessageBoxIcon.Error);}
             finally {installing=false;form.FormClosing-=prevent;form.Text=originalTitle;foreach(Control c in form.Controls)c.Enabled=true;setBusy(false);}
         };
     }
@@ -349,6 +349,6 @@ public static class PortableMain {
             if(args.Length>0 && args[0]=="--render-preview") {using(var f=new PolishedLauncher(true)){f.Show();f.PreviewPage(args.Length>1?args[1]:"Play");Application.DoEvents();using(var bitmap=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(bitmap,new Rectangle(Point.Empty,f.Size));bitmap.Save(System.IO.Path.Combine(Store.Home,"portable-preview"+(args.Length>1?"-"+args[1].ToLowerInvariant():"")+".png"));}}return 0;}
             using(var launcher=new PolishedLauncher()){if(args.Contains("--english"))launcher.Shown+=delegate{launcher.OpenEnglishPage();};Application.Run(launcher);}
             }return 0;
-        }catch(Exception e){File.WriteAllText(System.IO.Path.Combine(Store.Home,"delta-error.txt"),e.ToString(),Encoding.UTF8);if(args.Length==0)MessageBox.Show(e.Message,"Portable delta switcher");return 1;}
+        }catch(Exception e){File.WriteAllText(System.IO.Path.Combine(Store.Home,"delta-error.txt"),e.ToString(),Encoding.UTF8);if(args.Length==0)LauncherLanguage.Show(e.Message,"Portable delta switcher");return 1;}
     }
 }

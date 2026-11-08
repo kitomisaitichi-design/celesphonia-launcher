@@ -1,5 +1,13 @@
 # Launcher updates
 
+## 1.0.47 — Launcher languages
+- Adds a globe language selector with 16 bundled languages, Japanese included. Saved choice overrides Windows display-language detection; unsupported system languages use English.
+- Localizes launcher screens, menus, dialogs, progress/status text and all three notes sources. Game translation switches, dictionary content and model target languages remain separate.
+- Uses readable language fonts and Arabic direction. Long descriptions wrap inside the content viewport; navigation stays visible and the outer horizontal scrollbar is removed.
+- Compressed catalogs travel inside the existing allowlisted data payload so older launchers can install the update without an oversized executable. Original game files, saves, models and user dictionaries are preserved.
+- Catalogs are machine-assisted with reviewed short navigation/action labels. Original before/after screenshots and verbatim diagnostic/code identifiers remain authentic; captions and surrounding notes are translated.
+
+
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
 ## 1.0.46 — Opaque actor references and status markers

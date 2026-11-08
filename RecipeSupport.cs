@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -55,7 +55,7 @@ public class LayerState {
 }
 public static class RecipeSupport {
     static readonly object catalogGate=new object();static RecipeCatalog cachedCatalog;static string catalogStamp;
-    public static RecipeCatalog Catalog(){string file=Path.Combine(Store.Home,"mod-recipes.json"),stamp=DetectionCache.Stamp(file);lock(catalogGate){if(cachedCatalog==null||stamp!=catalogStamp){cachedCatalog=Store.Json.Deserialize<RecipeCatalog>(File.ReadAllText(file,Encoding.UTF8));catalogStamp=stamp;}return cachedCatalog;}}
+    public static RecipeCatalog Catalog(){string file=Path.Combine(Store.Home,"mod-recipes.json"),stamp=DetectionCache.Stamp(file);lock(catalogGate){if(cachedCatalog==null||stamp!=catalogStamp){cachedCatalog=Store.Json.Deserialize<RecipeCatalog>(LauncherLocaleEnvelope.Core(File.ReadAllText(file,Encoding.UTF8)));catalogStamp=stamp;}return cachedCatalog;}}
     public static bool IsCleanBase(string root){
         try {var catalog=Catalog();return catalog.GorpgFingerprint.All(x=>File.Exists(Store.Child(root,x.Key.Replace('/','\\'))) && Store.Hash(Store.Child(root,x.Key.Replace('/','\\')))==x.Value);}catch{return false;}
     }
@@ -241,18 +241,18 @@ public static class RecipeSupport {
         File.WriteAllText(Path.Combine(Store.Home,"recipe-test-result.txt"),"PASS: clean Gorpg accepted; CH/Maple/3.3.4 mixing rejected; applied-layer hashes verified; all profile save folders distinct.",Encoding.UTF8);
     }
     public static void Attach(Form form,Settings settings,Action<Profile> added,Action<bool> setBusy){
-        var delta=form.Controls.OfType<Button>().First(x=>x.Text.StartsWith("Install portable delta"));delta.Text="Install portable delta pack";delta.Width=396;
+        var delta=form.Controls.OfType<Button>().First(x=>LauncherLanguage.Source(x).StartsWith("Install portable delta"));delta.Text="Install portable delta pack";delta.Width=396;
         var button=new Button{Text="Install ordered mod layers",Location=new Point(452,508),Size=new Size(396,42),FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(87,75,181),ForeColor=Color.White};button.FlatAppearance.BorderSize=0;form.Controls.Add(button);
         var label=form.Controls.OfType<Label>().First(x=>x.Location.Y==560);label.Text="Full independent installs; saves stay with each version. See UPGRADE PATHS.md.";
         var location=new Button{Text="Install location...",Location=new Point(683,409),Size=new Size(165,30),FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(43,51,71),ForeColor=Color.White};location.FlatAppearance.BorderSize=0;form.Controls.Add(location);
-        location.Click+=delegate{using(var pick=new FolderBrowserDialog{Description="Choose where new complete game profiles will be installed. Existing profiles stay where they are.",SelectedPath=settings.InstallRoot})if(pick.ShowDialog(form)==DialogResult.OK){settings.InstallRoot=pick.SelectedPath;settings.InstallRootUserSelected=true;Store.Write(settings);MessageBox.Show(form,"New profiles will be installed in:\r\n"+settings.InstallRoot);}};
+        location.Click+=delegate{using(var pick=new FolderBrowserDialog{Description=LauncherLanguage.T("Choose where new complete game profiles will be installed. Existing profiles stay where they are."),SelectedPath=settings.InstallRoot})if(pick.ShowDialog(form)==DialogResult.OK){settings.InstallRoot=pick.SelectedPath;settings.InstallRootUserSelected=true;Store.Write(settings);LauncherLanguage.Show(form,"New profiles will be installed in:\r\n"+settings.InstallRoot);}};
         button.Click+=delegate{
-            if(Store.Running(settings)){MessageBox.Show(form,"Save and close the game first.");return;}
-            var bases=settings.Profiles.Where(x=>IsCleanBase(x.Root)).ToArray();if(bases.Length==0){MessageBox.Show(form,"Register clean Gorpg 1.23 or install its delta pack first. Existing patched branches cannot be the base.");return;}
+            if(Store.Running(settings)){LauncherLanguage.Show(form,"Save and close the game first.");return;}
+            var bases=settings.Profiles.Where(x=>IsCleanBase(x.Root)).ToArray();if(bases.Length==0){LauncherLanguage.Show(form,"Register clean Gorpg 1.23 or install its delta pack first. Existing patched branches cannot be the base.");return;}
             using(var dialog=new Form{Text="Review mod layers: later files replace earlier files",ClientSize=new Size(760,425),StartPosition=FormStartPosition.CenterParent,Font=form.Font,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
                 var baseBox=new ComboBox{Location=new Point(18,18),Width=722,DropDownStyle=ComboBoxStyle.DropDownList};baseBox.Items.AddRange(bases);baseBox.SelectedIndex=0;dialog.Controls.Add(baseBox);
                 var list=new ListBox{Location=new Point(18,65),Size=new Size(722,190),HorizontalScrollbar=true};dialog.Controls.Add(list);
-                Action<bool> addSource=delegate(bool archive){if(archive){using(var pick=new OpenFileDialog{Multiselect=true,Filter="Overlay archives|*.rar;*.zip;*.7z;*.001;*.7删z|All files|*.*",InitialDirectory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Telegram Desktop")})if(pick.ShowDialog(dialog)==DialogResult.OK)foreach(string source in pick.FileNames)list.Items.Add(new LayerInput{Source=source});}else{using(var pick=new FolderBrowserDialog{Description="Select an extracted overlay folder"})if(pick.ShowDialog(dialog)==DialogResult.OK)list.Items.Add(new LayerInput{Source=pick.SelectedPath});}};
+                Action<bool> addSource=delegate(bool archive){if(archive){using(var pick=new OpenFileDialog{Multiselect=true,Filter=LauncherLanguage.Filter("Overlay archives|*.rar;*.zip;*.7z;*.001;*.7删z|All files|*.*"),InitialDirectory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Telegram Desktop")})if(pick.ShowDialog(dialog)==DialogResult.OK)foreach(string source in pick.FileNames)list.Items.Add(new LayerInput{Source=source});}else{using(var pick=new FolderBrowserDialog{Description=LauncherLanguage.T("Select an extracted overlay folder")})if(pick.ShowDialog(dialog)==DialogResult.OK)list.Items.Add(new LayerInput{Source=pick.SelectedPath});}};
                 var archiveButton=new Button{Text="Add archives",Location=new Point(18,268),Width=140};archiveButton.Click+=delegate{addSource(true);};dialog.Controls.Add(archiveButton);
                 var folderButton=new Button{Text="Add folder",Location=new Point(170,268),Width=130};folderButton.Click+=delegate{addSource(false);};dialog.Controls.Add(folderButton);
                 var up=new Button{Text="Move up",Location=new Point(315,268),Width=120};up.Click+=delegate{int i=list.SelectedIndex;if(i>0){object item=list.Items[i];list.Items.RemoveAt(i);list.Items.Insert(i-1,item);list.SelectedIndex=i-1;}};dialog.Controls.Add(up);
@@ -267,8 +267,8 @@ public static class RecipeSupport {
     }
     static async void RunInstall(Form form,Profile basis,List<LayerInput> inputs,Settings settings,Action<Profile> added,Action<bool> setBusy){
         setBusy(true);foreach(Control c in form.Controls)c.Enabled=false;string title=form.Text;form.Text="Installing ordered layers and verifying files...";
-        try{var p=await Task.Run(()=>Install(basis.Root,settings.InstallRoot,"Custom layered profile",inputs));added(p);MessageBox.Show(form,"Installed "+p.Name+". CH and all previous versions remain selectable; saves are separate.");}
-        catch(Exception e){MessageBox.Show(form,e.Message,"Layer installation",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        try{var p=await Task.Run(()=>Install(basis.Root,settings.InstallRoot,"Custom layered profile",inputs));added(p);LauncherLanguage.Show(form,"Installed "+p.Name+". CH and all previous versions remain selectable; saves are separate.");}
+        catch(Exception e){LauncherLanguage.Show(form,e.Message,"Layer installation",MessageBoxButtons.OK,MessageBoxIcon.Error);}
         finally{form.Text=title;foreach(Control c in form.Controls)c.Enabled=true;setBusy(false);}
     }
 }

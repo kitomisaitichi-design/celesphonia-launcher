@@ -1,5 +1,11 @@
 # Celesphonia Mod Library
 
+## Launcher language
+Use the globe icon in the header to choose the launcher language, including 日本語. A saved choice takes priority; Automatic uses the Windows display language and falls back to English when unsupported. This changes launcher pages, dialogs and notes only. Game English/local translation choices and model target languages remain independent.
+
+Bundled languages: English, Simplified Chinese, Spanish, French, German, Japanese, Korean, Portuguese, Russian, Arabic, Hindi, Bengali, Indonesian, Italian, Turkish and Vietnamese. Locale catalogs are machine-assisted, with reviewed navigation/action labels. Screenshots retain their original evidence; captions and notes are localized. Diagnostic details, paths, code and version/product identifiers remain intact. Community wording corrections can be made in the source Localization JSON catalogs. No model or network connection is required to display these catalogs.
+
+
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
 ## Launcher 1.0.46 — Preserve opaque actor/status syntax

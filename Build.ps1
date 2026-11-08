@@ -4,7 +4,9 @@ $taskRoot = $PSScriptRoot
 $taskSource = if (Test-Path -LiteralPath (Join-Path $taskRoot 'Source')) { Join-Path $taskRoot 'Source' } else { $taskRoot }
 $taskCompiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $taskCompiler)) { $taskCompiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe' }
-$taskFiles = @('PortableLauncher.cs', 'RarSupport.cs', 'ExtendedSafeCleanup.cs', 'DeltaSupport.cs', 'RecipeSupport.cs', 'PolishedLauncher.cs', 'FileDiscovery.cs', 'UniversalSupport.cs', 'EnglishSupport.cs', 'LocalTranslation.cs', 'LocalTranslationWorker.cs', 'LocalTranslationPage.cs', 'LocalTranslationWindows.cs', 'LocalTranslationLibrary.cs', 'LocalTranslationCompare.cs', 'EnglishRelease.cs', 'EnglishTests.cs', 'LauncherShell.cs', 'UpgradeSupport.cs', 'UpgradeTests.cs', 'MixedSourceRecovery.cs', 'InstallationRemoval.cs', 'LauncherLayoutTests.cs', 'RuntimeSupport.cs', 'LauncherUpdate.cs') | ForEach-Object { Join-Path $taskSource $_ }
+$taskFiles = @('LauncherLanguage.cs', 'PortableLauncher.cs', 'RarSupport.cs', 'ExtendedSafeCleanup.cs', 'DeltaSupport.cs', 'RecipeSupport.cs', 'PolishedLauncher.cs', 'FileDiscovery.cs', 'UniversalSupport.cs', 'EnglishSupport.cs', 'LocalTranslation.cs', 'LocalTranslationWorker.cs', 'LocalTranslationPage.cs', 'LocalTranslationWindows.cs', 'LocalTranslationLibrary.cs', 'LocalTranslationCompare.cs', 'EnglishRelease.cs', 'EnglishTests.cs', 'LauncherShell.cs', 'UpgradeSupport.cs', 'UpgradeTests.cs', 'MixedSourceRecovery.cs', 'InstallationRemoval.cs', 'LauncherLayoutTests.cs', 'RuntimeSupport.cs', 'LauncherUpdate.cs') | ForEach-Object { Join-Path $taskSource $_ }
+& $Python (Join-Path $taskRoot 'Tests/BuildLauncherLocales.py')
+if ($LASTEXITCODE -ne 0) { throw 'Launcher localization bundle failed validation.' }
 & $Python (Join-Path $taskRoot 'Tests/CompactCatalogs.py')
 if ($LASTEXITCODE -ne 0) { throw 'Lossless catalog compression failed.' }
 & $Python (Join-Path $taskRoot 'Tests/CompactNotes.py')
