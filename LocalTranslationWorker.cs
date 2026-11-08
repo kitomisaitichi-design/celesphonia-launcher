@@ -14,13 +14,15 @@ public static class LocalTextIndex {
  public static List<LocalUnit> Build(LocalRun run,Func<bool> cancelled){
   if(cancelled())throw new OperationCanceledException();var options=LocalTranslation.Options(run);run.Scope=options.Scope;run.OptionsRevision=options.Revision;
   var covered=EnglishSupport.CoveredLocalSources(run.Root);var units=new List<LocalUnit>();
-  foreach(var pair in covered.OrderBy(x=>x.Key)){if(!options.Scope.Contains(pair.Value))continue;string context="EnglishCoverage";units.Add(new LocalUnit{Source=pair.Key,Category=pair.Value,Context=context,Key=LocalTranslation.TextHash(pair.Value+"\u001f"+context+"\u001f"+pair.Key)});}
+  foreach(var pair in covered.OrderBy(x=>x.Key)){if(!LocalLibrary.Selected(options,pair.Value,pair.Key))continue;string context="EnglishCoverage";units.Add(new LocalUnit{Source=pair.Key,Category=pair.Value,Context=context,Key=LocalTranslation.TextHash(pair.Value+"\u001f"+context+"\u001f"+pair.Key)});}
   run.Total=units.Count;run.Excluded=covered.Count-units.Count;run.SourceDigest=LocalTranslation.TextHash(LocalTranslation.Json.Serialize(covered));run.SourceStamp=run.SourceDigest+":"+options.Revision;
   LocalTranslation.Write(LocalTranslation.RunFile(run.Id,"index.json"),units);LocalTranslation.Write(LocalTranslation.RunFile(run.Id,"index-status.json"),new{indexed=units.Count,excluded=run.Excluded,coverage="Existing English dictionary keys only",unreadableFiles=new string[0],imagesIncluded=false,sourceDigest=run.SourceDigest});return units;
  }
 }
 public sealed class LocalInference:IDisposable {
- Process server;int port;string id;readonly object logGate=new object();
+  Process server;int port;string id,unitReference;readonly object logGate=new object();LocalRunOptions settings;LocalGlossaryProfile terminology;Dictionary<string,string> references=new Dictionary<string,string>();
+  public void Configure(LocalRun run,LocalRunOptions options){settings=options;terminology=LocalLibrary.Profile(run,options);references=EnglishSupport.LocalReference(run.Root);}
+  public void ReferenceUnit(string source){references.TryGetValue(source,out unitReference);}
  public LocalInference(string model,Action<string> status,Func<bool> cancelled):this(model,new LocalRunOptions(),status,cancelled){}
  public LocalInference(string model,LocalRunOptions options,Action<string> status,Func<bool> cancelled){
   id=model;var m=LocalTranslation.Model(model);if(!LocalTranslation.ModelInstalled(model))throw new IOException("Install "+m.Label+" first.");
@@ -40,7 +42,12 @@ public sealed class LocalInference:IDisposable {
  public string Translate(string source,string language,string context,Func<bool> cancelled){
   var controls=new List<string>();string masked=Regex.Replace(source,@"(?:\\|\x1b)(?:[A-Za-z]+(?:\[[^\]\r\n]*\]|<[^>\r\n]*>)?|[.$|!><^{}\\])|%[1-9]|\s+(?:if|en)\([^\r\n]*\)$",m=>{controls.Add(m.Value);return "__CTL_"+(controls.Count-1).ToString("D4")+"__";});
   if(string.IsNullOrWhiteSpace(Regex.Replace(masked,@"__CTL_\d+__","")))return source;
-  var body=new{model="plamo-local",messages=new[]{new{role="user",content=masked}},chat_template_kwargs=new{target_lang=language,context="RPG game text. "+context+". Tokens __CTL_0000__ are literal protected control slots."},temperature=0,max_tokens=Math.Min(3072,Math.Max(384,masked.Length*3)),stop=new[]{"<|plamo:tag|>","<|plamo:bos|>"}};
+   string english;if(!references.TryGetValue(source,out english))english=unitReference;string information="RPG game text. "+context+". Tokens __CTL_0000__ are literal protected control slots.";
+  var kwargs=new Dictionary<string,object>{{"target_lang",language}};
+  if(terminology!=null){information+="\n"+terminology.Context;if(settings.ReferenceEnglish&&terminology.UseEnglishReference&&!string.IsNullOrEmpty(english))information+="\nCurated English reference (meaning only; preserve the input's protected slots): "+english.Substring(0,Math.Min(2000,english.Length));if(settings.UseGlossary)kwargs["glossary"]=terminology.Terms.Where(x=>source.IndexOf(x.Source,StringComparison.OrdinalIgnoreCase)>=0).Take(40).Select(x=>new{source=x.Source,target=x.Target}).ToArray();}
+  kwargs["context"]=information;
+  var body=new{model="plamo-local",messages=new[]{new{role="user",content=masked}},chat_template_kwargs=kwargs,temperature=0,max_tokens=Math.Min(3072,Math.Max(384,masked.Length*3)),stop=new[]{"<|plamo:tag|>","<|plamo:bos|>"}};
+
   var request=(HttpWebRequest)WebRequest.Create("http://127.0.0.1:"+port+"/v1/chat/completions");request.Method="POST";request.ContentType="application/json";request.Timeout=180000;request.ReadWriteTimeout=180000;byte[] bytes=Encoding.UTF8.GetBytes(LocalTranslation.Json.Serialize(body));request.ContentLength=bytes.Length;
   using(var cancellation=new Timer(_=>{if(cancelled())request.Abort();},null,100,100)){
    try{using(var stream=request.GetRequestStream())stream.Write(bytes,0,bytes.Length);using(var response=request.GetResponse())using(var reader=new StreamReader(response.GetResponseStream(),Encoding.UTF8)){
@@ -60,29 +67,29 @@ public static class LocalTranslationWorker {
  }finally{mutex.ReleaseMutex();}}}
  static bool Pending(LocalRun run){DateTime updated;DateTime.TryParse(run.Updated,out updated);return !run.State.StartsWith("Completed")||LocalTranslation.Options(run).Revision!=run.OptionsRevision||File.GetLastWriteTimeUtc(LocalTranslation.RunFile(run.Id,"control.json"))>updated.ToUniversalTime();}
  static void Execute(LocalRun run){using(var owned=new FileStream(LocalTranslation.RunFile(run.Id,"worker.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
-  var clock=Stopwatch.StartNew();double prior=run.Seconds;LocalTranslation.Migrate(run);LocalTranslation.RepairJournal(run.Id);var results=LocalTranslation.Results(run.Id);var failures=LocalTranslation.Read<Dictionary<string,string>>(LocalTranslation.RunFile(run.Id,"failures.json"));var options=LocalTranslation.Options(run);var edits=LocalTranslation.Edits(run.Id);run.OptionsRevision=options.Revision;
+  var clock=Stopwatch.StartNew();double prior=run.Seconds;LocalTranslation.Migrate(run);LocalLibrary.Bind(run);LocalTranslation.RepairJournal(run.Id);var results=LocalTranslation.Results(run.Id);var failures=LocalTranslation.Read<Dictionary<string,string>>(LocalTranslation.RunFile(run.Id,"failures.json"));var options=LocalTranslation.Options(run);var edits=LocalTranslation.Edits(run.Id);run.OptionsRevision=options.Revision;
   try{
    run.State="Indexing";run.Error="";LocalTranslation.Save(run);var units=LocalTextIndex.Build(run,()=>Cancelled(run));
-   if(options.RetryGeneration>run.LastRetryGeneration){failures.Clear();run.LastRetryGeneration=options.RetryGeneration;}
-   var reuse=new Dictionary<string,LocalResult>();var ambiguous=new HashSet<string>();
-   foreach(var other in LocalTranslation.Runs(run.Root).Where(x=>x.ModelHash==run.ModelHash&&x.PromptVersion==run.PromptVersion&&x.Language==run.Language))foreach(var row in LocalTranslation.Results(other.Id).Values){LocalResult prev;if(reuse.TryGetValue(row.Source,out prev)&&prev.Target!=row.Target){ambiguous.Add(row.Source);reuse.Remove(row.Source);}else if(!ambiguous.Contains(row.Source))reuse[row.Source]=row;}
+   if(options.RetryGeneration>run.LastRetryGeneration){if((options.RetryKeys??new string[0]).Length==0)failures.Clear();else foreach(string key in options.RetryKeys)failures.Remove(key);run.LastRetryGeneration=options.RetryGeneration;}
+   var comparison=LocalLibrary.Compare(run);var reuse=LocalLibrary.ModelRows(run,true);var reference=comparison.English;var regenerate=new HashSet<string>(options.RegenerateGeneration>run.LastRegenerateGeneration?options.RegenerateKeys??new string[0]:new string[0]);
    var pending=new List<LocalUnit>();run.Done=run.Failed=run.Deferred=0;
    using(var journal=new StreamWriter(new FileStream(LocalTranslation.RunFile(run.Id,"results.jsonl"),FileMode.Append,FileAccess.Write,FileShare.Read),new UTF8Encoding(false))){
-    foreach(var unit in units){LocalEdit edit;if(edits.TryGetValue(unit.Key,out edit)&&(edit.Deferred||edit.LeaveOriginal)){run.Deferred++;continue;}if(edit!=null&&edit.Target!=null){run.Done++;continue;}if(results.ContainsKey(unit.Key)){run.Done++;continue;}LocalResult cached;
-     if(reuse.TryGetValue(unit.Source,out cached)&&EnglishSupport.Compatible(unit.Source,cached.Target)){var row=new LocalResult{Key=unit.Key,Source=unit.Source,Category=unit.Category,Context=unit.Context,Target=cached.Target,Fields=EnglishSupport.PrepareLocalField(run.Root,unit.Source,cached.Target)};results[row.Key]=row;journal.WriteLine(LocalTranslation.Json.Serialize(row));run.Reused++;run.Done++;}
+    foreach(var unit in units){LocalEdit edit;if(edits.TryGetValue(unit.Key,out edit)&&(edit.Deferred||edit.LeaveOriginal)){run.Deferred++;continue;}if(edit!=null&&edit.Target!=null){run.Done++;continue;}if(comparison.Imported.ContainsKey(unit.Source)){run.Done++;continue;}bool forced=regenerate.Contains(unit.Key)&&(!results.ContainsKey(unit.Key)||results[unit.Key].Generation<options.RegenerateGeneration);if(results.ContainsKey(unit.Key)&&!forced){run.Done++;continue;}LocalResult cached;
+     if(regenerate.Count>0&&!regenerate.Contains(unit.Key))continue;
+     if(!forced&&reuse.TryGetValue(unit.Source,out cached)&&EnglishSupport.Compatible(unit.Source,cached.Target)){var row=new LocalResult{Key=unit.Key,Source=unit.Source,Category=unit.Category,Context=unit.Context,Target=cached.Target,PolicyHash=cached.PolicyHash,ReferenceHash=cached.ReferenceHash,ModelHash=run.ModelHash,GeneratedAt=cached.GeneratedAt,Generation=cached.Generation,Fields=EnglishSupport.PrepareLocalField(run.Root,unit.Source,cached.Target)};results[row.Key]=row;journal.WriteLine(LocalTranslation.Json.Serialize(row));run.Reused++;run.Done++;}
      else if(failures.ContainsKey(unit.Key)){run.Failed++;}else pending.Add(unit);
     }journal.Flush();LocalTranslation.Save(run);LocalTranslation.Snapshot(run,results);
     if(pending.Count>0)using(var model=new LocalInference(run.Model,options,state=>{run.State=state;run.ActiveBackend=options.Backend+(string.IsNullOrEmpty(options.Device)?"":" · "+options.Device);LocalTranslation.Save(run);},()=>Cancelled(run))){
-     var speed=Stopwatch.StartNew();int completed=0;foreach(var unit in pending){
-      if(Cancelled(run))throw new OperationCanceledException();string target=null,error=null;
+     model.Configure(run,options);var speed=Stopwatch.StartNew();int completed=0;foreach(var unit in pending){
+      if(Cancelled(run))throw new OperationCanceledException();model.ReferenceUnit(unit.Source);string target=null,error=null;
       for(int attempt=0;attempt<2;attempt++)try{var translated=new List<string>();foreach(string line in unit.Source.Split('\n')){if(Cancelled(run))throw new OperationCanceledException();translated.Add(string.IsNullOrWhiteSpace(line)?line:model.Translate(line,run.Language,unit.Category+"; "+unit.Context,()=>Cancelled(run)));}target=string.Join("\n",translated);if(!EnglishSupport.Compatible(unit.Source,target))throw new IOException("Control/layout mismatch.");break;}catch(OperationCanceledException){throw;}catch(Exception e){target=null;error=e.Message;}
-      if(target==null){failures[unit.Key]=error;run.Failed++;}else{var row=new LocalResult{Key=unit.Key,Source=unit.Source,Category=unit.Category,Context=unit.Context,Target=target,Fields=EnglishSupport.PrepareLocalField(run.Root,unit.Source,target)};results[unit.Key]=row;journal.WriteLine(LocalTranslation.Json.Serialize(row));journal.Flush();run.Done++;run.Processed++;}
+      if(target==null){failures[unit.Key]=error;run.Failed++;}else{var row=new LocalResult{Key=unit.Key,Source=unit.Source,Category=unit.Category,Context=unit.Context,Target=target,PolicyHash=LocalLibrary.Policy(run,options,unit.Source,reference.ContainsKey(unit.Source)?reference[unit.Source]:""),ReferenceHash=LocalTranslation.TextHash(reference.ContainsKey(unit.Source)?reference[unit.Source]:""),ModelHash=run.ModelHash,GeneratedAt=DateTimeOffset.Now.ToString("o"),Generation=options.RegenerateGeneration,Fields=EnglishSupport.PrepareLocalField(run.Root,unit.Source,target)};results[unit.Key]=row;journal.WriteLine(LocalTranslation.Json.Serialize(row));journal.Flush();run.Done++;run.Processed++;}
       completed++;run.RecentRate=completed*60/Math.Max(1,speed.Elapsed.TotalSeconds);run.Seconds=prior+clock.Elapsed.TotalSeconds;run.State="Running";LocalTranslation.Write(LocalTranslation.RunFile(run.Id,"failures.json"),failures);LocalTranslation.Save(run);
      }
     }
    }
-   run.State=run.Failed>0||run.Deferred>0?"Completed · deferred entries":"Completed";run.Error=run.Failed+" failed and "+run.Deferred+" deferred entries retained. Retry failures is optional; completed translations are kept.";
+   run.LastRegenerateGeneration=options.RegenerateGeneration;if(regenerate.Count>0){run.State="Paused";run.Error="Selected model refresh finished. Other pending work is kept; Resume pending continues it.";LocalTranslation.Control(run.Id,"pause");}else{run.State=run.Failed>0||run.Deferred>0?"Completed · deferred entries":"Completed";run.Error=run.Failed+" failed and "+run.Deferred+" deferred entries retained. Retry failures is optional; completed translations are kept.";}
   }catch(OperationCanceledException){run.State="Paused";run.Error="Completed translations kept. Resume continues pending covered entries.";}catch(Exception e){run.State="Needs attention";run.Error=e.Message;LocalTranslation.Control(run.Id,"pause");}
-  finally{LocalTranslation.Write(LocalTranslation.RunFile(run.Id,"failures.json"),failures);run.Seconds=prior+clock.Elapsed.TotalSeconds;LocalTranslation.Snapshot(run,results);LocalTranslation.Save(run);}
+  finally{LocalTranslation.Write(LocalTranslation.RunFile(run.Id,"failures.json"),failures);run.Seconds=prior+clock.Elapsed.TotalSeconds;LocalTranslation.Snapshot(run,results);LocalTranslation.Save(run);LocalLibrary.Publish(run);}
  }}
 }

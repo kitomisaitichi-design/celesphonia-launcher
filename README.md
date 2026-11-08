@@ -2,6 +2,11 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.43 — Glossary, comparison and portable dictionaries
+Open **Local TL → Translations** for **Source | curated English | target** comparison, optional glossary/context profiles, and dictionary **Import / Export**. Combine **Untranslated / Local model / User corrected / Imported** filters with search. Ctrl/Shift selects rows for bulk actions; browsing a layer does not change the game's layer until **Use this layer** is chosen.
+
+Imported dictionaries and manual corrections stay separate from curated English. Exact compatible source/role entries can carry into later mod installs, using the current shared adapters and the same covered-source boundary. **Glossary → Refresh affected model text** optionally updates older generated terminology without resetting the run. [Before/after and changes](LAUNCHER%20CHANGELOG.md) · [Sharing format and limits](docs/local-dictionary-sharing-1.0.43.md).
+
 ## Launcher 1.0.42 — Shared adapters, safer local dictionaries
 
 **Local TL reuses the complete Celesphonia English renderer and custom dictionary adapters.** PLaMo produces a separate target-language dictionary only for sources already covered by our English translation. Unknown or technical strings stay original; local mode does not scan/replace arbitrary game strings. Old cached work is preserved, with unsafe/out-of-coverage entries kept inactive.

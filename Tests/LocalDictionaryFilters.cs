@@ -1,0 +1,18 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Drawing;
+using System.Reflection;
+using System.Windows.Forms;
+using System.Collections.Generic;
+public static class GlossaryFilterProof {
+ static T Field<T>(object obj,string name){return (T)obj.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(obj);}
+ static void Pump(int ms){var end=DateTime.UtcNow.AddMilliseconds(ms);while(DateTime.UtcNow<end){Application.DoEvents();System.Threading.Thread.Sleep(10);}}
+ [STAThread]public static int Main(string[] args){try{Application.EnableVisualStyles();var output=Path.GetFullPath(args[0]);var cfg=LocalTranslation.Read<Dictionary<string,string>>(Path.Combine(output,"runtime-config.json"));typeof(LocalTranslation).GetField("Home").SetValue(null,cfg["home"]);var run=LocalTranslation.Run(cfg["Id"]);string optionsHash=Store.Hash(LocalTranslation.RunFile(run.Id,"options.json"));var checks=new List<object>();
+ using(var form=new LocalTranslationEditor(run,Color.FromArgb(15,17,25),Color.FromArgb(27,30,42),Color.White,Color.CornflowerBlue)){form.Show();var grid=Field<DataGridView>(form,"grid");var deadline=DateTime.UtcNow.AddSeconds(20);while((grid.RowCount<100||Field<bool>(form,"busy"))&&DateTime.UtcNow<deadline)Pump(50);if(grid.RowCount<100||Field<bool>(form,"busy"))throw new Exception("Editor loading timed out");var filters=Field<Dictionary<string,CheckBox>>(form,"originFilters");var data=Field<LocalComparison>(form,"data");var all=Field<List<LocalUnit>>(form,"all");var imported=new HashSet<string>(data.Packs.Values.SelectMany(x=>x.Entries).Select(x=>x.Source));var authored=new HashSet<string>(data.Edits.Values.Where(x=>x.Target!=null).Select(x=>x.Source));string[] kinds={"untranslated","model","user","imported"};
+ for(int mask=0;mask<16;mask++){for(int i=0;i<4;i++)filters[kinds[i]].Checked=(mask&(1<<i))!=0;Pump(60);int expected=all.Count(x=>((mask&2)!=0&&data.Model.ContainsKey(x.Source))||((mask&4)!=0&&authored.Contains(x.Source))||((mask&8)!=0&&imported.Contains(x.Source))||((mask&1)!=0&&!data.Model.ContainsKey(x.Source)&&!authored.Contains(x.Source)&&!imported.Contains(x.Source)));if(grid.RowCount!=expected)throw new Exception("Origin combination "+mask+" expected "+expected+" got "+grid.RowCount);checks.Add(new{mask,rows=expected,pass=true});}
+ filters["untranslated"].Checked=false;filters["model"].Checked=filters["user"].Checked=filters["imported"].Checked=true;var search=Field<TextBox>(form,"search");search.Text="媚药侵染";Pump(500);if(grid.RowCount!=1)throw new Exception("Combined search and origin filters failed");grid.CurrentCell=grid.Rows[0].Cells[1];Pump(50);using(var image=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(image,new Rectangle(0,0,form.Width,form.Height));image.Save(Path.Combine(output,"comparison-after.png"));}
+ var target=Field<TextBox>(form,"target");target.Text="";target.Modified=true;Field<SleekButton>(form,"save").PerformClick();Pump(50);if(!Field<Label>(form,"status").Text.Contains("Enter a translation"))throw new Exception("Empty save was not rejected");target.Modified=false;form.Close();}
+ if(Store.Hash(LocalTranslation.RunFile(run.Id,"options.json"))!=optionsHash)throw new Exception("Browsing/filtering changed the game rendering layer");LocalTranslation.Write(Path.Combine(output,"filter-proof.json"),new{status="PASS",combinations=checks,searchCombined=true,emptySaveRejected=true,renderOptionsUnchanged=true});Console.WriteLine("PASS: all 16 origin-filter combinations, combined search and empty edit guard");return 0;
+ }catch(Exception e){Console.Error.WriteLine(e);return 1;}}
+}

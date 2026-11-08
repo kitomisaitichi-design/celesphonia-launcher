@@ -1,0 +1,8 @@
+using System;
+using System.IO;
+using System.Reflection;
+using System.Collections.Generic;
+public static class GlossaryRegenerateProof {
+ public static int Main(string[] args){try{var cfg=LocalTranslation.Read<Dictionary<string,string>>(Path.Combine(args[0],"runtime-config.json"));typeof(LocalTranslation).GetField("Home").SetValue(null,cfg["home"]);var run=LocalTranslation.Run(cfg["Id"]);var options=LocalTranslation.Options(run);options.RegenerateGeneration++;options.RegenerateKeys=new[]{LocalLibrary.Key("Interface","物品")};LocalTranslation.SetOptions(run.Id,options);LocalTranslation.Write(LocalTranslation.RunFile(run.Id,"control.json"),new{action="run"});string before=Store.Hash(LocalTranslation.RunFile(run.Id,"results.jsonl"));typeof(LocalTranslationWorker).GetMethod("Execute",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{run});run=LocalTranslation.Run(run.Id);if(run.State!="Paused"||run.LastRegenerateGeneration!=options.RegenerateGeneration||LocalTranslation.Requested(run.Id)!="pause"||Store.Hash(LocalTranslation.RunFile(run.Id,"results.jsonl"))!=before)throw new Exception("Selected refresh consumed unrelated pending work or changed authored output: "+run.State+" "+run.Error);LocalTranslation.Write(Path.Combine(args[0],"regenerate-proof.json"),new{status="PASS",selectedAuthoredEntryKept=true,unrelatedPendingNotTranslated=true,successfulJournalUnchanged=true,run.Total,run.Done,run.LastRegenerateGeneration});Console.WriteLine("PASS: bounded regeneration pauses with unrelated pending work retained");return 0;
+ }catch(Exception e){Console.Error.WriteLine(e);return 1;}}
+}

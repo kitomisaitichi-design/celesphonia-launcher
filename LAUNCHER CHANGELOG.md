@@ -2,6 +2,25 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.43 — Glossaries, shared dictionaries and three-column comparison
+**Local TL → Translations** now compares **native source | current curated English | target text**. Browse model output, authored corrections, selected imports or an individual dictionary. **Use this layer** explicitly chooses the game's layer; browsing or filtering does not change it.
+
+- Independently select **Untranslated**, **Local model**, **User corrected** and **Imported** filters in any combination, together with search. A row with more than one retained layer matches either selected origin. Ctrl/Shift selects multiple rows; the Selected menu queues, regenerates, defers, leaves original or clears authored overrides. Selected identities survive filtering; the count includes hidden rows, and Clear selection clears those too. Unsaved edits remain bound to their original source.
+- **Glossary** supplies editable RPG/adult-RPG context presets and a French Celesphonia terminology starter set, including `媚药 → aphrodisiaque`. Matching terms and the optional current English meaning reference go through PLaMo's native glossary/context interface. Save a profile for future requests, or choose **Refresh affected model text** to update relevant cached output. Existing manual/imported text wins and unrelated completed work stays cached. Guidance improves consistency; it does not establish reviewed French for the whole game.
+- **Import / Export** share data-only dictionaries. Native packs include family, origin version, language, exact source, role and provenance, optionally a glossary. Source→target JSON/MTool maps, prior local JSONL and bounded ZIP packs are auto-detected. Preview binding, differing targets, invalid controls and inactive entries before importing. User overrides retain precedence. Source-only templates do not replace translations.
+- Compatible later installations reuse exact source/role content within the same game family and language. Changed or ambiguous source/roles stay inactive for review. Uncovered imported text is retained and can become usable when a later curated-English update covers that exact source. Derived aliases and display fields are rebuilt with the current Celesphonia adapters; imported scripts or frozen adapter Fields are never installed. Models, user packs and authored work remain separate from curated English and saves.
+- Effective order is **user correction → enabled imported dictionaries → model → original**. Dictionaries can be disabled without deleting them. Local caches work without model weights installed. Model processing and the game's selected translation remain separate; resume retains pending progress. UTF-8 BOM framing in JSONL is accepted, while malformed records still report errors.
+
+Before: the reported two-column editor. After: three columns, independent origin filters, layer comparison, glossary and sharing controls. The before image was supplied with the report; the after image is a native launcher capture.
+
+![Before — reported two-column local translation editor](docs/images/local-glossary-before.png)
+
+![After — native three-column comparison and combinable origin filters](docs/images/local-glossary-after.png)
+
+Actual 0.8B sample for the reported label: **Infection par sérocuteur (ultra-sensible)** → **Infection par aphrodisiaque (hypersensible)**. The 2B sample also used *aphrodisiaque*. Both preserved the original icon/color slots. This is a targeted terminology check, not a full language review.
+
+[Format, compatibility rules, checks and limits](docs/local-dictionary-sharing-1.0.43.md). Restart the game after updating to load the current shared provider. Existing dictionaries and successful journals are retained.
+
 ## 1.0.42 — Local dictionaries use the established Celesphonia adapters
 
 Fixes the local-translation regression that could turn DTextPicture's engine color `black` into French `noir` and crash the game. Local mode now uses the **same renderer, custom adapters and dictionary preparation as curated English**. PLaMo only supplies a separate dictionary; it no longer scans arbitrary native JSON/plugin strings or automatically enrolls unknown live text.

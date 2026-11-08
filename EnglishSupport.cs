@@ -221,6 +221,10 @@ public static class EnglishSupport {
         }
         return result;
     }
+    static readonly Dictionary<string,Tuple<string,Dictionary<string,string>>> localReferences=new Dictionary<string,Tuple<string,Dictionary<string,string>>>();
+    public static string LocalCoverageRevision(string root){string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();if(id!=null&&ids.Contains(id))ids=new List<string>{id};return string.Join("|",ids.Select(x=>{string user=Path.Combine(PackFolder(x),"user-translations.json");return x+":"+ReadPack(x).DictionaryHash+":"+(File.Exists(user)?File.GetLastWriteTimeUtc(user).Ticks:0);}));}
+    public static Dictionary<string,string> LocalReference(string root){string revision=LocalCoverageRevision(root);lock(localReferences){Tuple<string,Dictionary<string,string>> cached;if(localReferences.TryGetValue(root,out cached)&&cached.Item1==revision)return cached.Item2;string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();if(id!=null&&ids.Contains(id))ids=new List<string>{id};var data=new Dictionary<string,string>();foreach(string version in ids)foreach(var pair in Dictionary(version,ReadPack(version)))data[pair.Key]=pair.Value;localReferences[root]=Tuple.Create(revision,data);return data;}}
+    public static void InvalidateLocal(string root){lock(coveredLocal)coveredLocal.Remove(root);lock(localReferences)localReferences.Remove(root);lock(localCatalogs)localCatalogs.Remove(root);}
     public static bool RefreshEnabled(Profile profile,Action<string> progress){
         var status=Status(profile);
         if(status.Modified)throw new IOException("English overlay verification failed: "+status.Detail);
@@ -302,9 +306,10 @@ public static class EnglishSupport {
         return new EnglishDisplay{Display=display,Labels=labels,Descriptions=descriptions,HumanLabels=humanLabels,EnemyPrefixes=enemyPrefixes,EnemyNames=enemyNames};
     }
     static readonly Dictionary<string,Dictionary<string,object>> localCatalogs=new Dictionary<string,Dictionary<string,object>>();
-    public static EnglishDisplay PrepareLocalField(string root,string source,string target){
+    public static EnglishDisplay PrepareLocalField(string root,string source,string target){return PrepareLocalData(root,new Dictionary<string,string>{{source,target}});}
+    public static EnglishDisplay PrepareLocalData(string root,Dictionary<string,string> data){
         Dictionary<string,object> catalog;lock(localCatalogs){if(!localCatalogs.TryGetValue(root,out catalog)){string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();if(id!=null&&ids.Contains(id))ids=new List<string>{id};catalog=new Dictionary<string,object>();foreach(string version in ids)foreach(var pair in Catalog(version,ReadPack(version)))catalog[pair.Key]=pair.Value;localCatalogs[root]=catalog;}}
-        if(!catalog.ContainsKey(source))return new EnglishDisplay();return PrepareDisplay(new Dictionary<string,string>{{source,target}},catalog);
+        var selected=data.Where(x=>catalog.ContainsKey(x.Key)&&Compatible(x.Key,x.Value)).ToDictionary(x=>x.Key,x=>x.Value);return PrepareDisplay(selected,catalog);
     }
     internal static void ApplyCore(Profile profile,string runtimeOverride){
         string id=UniversalSupport.Identify(profile.Root);if(id==null||id=="ch-current")throw new IOException("Choose Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 trial. CH is an English reference only.");
@@ -379,7 +384,7 @@ public static class EnglishSupport {
         string file=Path.Combine(PackFolder(status.VersionId),"user-translations.json");var merged=File.Exists(file)?Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(file,Encoding.UTF8)):new Dictionary<string,string>();foreach(var item in accepted)merged[item.Key]=item.Value;JsonWrite(file,merged);
         var built=DecodeCatalog(File.ReadAllBytes(Path.Combine(PackFolder(status.VersionId),"catalog.json")));foreach(var item in accepted)if(!built.ContainsKey(item.Key))observed[item.Key]=catalog[item.Key];JsonWrite(observedFile,observed);
         var defaults=Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(Path.Combine(PackFolder(status.VersionId),"dictionary.json"),Encoding.UTF8));JsonWrite(Path.Combine(PackFolder(status.VersionId),"user-statistics.json"),new{DictionaryHash=status.Pack.DictionaryHash,AdditionalTexts=merged.Keys.Count(x=>!defaults.ContainsKey(x)),ExtraCatalogTexts=observed.Keys.Count(x=>!built.ContainsKey(x))});
-        if(status.Enabled)Apply(profile);return "Imported "+accepted.Count.ToString("N0")+" translations for "+status.Pack.Name+"; ignored "+ignored.ToString("N0")+" unrelated entries.";
+        InvalidateLocal(profile.Root);if(status.Enabled)Apply(profile);return "Imported "+accepted.Count.ToString("N0")+" translations for "+status.Pack.Name+"; ignored "+ignored.ToString("N0")+" unrelated entries.";
     }
     public static void ExportRemaining(Profile profile,string target){var status=Status(profile);if(status.Pack==null)throw new IOException("Choose a version with an English overlay pack.");var known=Dictionary(status.VersionId,status.Pack);var catalog=Catalog(status.VersionId,status.Pack);JsonWrite(target,catalog.Keys.Where(x=>!known.ContainsKey(x)).ToDictionary(x=>x,x=>x));}
     public static int SeenCount(Profile profile){try{string file=Path.Combine(Folder(profile.Root),"seen-untranslated.json");return File.Exists(file)?Store.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(file,Encoding.UTF8)).Count:0;}catch{return 0;}}
