@@ -82,6 +82,9 @@ public static class EnglishSupport {
         }
     }
     static void JsonWrite(string file,object value){Atomic(file,new UTF8Encoding(false).GetBytes(Store.Json.Serialize(value)));}
+    public static string LocalControlPattern {get{return Controls.ToString();}}
+    public static bool LocalCompatible(string source,string target){if(source.Count(c=>c=='\n')!=target.Count(c=>c=='\n'))return false;var a=Controls.Matches(source).Cast<Match>().Select(x=>x.Value).ToArray();var b=Controls.Matches(target).Cast<Match>().Select(x=>x.Value).ToArray();Func<string,bool> format=x=>Regex.IsMatch(x,@"^%[1-9]$");return a.Where(x=>!format(x)).SequenceEqual(b.Where(x=>!format(x)))&&a.Where(format).OrderBy(x=>x,StringComparer.Ordinal).SequenceEqual(b.Where(format).OrderBy(x=>x,StringComparer.Ordinal));}
+    public static bool LocalNumbersCompatible(string source,string target){string a=Controls.Replace(source,""),b=Controls.Replace(target,"");Func<string,string> normalize=x=>Regex.Replace(x,@"\b\d{1,3}(?:,\d{3})+\b",m=>m.Value.Replace(",",""));return Regex.Matches(normalize(a),@"[+-]?\d+(?:\.\d+)?").Cast<Match>().Select(x=>x.Value).SequenceEqual(Regex.Matches(normalize(b),@"[+-]?\d+(?:\.\d+)?").Cast<Match>().Select(x=>x.Value));}
     public static bool Compatible(string source,string target){return source.Count(c=>c=='\n')==target.Count(c=>c=='\n')&&Controls.Matches(source).Cast<Match>().Select(x=>x.Value).SequenceEqual(Controls.Matches(target).Cast<Match>().Select(x=>x.Value));}
     static void ValidateState(string root,EnglishState state,bool assets){
         if(state.Format!=1||state.Assets==null||state.VersionId=="ch-current")throw new IOException("Invalid English overlay record.");
@@ -239,7 +242,8 @@ public static class EnglishSupport {
         return true;
     }
     public static void Apply(Profile profile){RequireClosed(profile);ApplyCore(profile,null);}
-    public static EnglishDisplay PrepareDisplay(Dictionary<string,string> data,Dictionary<string,object> catalog){
+    public static EnglishDisplay PrepareDisplay(Dictionary<string,string> data,Dictionary<string,object> catalog){return PrepareDisplay(data,catalog,false);}
+    public static EnglishDisplay PrepareDisplay(Dictionary<string,string> data,Dictionary<string,object> catalog,bool local){Func<string,string,bool> compatible=local?(Func<string,string,bool>)LocalCompatible:Compatible;
         var display=new Dictionary<string,string>(data);foreach(var item in data){var suffix=Regex.Match(item.Key,@"(?:if|en|cmpd|cmxs)\([^\r\n]*\)$");if(suffix.Success&&item.Value.EndsWith(suffix.Value,StringComparison.Ordinal)){string a=item.Key.Substring(0,suffix.Index).TrimEnd(),b=item.Value.Substring(0,item.Value.Length-suffix.Length).TrimEnd();if(a.Length>0&&!display.ContainsKey(a))display[a]=b;}}
         foreach(var item in data){var prefix=Regex.Match(item.Key,@"^\\[Nn]<[^\r\n]*?>");if(prefix.Success&&item.Value.StartsWith(prefix.Value,StringComparison.Ordinal)){string a=item.Key.Substring(prefix.Length),b=item.Value.Substring(prefix.Length);if(a.Length>0&&!display.ContainsKey(a))display[a]=b;}}
         // Notification plugins prepend their own icons/colors and sometimes spaces.
@@ -251,12 +255,12 @@ public static class EnglishSupport {
             string prefix=leading.Value,suffix=trailing.Value;
             if(!item.Value.StartsWith(prefix,StringComparison.Ordinal)||!item.Value.EndsWith(suffix,StringComparison.Ordinal)||prefix.Length+suffix.Length>=item.Key.Length)continue;
             string a=item.Key.Substring(prefix.Length,item.Key.Length-prefix.Length-suffix.Length).Trim(),b=item.Value.Substring(prefix.Length,item.Value.Length-prefix.Length-suffix.Length).Trim();
-            if(a.Length>0&&Compatible(a,b)&&!display.ContainsKey(a))display[a]=b;
+            if(a.Length>0&&compatible(a,b)&&!display.ContainsKey(a))display[a]=b;
         }
         // Only cataloged short UI/name labels participate in dynamic segment matching.
         // Full dialogue still requires an exact message or complete line match.
         var labels=new Dictionary<string,string>();var descriptions=new Dictionary<string,string>();var humanLabels=new Dictionary<string,string>();
-        foreach(var item in data){var row=catalog[item.Key] as Dictionary<string,object>;if(row==null||!row.ContainsKey("kinds"))continue;var kinds=row["kinds"] as System.Collections.IEnumerable;if(kinds!=null&&kinds.Cast<object>().Select(Convert.ToString).Any(x=>x=="picture-label")&&Compatible(item.Key,item.Value))humanLabels[item.Key]=item.Value;}
+        foreach(var item in data){var row=catalog[item.Key] as Dictionary<string,object>;if(row==null||!row.ContainsKey("kinds"))continue;var kinds=row["kinds"] as System.Collections.IEnumerable;if(kinds!=null&&kinds.Cast<object>().Select(Convert.ToString).Any(x=>x=="picture-label")&&compatible(item.Key,item.Value))humanLabels[item.Key]=item.Value;}
         // Native state notifications concatenate an actor name and a suffix.
         // Build display templates from cataloged state messages, without changing
         // the database messages or the log strings saved by the game.
@@ -271,10 +275,10 @@ public static class EnglishSupport {
             if(kinds!=null&&(battleLine||kinds.Cast<object>().Select(Convert.ToString).Any(x=>x=="character"||x=="display-value"||x=="notification"||x=="script-display"))){
                 foreach(string separator in new[]{" : ",": ","："}){
                     string source="%9"+separator+item.Key,target="%9"+separator+item.Value;
-                    if(!display.ContainsKey(source)&&Compatible(source,target))display[source]=target;
+                    if(!display.ContainsKey(source)&&compatible(source,target))display[source]=target;
                 }
             }
-            if(contexts!=null&&contexts.Cast<object>().Select(Convert.ToString).Any(x=>x.EndsWith("/description-first-line",StringComparison.Ordinal))&&Compatible(item.Key,item.Value)&&!Controls.IsMatch(item.Key))descriptions[item.Key]=item.Value;
+            if(contexts!=null&&contexts.Cast<object>().Select(Convert.ToString).Any(x=>x.EndsWith("/description-first-line",StringComparison.Ordinal))&&compatible(item.Key,item.Value)&&!Controls.IsMatch(item.Key))descriptions[item.Key]=item.Value;
             if(contexts==null||!contexts.Cast<object>().Select(Convert.ToString).Any(x=>Regex.IsMatch(x,@"^States\.json/\d+/message[1-4]$")))continue;
             if(item.Key.Contains("%9")||!Cjk.IsMatch(item.Key)||item.Key.StartsWith("\\",StringComparison.Ordinal))continue;
             string a="%9"+item.Key,b="%9 "+item.Value.TrimStart();if(!display.ContainsKey(a))display[a]=b;
@@ -302,7 +306,7 @@ public static class EnglishSupport {
             if(contexts!=null&&contexts.Cast<object>().Select(Convert.ToString).Any(x=>x.StartsWith("System.json/terms/messages/",StringComparison.Ordinal)||x.StartsWith("SystemMessage.json/",StringComparison.Ordinal))&&Regex.IsMatch(item.Value,@"%[1-9]"))display[item.Value]=item.Value;
             if(contexts!=null&&contexts.Cast<object>().Select(Convert.ToString).Any(x=>Regex.IsMatch(x,@"^Skills\.json/\d+/message1$"))){
                 string source="%9"+item.Key,target="%9 "+item.Value.TrimStart();
-                if(!display.ContainsKey(source)&&Compatible(source,target))display[source]=target;
+                if(!display.ContainsKey(source)&&compatible(source,target))display[source]=target;
             }
         }
         return new EnglishDisplay{Display=display,Labels=labels,Descriptions=descriptions,HumanLabels=humanLabels,EnemyPrefixes=enemyPrefixes,EnemyNames=enemyNames};
@@ -311,7 +315,7 @@ public static class EnglishSupport {
     public static EnglishDisplay PrepareLocalField(string root,string source,string target){return PrepareLocalData(root,new Dictionary<string,string>{{source,target}});}
     public static EnglishDisplay PrepareLocalData(string root,Dictionary<string,string> data){
         Dictionary<string,object> catalog;lock(localCatalogs){if(!localCatalogs.TryGetValue(root,out catalog)){string id=UniversalSupport.Identify(root);var ids=EnglishRelease.VersionIds();if(id!=null&&ids.Contains(id))ids=new List<string>{id};catalog=new Dictionary<string,object>();foreach(string version in ids)foreach(var pair in Catalog(version,ReadPack(version)))catalog[pair.Key]=pair.Value;localCatalogs[root]=catalog;}}
-        var selected=data.Where(x=>catalog.ContainsKey(x.Key)&&Compatible(x.Key,x.Value)).ToDictionary(x=>x.Key,x=>x.Value);return PrepareDisplay(selected,catalog);
+        var selected=data.Where(x=>catalog.ContainsKey(x.Key)&&LocalCompatible(x.Key,x.Value)).ToDictionary(x=>x.Key,x=>x.Value);return PrepareDisplay(selected,catalog,true);
     }
     internal static void ApplyCore(Profile profile,string runtimeOverride){
         string id=UniversalSupport.Identify(profile.Root);if(id==null||id=="ch-current")throw new IOException("Choose Gorpg 1.23, Maple 1.7.2, 3.3.4, or 3.3.5 trial. CH is an English reference only.");

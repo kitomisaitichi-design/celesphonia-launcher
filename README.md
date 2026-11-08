@@ -2,6 +2,9 @@
 
 Portable Windows launcher with verified installation and upgrades, separate game profiles, partial English display overlays and optional runtime controls.
 
+## Launcher 1.0.45 — Local model formatting repair
+Fixes mass validation failures caused by CR-ended inputs becoming HTML line breaks. Native PLaMo glossary/context options now protect structure and numeric values without a generic instruction prompt. French indexed-placeholder order is supported by the existing display adapters. Completed work is retained; retry failed entries without restarting the run. [Cause, examples and limits](docs/model-format-repair-1.0.45.md).
+
 ## Launcher 1.0.44 — Comparison editor repair
 Fixes the disposed-popup error during Export/selection actions, clipped origin-filter labels and unnecessary work during loading/drawing/selection. Refresh retains correct invalidation for model, imported and user-edited text; all four origin filters still combine with search. [Before/after and changes](LAUNCHER%20CHANGELOG.md) · [Repair trace and limits](docs/editor-repair-1.0.44.md).
 

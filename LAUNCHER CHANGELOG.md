@@ -2,6 +2,21 @@
 
 Launcher releases change this tool and its reversible display overlays. Game-mod developer announcements are in the separate **Game developer notes** view.
 
+## 1.0.45 — Native model options and lossless line formatting
+Fixes the large burst of Local TL failures after resuming a run. Requests were reaching PLaMo, but **carriage returns sent as source text were coming back as HTML `<br />` tags**, which correctly failed the display-safety validator. The model no longer receives outer line separators/indentation; the original whitespace is restored after translation. Blank lines and CR/LF layout stay exact.
+
+PLaMo receives `target_lang`, matching `glossary` pairs and descriptive `context` through its native `chat_template_kwargs`. Default context now describes the game/text situation; it no longer contains a generic instruction dump or fake slot example. The optional English meaning reference is stripped of engine codes. Native glossary identity pairs protect the actual control/condition/tag slots and literal numeric values. A disabled terminology glossary does not disable engine-value protection.
+
+French can correctly put `%2` before `%1`. Local display validation now accepts a permutation of the same indexed printf placeholders; the existing shared renderer already substitutes them by ID. All non-format control/tag/condition order and identities remain checked, along with literal values and line layout. Curated English validation remains unchanged. Eight consecutive failures with the same reason now pause at a checkpoint with the cause visible, retaining completed work.
+
+| Before: raw returned text | After: accepted target |
+| --- | --- |
+| `C'est un test.<br />` for a CR-ended line | `C'est un test.` plus the original CR |
+| `Le %2 de %1 ... %3` rejected for placeholder order | The same indexed values accepted in French order |
+| Window-height help omitted literal `1` | Original numeric literals retained through protected slots |
+
+The real worker accepted all six selected covered examples in the bounded reproduction, including CR, newline, icon/color codes, a numeric help line and reordered format placeholders. The original successful journal stayed byte-identical in that check. This does not mean every model output is linguistically reviewed or every future line must succeed. Failed entries remain eligible for optional targeted retry; completed, imported and authored content is retained. [Native request details and evidence](docs/model-format-repair-1.0.45.md).
+
 ## 1.0.44 — Faster comparison editor, fixed popup error and full filter labels
 Fixes the reported **Cannot access a disposed object: ContextMenuStrip** exception when choosing Export or a selection action. The editor owns its menus for the lifetime of the window; dismissing a popup no longer disposes it while WinForms is still handling its click. Export cancellation, reopening and both selected/filtered exports now follow the same safe lifetime.
 
