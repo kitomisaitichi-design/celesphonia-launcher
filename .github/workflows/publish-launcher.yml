@@ -50,14 +50,9 @@ jobs:
           digest = hashlib.sha256(archive.read_bytes()).hexdigest()
           assert checksum.read_text('utf-8').strip() == digest+'  '+archive.name, 'Checksum mismatch'
           allowed = {'Celesphonia Portable Switcher.exe','EnglishRuntime.js','README.txt','mod-recipes.json','version-fingerprints.json'}
-          versions = (
-            'gorpg-1-23','maple-1-7-2','three-in-one-3-3-4',
-            'three-in-one-3-3-5-trial','three-in-one-3-3-5-v1-01',
-            'three-in-one-3-3-5-v1-02','three-in-one-3-3-5-v1-03',
-            'three-in-one-3-3-5-v1-04','three-in-one-3-3-5-v1-051',
-            'three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053',
-            'three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061','three-in-one-3-3-5-v1-07',
-          )
+          source_versions = json.loads(pathlib.Path('version-fingerprints.json').read_text('utf-8'))['Versions']
+          versions = tuple(row['Id'] for row in source_versions if row['Id'] != 'ch-current')
+          assert len(versions) == len(set(versions)) and len(versions) >= 15
           allowed.update('English/'+v+'/'+item for v in versions for item in ('manifest.json','dictionary.json','catalog.json'))
           with zipfile.ZipFile(archive) as bundle:
             assert bundle.testzip() is None, 'Corrupt ZIP entry'
@@ -67,7 +62,7 @@ jobs:
             # Existing updaters allow these five root files and versioned packs.
             # The five English
             # pictures are embedded inside the EXE, never separate ZIP files.
-            assert len(allowed) == 47
+            assert len(allowed) == 5 + 3*len(versions)
             executable = bundle.read('Celesphonia Portable Switcher.exe')
             rescue = pathlib.Path('StreamRepeatChoiceRescue.js').read_bytes()
             assert rescue in executable, 'Missing verified repeat-stream choice rescue in EXE'
@@ -79,7 +74,8 @@ jobs:
                 if decoded.startswith(b'{'): native_streams.append(decoded)
               except zlib.error: pass
             # Each native reference is a hash-only inventory, never game bytes.
-            # Require exact release-catalog bytes inside the distributed EXE.
+            # Reconstruct shared records before comparing the complete inventory.
+            # Sparse fingerprints are never used as a substitute for file hashes.
             native_refs = {
               'NativeReferenceFiles.json': ('gorpg-1-23', 7208),
               'NativeReferenceFiles-ch-current.json': ('ch-current', 13536),
@@ -89,6 +85,7 @@ jobs:
               'NativeReferenceFiles-three-in-one-3-3-5-v1-06.json': ('three-in-one-3-3-5-v1-06', 11738),
               'NativeReferenceFiles-three-in-one-3-3-5-v1-061.json': ('three-in-one-3-3-5-v1-061', 11738),
               'NativeReferenceFiles-three-in-one-3-3-5-v1-07.json': ('three-in-one-3-3-5-v1-07', 11732),
+              'NativeReferenceFiles-three-in-one-3-3-5-v1-071.json': ('three-in-one-3-3-5-v1-071', 11741),
             }
             for name, (ident, expected_count) in native_refs.items():
               content = pathlib.Path(name).read_bytes()
@@ -98,7 +95,26 @@ jobs:
               assert len({f['Path'].casefold() for f in native['Files']}) == expected_count
               assert all(len(f['Hash']) == 64 and f['Size'] >= 0 for f in native['Files'])
               exact=content.rstrip(b'\r\n')
-              assert exact in executable or any(data.rstrip(b'\r\n')==exact for data in native_streams), 'EXE native inventory differs from source: ' + name
+              embedded_matches = exact in executable or any(data.rstrip(b'\r\n')==exact for data in native_streams)
+              if not embedded_matches:
+                base = json.loads(pathlib.Path('NativeReferenceFiles.json').read_bytes())
+                expected = {row['Path']: row for row in native['Files']}
+                for data in native_streams:
+                  candidate = json.loads(data)
+                  if not isinstance(candidate,dict) or candidate.get('Format') != 2 or candidate.get('VersionId') != ident:
+                    continue
+                  assert candidate['BaseVersionId'] == base['VersionId'] == 'gorpg-1-23'
+                  assert ident != base['VersionId']
+                  recovered = {row['Path']: row for row in base['Files']}
+                  assert len(candidate['RemovedPaths']) == len(set(candidate['RemovedPaths']))
+                  for path in candidate['RemovedPaths']:
+                    assert path in recovered
+                    del recovered[path]
+                  assert len(candidate['Files']) == len({row['Path'].casefold() for row in candidate['Files']})
+                  recovered.update({row['Path']: row for row in candidate['Files']})
+                  embedded_matches = recovered == expected
+                  break
+              assert embedded_matches, 'EXE native inventory differs from source: ' + name
             runtime = bundle.read('EnglishRuntime.js')
             assert b'installGroperTicker' in runtime, 'Native Ticker groper rendering fix missing'
             assert b'installGlossaryPictureLayout' in runtime, 'Glossary illustration layout repair missing'
@@ -107,7 +123,7 @@ jobs:
             assert b'celesphonia-english/images/' in runtime, 'Help image redirection missing'
             assert b'English/ImageLocalization/manifest.json' in executable, 'Embedded localized artwork missing'
             artwork = json.loads(pathlib.Path('English/ImageLocalization/manifest.json').read_text('utf-8'))
-            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053','three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061','three-in-one-3-3-5-v1-07'}
+            assert set(artwork['versionIds']) == {'three-in-one-3-3-5-v1-051','three-in-one-3-3-5-v1-052','three-in-one-3-3-5-v1-053','three-in-one-3-3-5-v1-06','three-in-one-3-3-5-v1-061','three-in-one-3-3-5-v1-07','three-in-one-3-3-5-v1-071'}
             assert len(artwork['images']) == 5
             for name, info in artwork['images'].items():
               data = pathlib.Path('English/ImageLocalization',name).read_bytes()
@@ -230,6 +246,18 @@ jobs:
             reviewed=json.loads(pathlib.Path('English/v107-reviewed-overrides.json').read_text('utf8'))
             assert len(reviewed)==56 and all(dictionary.get(k)==v for k,v in reviewed.items())
             assert dictionary['伤痕:开']=='Scars: On' and dictionary['伤痕:关']=='Scars: Off'
+            newest=next(x for x in recipes if x['Id']=='three-in-one-3-3-5-v1-071')
+            assert newest['ArchiveHash']=='aad96a8df7a7636eb46d3a53e4238eeb66ae4d5c90c084a756f0064875f90e92'
+            assert newest['SaveGeneration']==1071 and newest['ArchiveBytes']==550240894 and len(newest['Files'])==5174
+            assert len(newest['UpgradeFrom'])==11 and recipe['Id'] in newest['UpgradeFrom']
+            folder='English/'+newest['Id']+'/'
+            manifest=json.loads(bundle.read(folder+'manifest.json'))
+            assert manifest['Fingerprints']==newest['Fingerprints']
+            for name,key in [('dictionary.json','DictionaryHash'),('catalog.json','CatalogHash')]:
+              data=bundle.read(folder+name)
+              assert hashlib.sha256(data).hexdigest()==manifest[key]
+              assert data==bundle.read('English/'+recipe['Id']+'/'+name), '1.071 must retain the verified 1.07 display pack'
+            assert manifest['TranslatedTexts']==35014 and manifest['TotalTexts']==56097
           print('VERIFIED',tag,'files',len(allowed),'bytes',archive.stat().st_size,'sha256',digest)
           PY
 
