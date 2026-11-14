@@ -21,6 +21,8 @@ public sealed class MixedNativeReference {
     public int Format {get;set;}
     public string VersionId {get;set;}
     public List<MixedNativeFile> Files {get;set;}
+    public string BaseVersionId {get;set;}
+    public string[] RemovedPaths {get;set;}
 }
 public sealed class MixedRecoverySelection {
     public string Path {get;internal set;}
@@ -128,8 +130,20 @@ public static class MixedSourceRecovery {
             using(Stream decoded=compressed?(Stream)new GZipStream(source,CompressionMode.Decompress):source)
             using(var reader=new StreamReader(decoded,Encoding.UTF8)) {
                 var reference=Json.Deserialize<MixedNativeReference>(reader.ReadToEnd());
-                if(reference==null || reference.Format!=1 || reference.VersionId!=versionId)
+                if(reference==null || reference.VersionId!=versionId)
                     throw new IOException("Embedded native inventory does not match the requested build.");
+                if(reference.Format==2) {
+                    if(reference.BaseVersionId!="gorpg-1-23" || versionId==reference.BaseVersionId || reference.Files==null || reference.RemovedPaths==null)
+                        throw new IOException("Embedded native inventory has an invalid shared base.");
+                    var files=LoadEmbeddedReference(reference.BaseVersionId).Files.ToDictionary(x=>x.Path,PathComparer);
+                    foreach(string removed in reference.RemovedPaths)
+                        if(!files.Remove(removed))throw new IOException("Embedded native inventory removes an unknown original file.");
+                    if(reference.Files.Count>0)ValidateTargets(reference.Files);
+                    foreach(var file in reference.Files)files[file.Path]=file;
+                    reference.Files=files.Values.OrderBy(x=>x.Path,StringComparer.Ordinal).ToList();
+                    reference.Format=1;reference.BaseVersionId=null;reference.RemovedPaths=null;
+                }
+                if(reference.Format!=1)throw new IOException("Embedded native inventory uses an unsupported format.");
                 ValidateTargets(reference.Files);
                 return reference;
             }

@@ -1,6 +1,6 @@
 # Magical Girl Celesphonia — Three-in-One 3.3.5
 
-## Creator's English changelog (releases v1.01–v1.053)
+## Creator's English changelog (releases v1.01–v1.071)
 
 These are English translations of developer **Tian Ying (天影)**'s announcements
 dated October 3–18, 2026. They describe **game-mod versions**, not the Windows
@@ -108,6 +108,12 @@ The supplied 1.061 archive contains a folder named 1.062; its bundled creator ch
 208. Warding Talisman now activates instantly, is battle-only and costs 1 MP. First Aid Kits are menu-only. Clarity Eye Drops, Antidotes and similar remedies are now talismans.
 
 The date above records when these notes/files were supplied locally, not an independently verified creator publication date.
+
+### Ver1.071 — supplied November 14, 2026
+
+1. Fixed the missing portrait artwork for **Glossy Black Gloves**.
+
+Translated from the bundled creator log: `Ver1.071 — 修复缺少“油光黑丝手套”立绘的问题`. The date records local receipt of the archive; the creator's publication date was not independently supplied.
 
 ## Source and terminology
 

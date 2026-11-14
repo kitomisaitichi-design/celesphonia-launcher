@@ -1,5 +1,10 @@
 # Celesphonia Mod Library
 
+## Latest game support — Ver1.071
+
+Launcher 1.0.48 adds direct installation and upgrades to Three-in-One 3.3.5 Ver1.071. Use the 1.071 creator bundle with clean GoRPG 1.23, or pool original archives, folders and exact individual files. All supported earlier 3.3.5 releases can carry saves forward. Existing English coverage and adapters apply to the new version. [Upgrade instructions](UPGRADE%20PATHS.md) · [Source and verification trace](docs/v1071-support-trace.md).
+
+
 ## Launcher language
 Use the globe icon in the header to choose the launcher language, including 日本語. A saved choice takes priority; Automatic uses the Windows display language and falls back to English when unsupported. This changes launcher pages, dialogs and notes only. Game English/local translation choices and model target languages remain independent.
 

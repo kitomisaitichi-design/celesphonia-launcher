@@ -1,3 +1,6 @@
+Latest supported Three-in-One game: Ver1.071. Launcher 1.0.48.
+GoRPG 1.23 + the 1.071 creator bundle supports direct installation. Earlier supported 3.3.5 saves can be carried forward.
+
 CELESPHONIA MOD LIBRARY — LAUNCHER 1.0.39
 
 Launcher 1.0.40 — Three-in-One Ver1.07

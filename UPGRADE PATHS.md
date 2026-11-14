@@ -331,3 +331,12 @@ Choose **Three-in-one 3.3.5 Ver1.07**. A clean GoRPG 1.23 plus the 1.07 creator 
 The trial and versions 1.01, 1.02, 1.03, 1.04, 1.051, 1.052, 1.053, 1.06 and 1.061 are registered forward save sources. Saves are backed up/copied into an independent 1.07 installation. Original profiles remain available. 3.3.4, CH and Maple are separate save families; do not infer cross-family save compatibility from shared file hashes.
 
 The exact target contains 11,732 files. The creator supplies 5,165 overlay files, with seven old ear/tail images and the old #207 text log absent, and a gamepad-mode plugin plus #208 log added. The 1.07 reference is constructed from the verified GoRPG base and the actual new overlay, so an older bundle's obsolete entries are not demanded for a fresh install. Existing unknown files are never silently removed.
+
+
+## Ver1.071 — direct originals, mixed sources and earlier 3.3.5 saves
+
+Select **Three-in-one 3.3.5 Ver1.071**. Clean GoRPG 1.23 plus the 1.071 creator archive is sufficient. The launcher reads archive signatures, including misleading extensions and supported multipart downloads. Extracted folders and individual exact files can also be combined by hash. No intermediate release is required.
+
+Trial, 1.01, 1.02, 1.03, 1.04, 1.051, 1.052, 1.053, 1.06, 1.061 and 1.07 are supported forward save sources. Upgrades create an independent target and copy backed-up saves. Keep all parts of split downloads together and select the first volume. CH, Maple and 3.3.4 remain separate save families, although their matching original files can contribute to reconstruction.
+
+The full target has **11,741 native files**, including **5,174 creator-overlay files**. Compared with 1.07, nine portrait PNGs were added, CommonEvents.json and States.json changed, and the creator log was updated. The English dictionary and display catalog are unchanged because no supported display strings were added. Existing partial English coverage and local translation choices apply independently.
